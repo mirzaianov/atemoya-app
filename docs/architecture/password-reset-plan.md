@@ -33,7 +33,7 @@ Login
   -> /forgot-password submits email
 or
 Settings
-  -> Send Password Reset Email
+  -> Send Email
   -> submits the authenticated account email
   -> Better Auth returns a generic response
   -> Resend sends a one-hour reset link when the account exists

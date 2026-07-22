@@ -11,6 +11,7 @@ import { passwordResetCallbackURL } from '../auth/password-reset';
 
 import buttonStyles from '../../components/button.module.css';
 import statusStyles from '../check-email/check-email.module.css';
+import styles from './settings.module.css';
 
 const iconSize = 20;
 const resendCooldownMs = 30_000;
@@ -71,8 +72,13 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
         handleOnClick={() => requestMutation.mutate()}
         icon={<Mail size={iconSize} />}
         loading={requestMutation.isPending}
-        styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
-        text={isCoolingDown ? 'Email Sent' : 'Send Password Reset Email'}
+        styling={clsx(
+          buttonStyles.standard,
+          buttonStyles.fullWidth,
+          buttonStyles.primary,
+          styles.passwordResetButton,
+        )}
+        text={isCoolingDown ? 'Email Sent' : 'Send Email'}
       />
       {notice ? (
         <p

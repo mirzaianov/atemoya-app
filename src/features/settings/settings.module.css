@@ -72,6 +72,10 @@
   flex: 0 0 auto;
 }
 
+.passwordResetButton {
+  margin-block-start: 0.25rem;
+}
+
 .options {
   display: flex;
   flex-direction: column;

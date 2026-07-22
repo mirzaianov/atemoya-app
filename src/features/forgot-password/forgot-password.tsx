@@ -134,16 +134,21 @@ export default function ForgotPassword() {
             {notice?.message ?? ''}
           </p>
           <Button
-            styling={clsx(buttonStyles.standard, buttonStyles.primary)}
+            styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
             icon={<Mail size={iconSize} />}
-            text={isCoolingDown ? 'Email Sent' : 'Send Reset Email'}
+            text={isCoolingDown ? 'Email Sent' : 'Send Email'}
             type="submit"
             disabled={!form.formState.isValid || isCoolingDown}
             loading={requestMutation.isPending}
           />
         </form>
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.neutral, statusStyles.backButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.neutral,
+            statusStyles.backButton,
+          )}
           handleOnClick={() => router.push('/login')}
           icon={<ArrowLeft size={iconSize} />}
           text="Back to Login"
