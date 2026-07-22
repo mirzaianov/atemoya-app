@@ -2,8 +2,8 @@
 
 ## Status
 
-Implemented and manually accepted in the user's test environment; production migration and
-deployment pending.
+Implemented, manually accepted, deployed, migrated, smoke-tested, and production-monitored as of
+2026-07-22.
 
 ## Goal
 
@@ -114,8 +114,8 @@ Manual acceptance completed on 2026-07-21. The user verified normal non-2FA sign
 rejection; QR and manual-key enrollment; invalid and valid TOTP handling; generation, copy, download,
 single use, and regeneration of 10 backup codes; saved-code confirmation; `/two-factor` redirects;
 trusted-device behavior; disable; other-session revocation; and the 10-attempt, 15-minute lockout.
-Production rollout must still apply the migration before deploying the plugin and then complete a
-short smoke test with a dedicated account.
+The code was deployed on 2026-07-22. The deployment database received migration `0005`, the
+production smoke test passed with a dedicated account, and post-rollout monitoring passed.
 
 - The migration applies before the plugin is deployed.
 - Users without 2FA continue to sign in normally.

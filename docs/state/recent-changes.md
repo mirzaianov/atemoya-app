@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-22: Completed the optional TOTP and backup-code authentication rollout, including deployment-database migration, production smoke testing, and post-rollout monitoring. [Reason why added: records full production acceptance of the 2FA feature.]
+
 - 2026-07-21: Standardized every raised text button and button-styled link on the shared `standard` height variant and removed the obsolete `action` variant while retaining compact icon-control sizing. [Reason why added: records the project-wide control-height convention established during 2FA UI acceptance.]
 
 - 2026-07-21: Implemented and manually accepted optional Better Auth TOTP and encrypted backup-code authentication, including Settings management, sign-in challenges, trusted devices, one-time and regenerated backup codes, lockout, disable, and other-session revocation. [Reason why added: records completion of the code path and full manual security-flow acceptance while production rollout remains pending.]
@@ -44,7 +46,3 @@ Keep only the 10 most recent entries.
   while preserving existing formatting, lint command boundaries, and the local
   declaration-padding rule. [Reason why added: records the expanded code-quality
   baseline without implying a repository-wide style migration.]
-
-- 2026-07-18: Updated the approved minor dependency set and pinned pnpm 11.11.0
-  while keeping TypeScript 6 and patch-only packages unchanged. [Reason why added:
-  records the deliberately scoped dependency-maintenance baseline.]
