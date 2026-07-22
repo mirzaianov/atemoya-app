@@ -317,7 +317,7 @@ const SignupForm = ({
         )}
         handleOnClick={toLogin}
         icon={<ArrowLeft size={buttonSmall} />}
-        text="Go Back"
+        text="Back to Login"
       />
     </>
   );

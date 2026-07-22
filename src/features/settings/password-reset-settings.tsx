@@ -80,6 +80,13 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
         loading={requestMutation.isPending}
         styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
         text={isCoolingDown ? `Send again in ${cooldownSeconds}s` : 'Send Reset'}
+        textContent={
+          isCoolingDown ? (
+            <span>
+              Send again in <span className={buttonStyles.countdown}>{cooldownSeconds}</span>s
+            </span>
+          ) : undefined
+        }
       />
       {notice ? (
         <p

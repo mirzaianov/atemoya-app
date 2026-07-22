@@ -19,7 +19,6 @@ import { passwordResetCallbackURL } from '../auth/password-reset';
 
 import buttonStyles from '../../components/button.module.css';
 import authStyles from '../auth/auth-page.module.css';
-import statusStyles from '../check-email/check-email.module.css';
 import formStyles from '../signup/signup-form.module.css';
 import styles from './forgot-password.module.css';
 
@@ -86,90 +85,95 @@ export default function ForgotPassword() {
   return (
     <div className={authStyles.container}>
       <BrandHeader />
-      <div className={authStyles.formContainer}>
-        <h2 className={formStyles.subHeading}>Reset Password</h2>
-        <p className={statusStyles.description}>
+      <div className={clsx(authStyles.formContainer, styles.content)}>
+        <h2 className={clsx(formStyles.subHeading, styles.heading)}>Reset Password</h2>
+        <p className={styles.description}>
           Enter your account email and we will send a one-hour reset link.
         </p>
-        <form onSubmit={submit} noValidate>
-          <Controller
-            control={form.control}
-            name="email"
-            render={({
-              field: { name, onBlur, onChange, ref, value },
-              fieldState: { error, invalid, isDirty, isTouched },
-            }) => (
-              <Field.Root
-                className={formStyles.formControl}
-                dirty={isDirty}
-                invalid={invalid}
-                name={name}
-                touched={isTouched}
-              >
-                <Field.Label className={formStyles.label}>
-                  <span className={formStyles.labelText}>Email</span>
-                </Field.Label>
-                <Field.Control
-                  autoComplete="username"
-                  autoFocus
-                  className={formStyles.input}
-                  enterKeyHint="send"
-                  id="reset-email"
-                  onBlur={onBlur}
-                  onValueChange={(nextEmail) => {
-                    onChange(nextEmail);
-                    setNotice(undefined);
-                  }}
-                  placeholder="Enter email"
-                  ref={ref}
-                  type="email"
-                  value={value}
-                />
-                <div className={styles.messageArea}>
-                  {error ? (
-                    <Field.Error
-                      aria-live="polite"
-                      className={clsx(styles.message, styles.errorMessage)}
-                      match
-                    >
-                      {error.message}
-                    </Field.Error>
-                  ) : null}
-                  {!error && notice ? (
-                    <p
-                      aria-live="polite"
-                      className={clsx(styles.message, styles.statusMessage)}
-                      data-tone={notice.tone}
-                      role={notice.tone === 'error' ? 'alert' : 'status'}
-                    >
-                      {notice.message}
-                    </p>
-                  ) : null}
-                </div>
-              </Field.Root>
-            )}
-          />
+        <div className={styles.actions}>
+          <form className={styles.form} onSubmit={submit} noValidate>
+            <Controller
+              control={form.control}
+              name="email"
+              render={({
+                field: { name, onBlur, onChange, ref, value },
+                fieldState: { error, invalid, isDirty, isTouched },
+              }) => (
+                <Field.Root
+                  className={formStyles.formControl}
+                  dirty={isDirty}
+                  invalid={invalid}
+                  name={name}
+                  touched={isTouched}
+                >
+                  <Field.Label className={formStyles.label}>
+                    <span className={formStyles.labelText}>Email</span>
+                  </Field.Label>
+                  <div className={styles.fieldBody}>
+                    <Field.Control
+                      autoComplete="username"
+                      autoFocus
+                      className={formStyles.input}
+                      enterKeyHint="send"
+                      id="reset-email"
+                      onBlur={onBlur}
+                      onValueChange={(nextEmail) => {
+                        onChange(nextEmail);
+                        setNotice(undefined);
+                      }}
+                      placeholder="Enter email"
+                      ref={ref}
+                      type="email"
+                      value={value}
+                    />
+                    <div className={styles.messageArea}>
+                      {error ? (
+                        <Field.Error
+                          aria-live="polite"
+                          className={clsx(styles.message, styles.errorMessage)}
+                          match
+                        >
+                          {error.message}
+                        </Field.Error>
+                      ) : null}
+                      {!error && notice ? (
+                        <div
+                          aria-live="polite"
+                          className={clsx(styles.message, styles.statusMessage)}
+                          data-tone={notice.tone}
+                          role={notice.tone === 'error' ? 'alert' : 'status'}
+                        >
+                          {notice.message}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </Field.Root>
+              )}
+            />
+            <Button
+              styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
+              icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
+              text={isCoolingDown ? `Send again in ${cooldownSeconds}s` : 'Send Reset'}
+              textContent={
+                isCoolingDown ? (
+                  <span>
+                    Send again in <span className={buttonStyles.countdown}>{cooldownSeconds}</span>s
+                  </span>
+                ) : undefined
+              }
+              type="submit"
+              disabled={!form.formState.isValid || isCoolingDown}
+              loading={requestMutation.isPending}
+            />
+          </form>
           <Button
-            styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
-            icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
-            text={isCoolingDown ? `Send again in ${cooldownSeconds}s` : 'Send Reset'}
-            type="submit"
-            disabled={!form.formState.isValid || isCoolingDown}
-            loading={requestMutation.isPending}
+            styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.neutral)}
+            handleOnClick={() => router.push('/login')}
+            icon={<ArrowLeft size={iconSize} />}
+            text="Back to Login"
           />
-        </form>
-        <Button
-          styling={clsx(
-            buttonStyles.standard,
-            buttonStyles.fullWidth,
-            buttonStyles.neutral,
-            authStyles.controlWidth,
-            statusStyles.backButton,
-          )}
-          handleOnClick={() => router.push('/login')}
-          icon={<ArrowLeft size={iconSize} />}
-          text="Back to Login"
-        />
+        </div>
       </div>
     </div>
   );
