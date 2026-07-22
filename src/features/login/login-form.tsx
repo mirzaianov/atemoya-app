@@ -1,6 +1,6 @@
 import { Field } from '@base-ui/react/field';
 import clsx from 'clsx';
-import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, LogIn, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEventHandler } from 'react';
 import { Controller } from 'react-hook-form';
@@ -25,6 +25,7 @@ interface Props {
   isSubmitting: boolean;
   isValid: boolean;
   clearError: () => void;
+  toForgotPassword: () => void;
   toSignup: () => void;
 }
 
@@ -36,6 +37,7 @@ const LoginForm = ({
   isSubmitting,
   isValid,
   clearError,
+  toForgotPassword,
   toSignup,
 }: Props) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -156,6 +158,12 @@ const LoginForm = ({
           type="submit"
           disabled={!isValid}
           loading={isSubmitting}
+        />
+        <Button
+          styling={clsx(buttonStyles.standard, buttonStyles.neutral, styles.forgotPasswordButton)}
+          handleOnClick={toForgotPassword}
+          icon={<KeyRound size={buttonSmall} />}
+          text="Forgot Password?"
         />
       </form>
       <div>

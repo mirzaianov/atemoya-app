@@ -92,6 +92,10 @@
   margin-top: 0.5rem;
 }
 
+.forgotPasswordButton {
+  margin-top: 1rem;
+}
+
 .createAccountButton {
   margin-right: auto;
   margin-left: auto;

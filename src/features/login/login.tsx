@@ -70,6 +70,7 @@ export default function Login({ notice }: LoginProps) {
           isValid={form.formState.isValid}
           onSubmit={submit}
           clearError={() => form.clearErrors('root')}
+          toForgotPassword={() => router.push('/forgot-password')}
           toSignup={() => router.push('/signup')}
         />
       </div>

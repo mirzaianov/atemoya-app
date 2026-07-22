@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-22: Implemented Better Auth password recovery through Resend with generic requests, one-hour single-use links, shared password validation, no automatic sign-in, all-session and trusted-device revocation, preserved 2FA state, and password-changed notices. [Reason why added: records the completed local implementation and its security behavior while manual acceptance and deployment remain pending.]
+
 - 2026-07-22: Closed the HSTS follow-up after verifying Vercel's two-year HSTS header on the apex redirect and primary host and confirming that the `.app` namespace is already HSTS-preloaded. [Reason why added: records why no application-level HSTS configuration or individual preload registration is needed.]
 
 - 2026-07-22: Completed the optional TOTP and backup-code authentication rollout, including deployment-database migration, production smoke testing, and post-rollout monitoring. [Reason why added: records full production acceptance of the 2FA feature.]
@@ -38,8 +40,3 @@ Keep only the 10 most recent entries.
   blank lines on both sides of declaration groups while exempting statement-list
   boundaries. [Reason why added: aligns the focused local rule with the relevant
   ESLint `padding-line-between-statements` behavior.]
-
-- 2026-07-18: Removed unused repository-local agent settings because
-  operational policy already lives in `AGENTS.md` and no project-local skills
-  exist. [Reason why added: keeps the documented project-support structure
-  aligned with the repository.]
