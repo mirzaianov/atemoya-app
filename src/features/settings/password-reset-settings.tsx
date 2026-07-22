@@ -6,6 +6,7 @@ import { Mail } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Button from '../../components/button';
+import Spinner from '../../components/spinner';
 import { authClient } from '../../lib/auth-client';
 import { passwordResetCallbackURL } from '../auth/password-reset';
 
@@ -14,7 +15,7 @@ import statusStyles from '../check-email/check-email.module.css';
 import styles from './settings.module.css';
 
 const iconSize = 20;
-const resendCooldownMs = 30_000;
+const resendCooldownSeconds = 30;
 
 interface PasswordResetSettingsProps {
   userEmail: string;
@@ -27,7 +28,8 @@ interface Notice {
 
 export default function PasswordResetSettings({ userEmail }: PasswordResetSettingsProps) {
   const [notice, setNotice] = useState<Notice>();
-  const [isCoolingDown, setIsCoolingDown] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const isCoolingDown = cooldownSeconds > 0;
   const requestMutation = useMutation({
     mutationFn: async () => {
       const { error } = await authClient.requestPasswordReset({
@@ -51,26 +53,29 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
         message: 'A one-hour password reset link has been sent to your email.',
         tone: 'success',
       });
-      setIsCoolingDown(true);
+      setCooldownSeconds(resendCooldownSeconds);
     },
   });
 
   useEffect(() => {
-    if (!isCoolingDown) {
+    if (cooldownSeconds === 0) {
       return;
     }
 
-    const timeout = window.setTimeout(() => setIsCoolingDown(false), resendCooldownMs);
+    const timeout = window.setTimeout(
+      () => setCooldownSeconds((currentSeconds) => Math.max(0, currentSeconds - 1)),
+      1000,
+    );
 
     return () => window.clearTimeout(timeout);
-  }, [isCoolingDown]);
+  }, [cooldownSeconds]);
 
   return (
     <>
       <Button
         disabled={isCoolingDown}
         handleOnClick={() => requestMutation.mutate()}
-        icon={<Mail size={iconSize} />}
+        icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
         loading={requestMutation.isPending}
         styling={clsx(
           buttonStyles.standard,
@@ -78,7 +83,7 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
           buttonStyles.primary,
           styles.passwordResetButton,
         )}
-        text={isCoolingDown ? 'Email Sent' : 'Send Email'}
+        text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Email'}
       />
       {notice ? (
         <p

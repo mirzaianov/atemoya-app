@@ -48,6 +48,10 @@
   white-space: nowrap;
 }
 
+.fullWidthInput {
+  max-width: none;
+}
+
 .input::placeholder {
   color: var(--color-placeholder);
 }

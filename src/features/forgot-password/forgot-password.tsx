@@ -11,6 +11,7 @@ import { Controller, useForm } from 'react-hook-form';
 
 import BrandHeader from '../../components/brand-header';
 import Button from '../../components/button';
+import Spinner from '../../components/spinner';
 import { authClient } from '../../lib/auth-client';
 import { forgotPasswordSchema } from '../auth/auth-schemas';
 import type { ForgotPasswordFormValues } from '../auth/auth-schemas';
@@ -23,7 +24,7 @@ import statusStyles from '../check-email/check-email.module.css';
 import formStyles from '../signup/signup-form.module.css';
 
 const iconSize = 20;
-const resendCooldownMs = 30_000;
+const resendCooldownSeconds = 30;
 
 interface Notice {
   message: string;
@@ -38,7 +39,8 @@ export default function ForgotPassword() {
     resolver: zodResolver(forgotPasswordSchema),
   });
   const [notice, setNotice] = useState<Notice>();
-  const [isCoolingDown, setIsCoolingDown] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const isCoolingDown = cooldownSeconds > 0;
   const requestMutation = useMutation({
     mutationFn: async ({ email }: ForgotPasswordFormValues) => {
       const { error } = await authClient.requestPasswordReset({
@@ -61,19 +63,22 @@ export default function ForgotPassword() {
         message: 'If an account uses this email, a one-hour reset link has been sent.',
         tone: 'success',
       });
-      setIsCoolingDown(true);
+      setCooldownSeconds(resendCooldownSeconds);
     },
   });
 
   useEffect(() => {
-    if (!isCoolingDown) {
+    if (cooldownSeconds === 0) {
       return;
     }
 
-    const timeout = window.setTimeout(() => setIsCoolingDown(false), resendCooldownMs);
+    const timeout = window.setTimeout(
+      () => setCooldownSeconds((currentSeconds) => Math.max(0, currentSeconds - 1)),
+      1000,
+    );
 
     return () => window.clearTimeout(timeout);
-  }, [isCoolingDown]);
+  }, [cooldownSeconds]);
 
   const submit = form.handleSubmit((values) => requestMutation.mutateAsync(values));
 
@@ -85,7 +90,7 @@ export default function ForgotPassword() {
         <p className={statusStyles.description}>
           Enter your account email and we will send a one-hour reset link.
         </p>
-        <form onSubmit={submit} noValidate>
+        <form className={authStyles.fullWidthForm} onSubmit={submit} noValidate>
           <Controller
             control={form.control}
             name="email"
@@ -106,7 +111,7 @@ export default function ForgotPassword() {
                 <Field.Control
                   autoComplete="username"
                   autoFocus
-                  className={formStyles.input}
+                  className={clsx(formStyles.input, formStyles.fullWidthInput)}
                   enterKeyHint="send"
                   id="reset-email"
                   onBlur={onBlur}
@@ -135,8 +140,8 @@ export default function ForgotPassword() {
           </p>
           <Button
             styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
-            icon={<Mail size={iconSize} />}
-            text={isCoolingDown ? 'Email Sent' : 'Send Email'}
+            icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
+            text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Email'}
             type="submit"
             disabled={!form.formState.isValid || isCoolingDown}
             loading={requestMutation.isPending}
