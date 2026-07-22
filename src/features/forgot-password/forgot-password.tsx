@@ -18,10 +18,10 @@ import type { ForgotPasswordFormValues } from '../auth/auth-schemas';
 import { passwordResetCallbackURL } from '../auth/password-reset';
 
 import buttonStyles from '../../components/button.module.css';
-import sharedFormStyles from '../../styles/form.module.css';
 import authStyles from '../auth/auth-page.module.css';
 import statusStyles from '../check-email/check-email.module.css';
 import formStyles from '../signup/signup-form.module.css';
+import styles from './forgot-password.module.css';
 
 const iconSize = 20;
 const resendCooldownSeconds = 30;
@@ -124,15 +124,17 @@ export default function ForgotPassword() {
                   type="email"
                   value={value}
                 />
-                <Field.Error aria-live="polite" className={sharedFormStyles.error} match>
-                  {error?.message ?? ''}
-                </Field.Error>
+                <div className={clsx(styles.messageLine, styles.errorLine)}>
+                  <Field.Error aria-live="polite" match>
+                    {error?.message ?? ''}
+                  </Field.Error>
+                </div>
               </Field.Root>
             )}
           />
           <p
             aria-live="polite"
-            className={statusStyles.status}
+            className={clsx(styles.messageLine, styles.statusLine)}
             data-tone={notice?.tone}
             role={notice?.tone === 'error' ? 'alert' : 'status'}
           >
@@ -141,7 +143,7 @@ export default function ForgotPassword() {
           <Button
             styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
             icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
-            text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Email'}
+            text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Reset'}
             type="submit"
             disabled={!form.formState.isValid || isCoolingDown}
             loading={requestMutation.isPending}

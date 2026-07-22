@@ -33,7 +33,7 @@ Login
   -> /forgot-password submits email
 or
 Settings
-  -> Send Email
+  -> Send Reset
   -> submits the authenticated account email
   -> Better Auth returns a generic response
   -> Resend sends a one-hour reset link when the account exists
@@ -110,6 +110,6 @@ request another email. A consumed token must fail in the same way on reuse.
    session is revoked and its next sign-in requires 2FA.
 4. Confirm an old password, reused reset link, and invalid reset link all fail.
 5. Confirm the request page does not reveal whether an email is registered.
-6. From both request entry points, send a reset email and confirm the disabled Send Email button
+6. From both request entry points, send a reset email and confirm the disabled Send Reset button
    shows the shared spinner and counts down from 30 seconds; Settings must not require re-entering the
    account email.

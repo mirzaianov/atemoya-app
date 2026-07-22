@@ -72,6 +72,7 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
 
   return (
     <>
+      <span className={styles.fieldLabel}>Reset password</span>
       <Button
         disabled={isCoolingDown}
         handleOnClick={() => requestMutation.mutate()}
@@ -83,7 +84,7 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
           buttonStyles.primary,
           styles.passwordResetButton,
         )}
-        text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Email'}
+        text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Reset'}
       />
       {notice ? (
         <p
