@@ -11,7 +11,8 @@ Continue the approved security-hardening sequence one step at a time:
 
 ## Immediate Goal
 
-Manually accept the password-reset flow, including its 2FA and trusted-device behavior, then deploy it.
+Manually accept the password-reset flow from Sign In and Settings, including its 2FA and
+trusted-device behavior, then deploy it.
 
 ## Open Questions
 

@@ -12,6 +12,8 @@ authentication and invalidating existing sessions and trusted-device grants.
 - Use Better Auth's built-in password-reset token and endpoints.
 - Send reset and password-changed emails through the existing Resend REST integration.
 - Add `/forgot-password` and `/reset-password` routes using the existing auth-page patterns.
+- Let signed-in users send the reset link directly to their authenticated account email from
+  Settings.
 - Keep request responses generic so callers cannot determine whether an email is registered.
 - Expire reset tokens after one hour and rely on Better Auth's atomic token consumption for
   single-use enforcement.
@@ -29,6 +31,10 @@ authentication and invalidating existing sessions and trusted-device grants.
 Login
   -> Forgot Password
   -> /forgot-password submits email
+or
+Settings
+  -> Send Password Reset Email
+  -> submits the authenticated account email
   -> Better Auth returns a generic response
   -> Resend sends a one-hour reset link when the account exists
   -> Better Auth validates the link
@@ -62,9 +68,11 @@ request another email. A consumed token must fail in the same way on reuse.
 5. Add a Forgot Password action to login.
 6. Add `/forgot-password` with an email form, generic success notice, 30-second resend cooldown, and
    Back to Login action.
-7. Add `/reset-password` with invalid-token recovery and new-password/confirmation fields using the
+7. Add a Settings action that sends the reset link to the authenticated account email, reports the
+   result inline, and applies the same 30-second resend cooldown.
+8. Add `/reset-password` with invalid-token recovery and new-password/confirmation fields using the
    existing password controls and shared raised-button styles.
-8. Redirect successful resets to `/login?reset=1` and show a success notice there.
+9. Redirect successful resets to `/login?reset=1` and show a success notice there.
 
 ## Security And Accessibility
 
@@ -102,3 +110,5 @@ request another email. A consumed token must fail in the same way on reuse.
    session is revoked and its next sign-in requires 2FA.
 4. Confirm an old password, reused reset link, and invalid reset link all fail.
 5. Confirm the request page does not reveal whether an email is registered.
+6. From Settings, send a reset email without re-entering the account email and confirm the button
+   remains unavailable for 30 seconds.

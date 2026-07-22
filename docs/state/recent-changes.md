@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-22: Added a Settings password-reset action that sends the existing one-hour recovery link directly to the authenticated account email, with inline status and a 30-second resend cooldown. [Reason why added: makes password recovery discoverable without requiring a signed-in user to leave Settings or re-enter a known email.]
+
 - 2026-07-22: Implemented Better Auth password recovery through Resend with generic requests, one-hour single-use links, shared password validation, no automatic sign-in, all-session and trusted-device revocation, preserved 2FA state, and password-changed notices. [Reason why added: records the completed local implementation and its security behavior while manual acceptance and deployment remain pending.]
 
 - 2026-07-22: Closed the HSTS follow-up after verifying Vercel's two-year HSTS header on the apex redirect and primary host and confirming that the `.app` namespace is already HSTS-preloaded. [Reason why added: records why no application-level HSTS configuration or individual preload registration is needed.]
@@ -35,8 +37,3 @@ Keep only the 10 most recent entries.
   compiler diagnostics, and replaced incompatible form subscriptions and
   effect-driven derived state. [Reason why added: keeps automatic component
   optimization active without globally suppressing compiler findings.]
-
-- 2026-07-18: Expanded the local Oxlint declaration-padding rule to require
-  blank lines on both sides of declaration groups while exempting statement-list
-  boundaries. [Reason why added: aligns the focused local rule with the relevant
-  ESLint `padding-line-between-statements` behavior.]
