@@ -50,7 +50,7 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
     onMutate: () => setNotice(undefined),
     onSuccess: () => {
       setNotice({
-        message: 'A one-hour password reset link has been sent to your email.',
+        message: 'Reset email sent. Check your inbox.',
         tone: 'success',
       });
       setCooldownSeconds(resendCooldownSeconds);
@@ -72,19 +72,14 @@ export default function PasswordResetSettings({ userEmail }: PasswordResetSettin
 
   return (
     <>
-      <span className={styles.fieldLabel}>Reset password</span>
+      <span className={clsx(styles.fieldLabel, styles.passwordResetLabel)}>Reset password</span>
       <Button
         disabled={isCoolingDown}
         handleOnClick={() => requestMutation.mutate()}
         icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
         loading={requestMutation.isPending}
-        styling={clsx(
-          buttonStyles.standard,
-          buttonStyles.fullWidth,
-          buttonStyles.primary,
-          styles.passwordResetButton,
-        )}
-        text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Reset'}
+        styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
+        text={isCoolingDown ? `Send again in ${cooldownSeconds}s` : 'Send Reset'}
       />
       {notice ? (
         <p

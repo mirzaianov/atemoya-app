@@ -28,6 +28,7 @@
   max-width: 16rem;
 }
 
-.formContainer > .fullWidthForm {
-  max-width: none;
+.controlWidth {
+  width: 100%;
+  max-width: 16rem;
 }

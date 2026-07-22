@@ -58,6 +58,7 @@ export default function ForgotPassword() {
         tone: 'error',
       });
     },
+    onMutate: () => setNotice(undefined),
     onSuccess: () => {
       setNotice({
         message: 'If an account uses this email, a one-hour reset link has been sent.',
@@ -90,7 +91,7 @@ export default function ForgotPassword() {
         <p className={statusStyles.description}>
           Enter your account email and we will send a one-hour reset link.
         </p>
-        <form className={authStyles.fullWidthForm} onSubmit={submit} noValidate>
+        <form onSubmit={submit} noValidate>
           <Controller
             control={form.control}
             name="email"
@@ -111,7 +112,7 @@ export default function ForgotPassword() {
                 <Field.Control
                   autoComplete="username"
                   autoFocus
-                  className={clsx(formStyles.input, formStyles.fullWidthInput)}
+                  className={formStyles.input}
                   enterKeyHint="send"
                   id="reset-email"
                   onBlur={onBlur}
@@ -124,26 +125,34 @@ export default function ForgotPassword() {
                   type="email"
                   value={value}
                 />
-                <div className={clsx(styles.messageLine, styles.errorLine)}>
-                  <Field.Error aria-live="polite" match>
-                    {error?.message ?? ''}
-                  </Field.Error>
+                <div className={styles.messageArea}>
+                  {error ? (
+                    <Field.Error
+                      aria-live="polite"
+                      className={clsx(styles.message, styles.errorMessage)}
+                      match
+                    >
+                      {error.message}
+                    </Field.Error>
+                  ) : null}
+                  {!error && notice ? (
+                    <p
+                      aria-live="polite"
+                      className={clsx(styles.message, styles.statusMessage)}
+                      data-tone={notice.tone}
+                      role={notice.tone === 'error' ? 'alert' : 'status'}
+                    >
+                      {notice.message}
+                    </p>
+                  ) : null}
                 </div>
               </Field.Root>
             )}
           />
-          <p
-            aria-live="polite"
-            className={clsx(styles.messageLine, styles.statusLine)}
-            data-tone={notice?.tone}
-            role={notice?.tone === 'error' ? 'alert' : 'status'}
-          >
-            {notice?.message ?? ''}
-          </p>
           <Button
             styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
             icon={isCoolingDown ? <Spinner size={iconSize} /> : <Mail size={iconSize} />}
-            text={isCoolingDown ? `${cooldownSeconds}s` : 'Send Reset'}
+            text={isCoolingDown ? `Send again in ${cooldownSeconds}s` : 'Send Reset'}
             type="submit"
             disabled={!form.formState.isValid || isCoolingDown}
             loading={requestMutation.isPending}
@@ -154,6 +163,7 @@ export default function ForgotPassword() {
             buttonStyles.standard,
             buttonStyles.fullWidth,
             buttonStyles.neutral,
+            authStyles.controlWidth,
             statusStyles.backButton,
           )}
           handleOnClick={() => router.push('/login')}

@@ -54,4 +54,4 @@ Firebase-era user/list data was moved manually; no automated Firebase import exi
 
 Varlock-backed Next development/local build commands depend on local `.env.local` values and KeePassXC access. Do not inspect `.env.local` unless the user explicitly asks.
 
-Full `pnpm format:check` is currently blocked by unrelated formatting issues in `docs/references/things-3.md` and `drizzle/meta/0000_snapshot.json`; targeted checks for the current documentation changes pass.
+Full `pnpm format:check` is currently blocked by unrelated formatting issues in `docs/references/things-3.md`, `drizzle/meta/0000_snapshot.json`, `drizzle/meta/0005_snapshot.json`, and `drizzle/meta/_journal.json`; targeted checks for current changes pass.

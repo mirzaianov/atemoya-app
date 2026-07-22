@@ -11,6 +11,7 @@ import IconTooltip from '../../components/icon-tooltip';
 import type { SignUpFormValues } from '../auth/auth-schemas';
 
 import buttonStyles from '../../components/button.module.css';
+import authStyles from '../auth/auth-page.module.css';
 import formStyles from '../../styles/form.module.css';
 import styles from './signup-form.module.css';
 
@@ -293,7 +294,12 @@ const SignupForm = ({
           )}
         />
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.primary, styles.registerButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.primary,
+            styles.registerButton,
+          )}
           icon={<UserPlus size={buttonSmall} />}
           text="Sign Up"
           type="submit"
@@ -302,7 +308,13 @@ const SignupForm = ({
         />
       </form>
       <Button
-        styling={clsx(buttonStyles.standard, buttonStyles.neutral, styles.goBackButton)}
+        styling={clsx(
+          buttonStyles.standard,
+          buttonStyles.fullWidth,
+          buttonStyles.neutral,
+          authStyles.controlWidth,
+          styles.goBackButton,
+        )}
         handleOnClick={toLogin}
         icon={<ArrowLeft size={buttonSmall} />}
         text="Go Back"

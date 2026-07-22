@@ -12,6 +12,7 @@ import type { SignInFormValues } from '../auth/auth-schemas';
 import type { VerificationNotice } from '../auth/email-verification';
 
 import buttonStyles from '../../components/button.module.css';
+import authStyles from '../auth/auth-page.module.css';
 import formStyles from '../../styles/form.module.css';
 import styles from './login-form.module.css';
 
@@ -152,7 +153,12 @@ const LoginForm = ({
           )}
         />
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.primary, styles.signInButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.primary,
+            styles.signInButton,
+          )}
           icon={<LogIn size={buttonSmall} />}
           text="Sign In"
           type="submit"
@@ -160,16 +166,26 @@ const LoginForm = ({
           loading={isSubmitting}
         />
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.neutral, styles.forgotPasswordButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.neutral,
+            styles.forgotPasswordButton,
+          )}
           handleOnClick={toForgotPassword}
           icon={<KeyRound size={buttonSmall} />}
           text="Forgot Password?"
         />
       </form>
-      <div>
+      <div className={authStyles.controlWidth}>
         <h2 className={styles.secondSubHeading}>Don&apos;t have an account?</h2>
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.neutral, styles.createAccountButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.neutral,
+            styles.createAccountButton,
+          )}
           handleOnClick={toSignup}
           icon={<UserPlus size={buttonSmall} />}
           text="Sign Up"
