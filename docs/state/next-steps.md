@@ -6,16 +6,11 @@ Status: project-state immediate recommendation
 
 Continue the approved security-hardening sequence one step at a time:
 
-1. Deploy the manually accepted password-reset flow and run a production smoke test.
-2. Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
+1. Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
 
 ## Immediate Goal
 
-Deploy the password-reset flow, run its production smoke test, and monitor the rollout.
-
 ## Open Questions
-
-None for password-reset rollout.
 
 ## Deferred UI Notes
 

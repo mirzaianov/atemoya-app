@@ -6,7 +6,11 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
-- 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance while deployment remains pending.]
+- 2026-07-27: Production-verified the deployed password-reset flow. [Reason why added: records successful production smoke testing while rollout monitoring remains pending.]
+
+- 2026-07-27: Deployed the manually accepted password-reset flow. [Reason why added: records production availability before verification.]
+
+- 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance before deployment.]
 
 - 2026-07-22: Clarified password-reset success and resend timing, made forgot-password feedback mutually exclusive within a reserved two-line area, and standardized login, signup, and forgot-password controls at the existing auth width. [Reason why added: keeps recovery feedback unambiguous and prevents auth-page sizing drift.]
 
@@ -21,13 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-21: Standardized every raised text button and button-styled link on the shared `standard` height variant and removed the obsolete `action` variant while retaining compact icon-control sizing. [Reason why added: records the project-wide control-height convention established during 2FA UI acceptance.]
 
 - 2026-07-21: Implemented and manually accepted optional Better Auth TOTP and encrypted backup-code authentication, including Settings management, sign-in challenges, trusted devices, one-time and regenerated backup codes, lockout, disable, and other-session revocation. [Reason why added: records completion of the code path and full manual security-flow acceptance while production rollout remains pending.]
-
-- 2026-07-20: Standardized active code and documentation on task-management
-  terminology, including a data-preserving migration to the canonical tasks
-  table and title column. [Reason why added: records the product-purpose cleanup
-  and canonical persistence vocabulary.]
-
-- 2026-07-20: Extended the local Oxlint statement-padding rule to require a
-  blank line before non-leading return statements and migrated existing
-  violations. [Reason why added: records the expanded enforced formatting
-  contract and its repository-wide adoption.]
