@@ -26,13 +26,23 @@
 
 .dragging {
   z-index: 1;
+  opacity: 0.35;
 }
 
-.dragging::after {
+.dragPreview {
+  isolation: isolate;
+  width: 100%;
+  pointer-events: none;
+}
+
+.dragPreview::after {
   z-index: -1;
   inset-block: -0.125rem;
   inset-inline: calc(var(--task-edge-control-offset) - 0.125rem);
   background: var(--color-surface);
+  box-shadow:
+    0 0.25rem 0.5rem color-mix(in oklab, var(--color-base-content) 12%, transparent),
+    0 0.75rem 1.5rem color-mix(in oklab, var(--color-base-content) 18%, transparent);
   opacity: 1;
 }
 

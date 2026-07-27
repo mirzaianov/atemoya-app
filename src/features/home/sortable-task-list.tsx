@@ -4,13 +4,14 @@ import { Collapsible } from '@base-ui/react/collapsible';
 import {
   closestCenter,
   DndContext,
+  DragOverlay,
   KeyboardSensor,
   MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import type { DragEndEvent } from '@dnd-kit/core';
+import type { DragEndEvent, DragStartEvent } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import {
   arrayMove,
@@ -30,7 +31,7 @@ import type { Task } from '../../types';
 import SortableTask from './sortable-task';
 import { reorderTasksAction, setTaskCompletedAction } from './task-actions';
 import TaskEditDialog from './task-edit-dialog';
-import TaskRow from './task-row';
+import TaskRow, { TaskDragPreview } from './task-row';
 import { moveTaskBetweenGroups } from './task-state';
 
 import listStyles from './task-list.module.css';
@@ -81,8 +82,9 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
   const [previousInputTasks, setPreviousInputTasks] = useState(tasks);
   const [orderedTasks, setOrderedTasks] = useState(tasks);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
+  const [activeTask, setActiveTask] = useState<Task | null>(null);
   const reducedMotion = useReducedMotion();
+  const isDragging = activeTask !== null;
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: { distance: 6 },
@@ -144,7 +146,7 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setIsDragging(false);
+    setActiveTask(null);
 
     const { active, over } = event;
 
@@ -166,6 +168,10 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
     reorderMutation.mutate({ nextTasks, previousTasks: previousOrder });
   };
 
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveTask(activeTasks.find((task) => task.id === event.active.id) ?? null);
+  };
+
   return (
     <>
       <div className={listStyles.groups}>
@@ -174,9 +180,9 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
             collisionDetection={closestCenter}
             id="task-list-sortable"
             modifiers={[restrictToVerticalAxis]}
-            onDragCancel={() => setIsDragging(false)}
+            onDragCancel={() => setActiveTask(null)}
             onDragEnd={handleDragEnd}
-            onDragStart={() => setIsDragging(true)}
+            onDragStart={handleDragStart}
             sensors={sensors}
           >
             <SortableContext
@@ -196,6 +202,13 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
                 ))}
               </ul>
             </SortableContext>
+            <DragOverlay
+              adjustScale={false}
+              dropAnimation={reducedMotion ? null : undefined}
+              zIndex={10}
+            >
+              {activeTask ? <TaskDragPreview task={activeTask} /> : null}
+            </DragOverlay>
           </DndContext>
         </TaskGroup>
         {completedTasks.length > 0 ? (

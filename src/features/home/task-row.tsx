@@ -30,6 +30,20 @@ interface TaskRowProps {
   task: Task;
 }
 
+export const TaskDragPreview = ({ task }: { task: Task }) => (
+  <div aria-hidden="true" className={clsx(styles.task, styles.dragPreview)}>
+    <span className={styles.completionControl}>
+      <span className={styles.completionBox} />
+    </span>
+    <div className={styles.taskContent}>
+      <span className={styles.taskTitle}>{task.title}</span>
+    </div>
+    <span className={clsx(buttonStyles.button, styles.optionsButton)}>
+      <EllipsisVertical size="1.25rem" />
+    </span>
+  </div>
+);
+
 export default function TaskRow({
   completionDisabled,
   dragHandleProps,
