@@ -72,6 +72,10 @@
   flex: 0 0 auto;
 }
 
+.passwordResetLabel {
+  margin-block-start: 0.75rem;
+}
+
 .options {
   display: flex;
   flex-direction: column;

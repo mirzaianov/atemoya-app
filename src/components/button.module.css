@@ -70,6 +70,13 @@
   visibility: hidden;
 }
 
+.countdown {
+  display: inline-block;
+  inline-size: 2ch;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
 .buttonSpinner {
   position: absolute;
   inset: 0;

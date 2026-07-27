@@ -5,6 +5,7 @@ import Link from 'next/link';
 import BrandHeader from '../../components/brand-header';
 import DeleteAccountDialog from './delete-account-dialog';
 import NicknameEditDialog from './nickname-edit-dialog';
+import PasswordResetSettings from './password-reset-settings';
 import TwoFactorSettings from './two-factor-settings';
 
 import buttonStyles from '../../components/button.module.css';
@@ -62,6 +63,7 @@ export default function Settings({ twoFactorEnabled, userEmail, userNickname }: 
             readOnly
             value="********"
           />
+          <PasswordResetSettings userEmail={userEmail} />
         </div>
       </div>
       <section className={styles.options} aria-labelledby="security-settings">
