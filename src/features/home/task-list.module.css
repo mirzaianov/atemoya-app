@@ -23,6 +23,7 @@
   background: transparent;
   color: var(--color-text);
   font: inherit;
+  font-size: 1rem;
   font-weight: 700;
   text-align: left;
 }
@@ -43,8 +44,7 @@
 }
 
 .groupCount {
-  margin-inline-start: auto;
-  color: var(--color-placeholder);
+  /* margin-inline-start: auto; */
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
