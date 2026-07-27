@@ -1,6 +1,6 @@
 import { Field } from '@base-ui/react/field';
 import clsx from 'clsx';
-import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { Eye, EyeOff, KeyRound, LogIn, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEventHandler } from 'react';
 import { Controller } from 'react-hook-form';
@@ -12,6 +12,7 @@ import type { SignInFormValues } from '../auth/auth-schemas';
 import type { VerificationNotice } from '../auth/email-verification';
 
 import buttonStyles from '../../components/button.module.css';
+import authStyles from '../auth/auth-page.module.css';
 import formStyles from '../../styles/form.module.css';
 import styles from './login-form.module.css';
 
@@ -25,6 +26,7 @@ interface Props {
   isSubmitting: boolean;
   isValid: boolean;
   clearError: () => void;
+  toForgotPassword: () => void;
   toSignup: () => void;
 }
 
@@ -36,6 +38,7 @@ const LoginForm = ({
   isSubmitting,
   isValid,
   clearError,
+  toForgotPassword,
   toSignup,
 }: Props) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
@@ -150,18 +153,39 @@ const LoginForm = ({
           )}
         />
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.primary, styles.signInButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.primary,
+            styles.signInButton,
+          )}
           icon={<LogIn size={buttonSmall} />}
           text="Sign In"
           type="submit"
           disabled={!isValid}
           loading={isSubmitting}
         />
+        <Button
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.neutral,
+            styles.forgotPasswordButton,
+          )}
+          handleOnClick={toForgotPassword}
+          icon={<KeyRound size={buttonSmall} />}
+          text="Forgot Password?"
+        />
       </form>
-      <div>
+      <div className={authStyles.controlWidth}>
         <h2 className={styles.secondSubHeading}>Don&apos;t have an account?</h2>
         <Button
-          styling={clsx(buttonStyles.standard, buttonStyles.neutral, styles.createAccountButton)}
+          styling={clsx(
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.neutral,
+            styles.createAccountButton,
+          )}
           handleOnClick={toSignup}
           icon={<UserPlus size={buttonSmall} />}
           text="Sign Up"

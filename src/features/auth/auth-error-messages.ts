@@ -51,3 +51,23 @@ export const getSignUpPasswordErrorMessage = (error: AuthError) => {
 
   return null;
 };
+
+export const getPasswordResetErrorMessage = (error: AuthError) => {
+  if (error.status === 429) {
+    return 'Too many reset attempts. Please wait and try again.';
+  }
+
+  if (error.code === 'INVALID_TOKEN') {
+    return 'That reset link is invalid or has expired. Request a new one.';
+  }
+
+  if (error.code === 'PASSWORD_TOO_SHORT') {
+    return 'Password is too short';
+  }
+
+  if (error.code === 'PASSWORD_TOO_LONG') {
+    return 'Password is too long';
+  }
+
+  return 'We could not reset your password. Please try again.';
+};

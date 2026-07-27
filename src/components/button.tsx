@@ -11,6 +11,7 @@ interface ButtonProps {
   handleOnClick?: MouseEventHandler<HTMLButtonElement>;
   icon?: ReactNode;
   text: string;
+  textContent?: ReactNode;
   type?: 'button' | 'submit';
   disabled?: boolean;
   loading?: boolean;
@@ -21,6 +22,7 @@ const Button = ({
   handleOnClick,
   icon,
   text,
+  textContent,
   type = 'button',
   disabled = false,
   loading = false,
@@ -39,7 +41,7 @@ const Button = ({
         className={clsx(styles.buttonContent, loading && styles.buttonContentHidden)}
       >
         {icon}
-        {text}
+        {textContent ?? text}
       </span>
       {loading ? (
         <span className={styles.buttonSpinner}>

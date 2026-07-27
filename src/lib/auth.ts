@@ -1,16 +1,16 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { APIError, betterAuth } from 'better-auth';
 import { twoFactor } from 'better-auth/plugins';
+import { and, eq, like } from 'drizzle-orm';
 import { after } from 'next/server';
 
 import { db } from '../db/client';
 import * as schema from '../db/schema';
+import { sendAuthEmail } from './auth-email';
 import { nicknameSchema } from './auth-nickname';
 import { authPasswordPolicy, authRateLimitPolicy } from './auth-policy';
 
 const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
-const resendApiKey = process.env.RESEND_API_KEY;
-const authEmailFrom = process.env.AUTH_EMAIL_FROM;
 const isProduction = process.env.NODE_ENV === 'production';
 const trustedDevOrigins = isProduction
   ? undefined
@@ -34,14 +34,6 @@ const validateNickname = (nickname: unknown) => {
 
 if (!betterAuthSecret) {
   throw new Error('BETTER_AUTH_SECRET is required.');
-}
-
-if (!resendApiKey) {
-  throw new Error('RESEND_API_KEY is required.');
-}
-
-if (!authEmailFrom) {
-  throw new Error('AUTH_EMAIL_FROM is required.');
 }
 
 const vercelHosts = [
@@ -100,32 +92,45 @@ export const auth = betterAuth({
     enabled: true,
     maxPasswordLength: authPasswordPolicy.maxLength,
     minPasswordLength: authPasswordPolicy.minLength,
+    onPasswordReset: async ({ user }) => {
+      await db
+        .delete(schema.verification)
+        .where(
+          and(
+            eq(schema.verification.value, user.id),
+            like(schema.verification.identifier, 'trust-device-%'),
+          ),
+        );
+
+      after(() =>
+        sendAuthEmail({
+          subject: 'Your Atemoya password was changed',
+          text: 'Your Atemoya password was changed. If you did not make this change, use the password reset flow immediately and review access to your email account.',
+          to: user.email,
+        }),
+      );
+    },
     requireEmailVerification: true,
+    resetPasswordTokenExpiresIn: 3600,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: ({ user, url }) =>
+      sendAuthEmail({
+        subject: 'Reset your Atemoya password',
+        text: `Reset your Atemoya password by opening this link:\n\n${url}\n\nThis link expires in one hour. If you did not request this, you can ignore this email.`,
+        to: user.email,
+      }),
   },
   emailVerification: {
     autoSignInAfterVerification: false,
     expiresIn: 3600,
     sendOnSignIn: true,
     sendOnSignUp: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      const response = await fetch('https://api.resend.com/emails', {
-        body: JSON.stringify({
-          from: authEmailFrom,
-          subject: 'Verify your Atemoya account',
-          text: `Verify your Atemoya account by opening this link:\n\n${url}\n\nThis link expires in one hour.`,
-          to: [user.email],
-        }),
-        headers: {
-          Authorization: `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        throw new Error(`Resend verification email failed with status ${response.status}.`);
-      }
-    },
+    sendVerificationEmail: ({ user, url }) =>
+      sendAuthEmail({
+        subject: 'Verify your Atemoya account',
+        text: `Verify your Atemoya account by opening this link:\n\n${url}\n\nThis link expires in one hour.`,
+        to: user.email,
+      }),
   },
   plugins: [
     twoFactor({

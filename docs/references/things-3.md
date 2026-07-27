@@ -18,10 +18,10 @@ feature; it should first preserve the mental model.
 
 Things 3 organizes work across two dimensions:
 
-| Dimension | Purpose | Examples |
-| --- | --- | --- |
-| When | When should this task come back into view? | Today, This Evening, Upcoming, Anytime, Someday |
-| Structure/context | What does this task belong to? | Inbox, Area, Project, Heading, Tag |
+| Dimension         | Purpose                                    | Examples                                        |
+| ----------------- | ------------------------------------------ | ----------------------------------------------- |
+| When              | When should this task come back into view? | Today, This Evening, Upcoming, Anytime, Someday |
+| Structure/context | What does this task belong to?             | Inbox, Area, Project, Heading, Tag              |
 
 The practical flow is:
 
@@ -278,10 +278,10 @@ After completion:
 - Review backup status
 ```
 
-| Repeat type | Meaning |
-| --- | --- |
-| Fixed schedule | Repeat on the calendar rhythm, whether or not the previous instance was completed |
-| After completion | Repeat a duration after the user actually completed the previous instance |
+| Repeat type      | Meaning                                                                           |
+| ---------------- | --------------------------------------------------------------------------------- |
+| Fixed schedule   | Repeat on the calendar rhythm, whether or not the previous instance was completed |
+| After completion | Repeat a duration after the user actually completed the previous instance         |
 
 Use fixed schedules for external rhythm. Use after-completion repeats for
 maintenance tasks.
@@ -326,14 +326,14 @@ Things is not a calendar replacement. It does not try to own time-blocking.
 
 Things has strong Apple ecosystem integration:
 
-| Feature | Use |
-| --- | --- |
-| Quick Entry on Mac | Capture tasks without switching context |
-| Share Sheet | Send links/text from Safari, Mail, and other apps |
-| Mail to Things | Create tasks by email |
-| Apple Shortcuts | Automate creating, editing, and finding tasks |
-| URL scheme | Deep links and advanced automation |
-| AppleScript | Mac-only automation |
+| Feature            | Use                                               |
+| ------------------ | ------------------------------------------------- |
+| Quick Entry on Mac | Capture tasks without switching context           |
+| Share Sheet        | Send links/text from Safari, Mail, and other apps |
+| Mail to Things     | Create tasks by email                             |
+| Apple Shortcuts    | Automate creating, editing, and finding tasks     |
+| URL scheme         | Deep links and advanced automation                |
+| AppleScript        | Mac-only automation                               |
 
 Developer-useful automation can create project templates with headings and
 tasks, even though Things does not have first-class built-in templates.
@@ -384,15 +384,15 @@ Store details before relying on them.
 
 These limits are central to the product shape:
 
-| Missing / limited | Why it matters |
-| --- | --- |
-| No real-time collaboration | Poor fit for team tasks |
-| No Windows / Android / web app | Poor fit for cross-platform users |
-| No file attachments | Poor fit for document-heavy workflows |
-| No Kanban/status workflow | Poor fit for software project tracking |
-| No comments/assignees | Poor fit for teams |
-| No native Pomodoro/habit tracker | Poor fit as an all-in-one productivity suite |
-| No full notes/database system | Poor fit for research-heavy knowledge management |
+| Missing / limited                | Why it matters                                   |
+| -------------------------------- | ------------------------------------------------ |
+| No real-time collaboration       | Poor fit for team tasks                          |
+| No Windows / Android / web app   | Poor fit for cross-platform users                |
+| No file attachments              | Poor fit for document-heavy workflows            |
+| No Kanban/status workflow        | Poor fit for software project tracking           |
+| No comments/assignees            | Poor fit for teams                               |
+| No native Pomodoro/habit tracker | Poor fit as an all-in-one productivity suite     |
+| No full notes/database system    | Poor fit for research-heavy knowledge management |
 
 ## Best-fit Use Cases
 
