@@ -1,6 +1,6 @@
 # Password Reset Plan
 
-Status: implemented, automated verification passed, manual acceptance pending
+Status: implemented, automated verification and manual acceptance passed, deployment pending
 
 ## Goal
 

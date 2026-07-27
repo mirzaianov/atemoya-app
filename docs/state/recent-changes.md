@@ -6,11 +6,13 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance while deployment remains pending.]
+
 - 2026-07-22: Clarified password-reset success and resend timing, made forgot-password feedback mutually exclusive within a reserved two-line area, and standardized login, signup, and forgot-password controls at the existing auth width. [Reason why added: keeps recovery feedback unambiguous and prevents auth-page sizing drift.]
 
 - 2026-07-22: Added a Settings password-reset action that sends the existing one-hour recovery link directly to the authenticated account email, with inline status and a 30-second resend cooldown. [Reason why added: makes password recovery discoverable without requiring a signed-in user to leave Settings or re-enter a known email.]
 
-- 2026-07-22: Implemented Better Auth password recovery through Resend with generic requests, one-hour single-use links, shared password validation, no automatic sign-in, all-session and trusted-device revocation, preserved 2FA state, and password-changed notices. [Reason why added: records the completed local implementation and its security behavior while manual acceptance and deployment remain pending.]
+- 2026-07-22: Implemented Better Auth password recovery through Resend with generic requests, one-hour single-use links, shared password validation, no automatic sign-in, all-session and trusted-device revocation, preserved 2FA state, and password-changed notices. [Reason why added: records the completed local implementation and its security behavior before acceptance.]
 
 - 2026-07-22: Closed the HSTS follow-up after verifying Vercel's two-year HSTS header on the apex redirect and primary host and confirming that the `.app` namespace is already HSTS-preloaded. [Reason why added: records why no application-level HSTS configuration or individual preload registration is needed.]
 
@@ -29,8 +31,3 @@ Keep only the 10 most recent entries.
   blank line before non-leading return statements and migrated existing
   violations. [Reason why added: records the expanded enforced formatting
   contract and its repository-wide adoption.]
-
-- 2026-07-20: Removed Oxlint compatibility overrides and migrated the codebase to
-  Ultracite's inherited lint conventions while preserving the established Oxfmt
-  settings. [Reason why added: records the intentional lint migration without
-  implying a formatting-policy change.]
