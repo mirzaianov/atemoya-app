@@ -52,6 +52,7 @@ const TaskGroup = ({ children, count, defaultOpen = false, label }: TaskGroupPro
       <Collapsible.Trigger className={listStyles.groupTrigger}>
         <ChevronRight aria-hidden="true" className={listStyles.groupChevron} size={18} />
         <span>{label}</span>
+        <span aria-hidden="true">&middot;</span>
         <span className={listStyles.groupCount}>{count}</span>
       </Collapsible.Trigger>
     </h2>
