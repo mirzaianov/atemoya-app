@@ -4,13 +4,16 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Continue the approved security-hardening sequence one step at a time:
+Complete the retained-task rollout:
 
-1. Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
+1. Check production for case-insensitive duplicate titles before applying `0006_lively_lorna_dane.sql`.
+2. Apply the migration, manually accept completion, restoration, collapsing, ordering, duplicate validation, and deletion, then deploy and smoke test.
 
 ## Immediate Goal
 
 ## Open Questions
+
+- Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
 
 ## Deferred UI Notes
 

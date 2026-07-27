@@ -3,9 +3,22 @@
 import { revalidatePath } from 'next/cache';
 import { headers } from 'next/headers';
 
-import { createTask, deleteTask, listTasks, reorderTasks, updateTask } from '../../db/queries';
+import {
+  createTask,
+  deleteTask,
+  listTasks,
+  reorderTasks,
+  setTaskCompleted,
+  updateTask,
+} from '../../db/queries';
 import { auth } from '../../lib/auth';
-import { taskIdSchema, taskOrderSchema, taskSchema, taskWithIdSchema } from './task-schemas';
+import {
+  taskCompletionSchema,
+  taskIdSchema,
+  taskOrderSchema,
+  taskSchema,
+  taskWithIdSchema,
+} from './task-schemas';
 
 interface ActionResult {
   error?: string;
@@ -18,6 +31,9 @@ const getUserId = async () => {
 
   return session?.user.id ?? null;
 };
+
+const isUniqueViolation = (error: unknown) =>
+  typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
 
 export const createTaskAction = async (title: string): Promise<ActionResult> => {
   const parsed = taskSchema.safeParse({ title });
@@ -41,7 +57,15 @@ export const createTaskAction = async (title: string): Promise<ActionResult> => 
     return { error: 'Task already exists' };
   }
 
-  await createTask(userId, parsed.data.title);
+  try {
+    await createTask(userId, parsed.data.title);
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return { error: 'Task already exists' };
+    }
+
+    throw error;
+  }
   revalidatePath('/');
 
   return {};
@@ -60,7 +84,52 @@ export const updateTaskAction = async (id: string, title: string): Promise<Actio
     return { error: 'Please sign in again.' };
   }
 
-  await updateTask(userId, parsed.data.id, parsed.data.title);
+  const tasks = await listTasks(userId);
+  const hasDuplicate = tasks.some(
+    (task) =>
+      task.id !== parsed.data.id && task.title.toLowerCase() === parsed.data.title.toLowerCase(),
+  );
+
+  if (hasDuplicate) {
+    return { error: 'Task already exists' };
+  }
+
+  try {
+    await updateTask(userId, parsed.data.id, parsed.data.title);
+  } catch (error) {
+    if (isUniqueViolation(error)) {
+      return { error: 'Task already exists' };
+    }
+
+    throw error;
+  }
+  revalidatePath('/');
+
+  return {};
+};
+
+export const setTaskCompletedAction = async (
+  id: string,
+  completed: boolean,
+): Promise<ActionResult> => {
+  const parsed = taskCompletionSchema.safeParse({ completed, id });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? 'Invalid task completion state' };
+  }
+
+  const userId = await getUserId();
+
+  if (!userId) {
+    return { error: 'Please sign in again.' };
+  }
+
+  const updated = await setTaskCompleted(userId, parsed.data.id, parsed.data.completed);
+
+  if (!updated) {
+    return { error: 'Task could not be updated. Please refresh and try again.' };
+  }
+
   revalidatePath('/');
 
   return {};

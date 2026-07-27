@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 
 import { db } from './client';
 import { tasks } from './schema';
@@ -10,7 +10,12 @@ export const listTasks = (userId: string) =>
     .select()
     .from(tasks)
     .where(eq(tasks.userId, userId))
-    .orderBy(asc(tasks.position), desc(tasks.changedOn));
+    .orderBy(
+      sql`${tasks.completedAt} IS NOT NULL`,
+      sql`CASE WHEN ${tasks.completedAt} IS NULL THEN ${tasks.position} END`,
+      desc(tasks.completedAt),
+      desc(tasks.changedOn),
+    );
 
 export const createTask = async (userId: string, title: string) => {
   const id = crypto.randomUUID();
@@ -21,6 +26,7 @@ export const createTask = async (userId: string, title: string) => {
       UPDATE ${tasks}
       SET ${sql.identifier('position')} = ${tasks.position} + 1
       WHERE ${tasks.userId} = ${userId}
+        AND ${tasks.completedAt} IS NULL
     )
     INSERT INTO ${tasks} (
       ${sql.identifier('id')},
@@ -54,6 +60,80 @@ export const deleteTask = async (userId: string, id: string) => {
   return Boolean(task);
 };
 
+interface TaskCompletionRow extends Record<string, unknown> {
+  updatedCount: number;
+}
+
+export const setTaskCompleted = async (userId: string, id: string, completed: boolean) => {
+  const changedOn = Date.now();
+  const result = completed
+    ? await db.execute<TaskCompletionRow>(sql`
+        WITH target AS (
+          SELECT ${tasks.id}, ${tasks.position}
+          FROM ${tasks}
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.id} = ${id}
+            AND ${tasks.completedAt} IS NULL
+        ),
+        completed AS (
+          UPDATE ${tasks}
+          SET
+            ${sql.identifier('completed_at')} = now(),
+            ${sql.identifier('changed_on')} = ${changedOn}
+          FROM target
+          WHERE ${tasks.id} = target.id
+            AND ${tasks.userId} = ${userId}
+          RETURNING ${tasks.id}
+        ),
+        compacted AS (
+          UPDATE ${tasks}
+          SET ${sql.identifier('position')} = ${tasks.position} - 1
+          FROM target
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.completedAt} IS NULL
+            AND ${tasks.id} <> target.id
+            AND ${tasks.position} > target.position
+          RETURNING ${tasks.id}
+        )
+        SELECT count(*)::int AS "updatedCount"
+        FROM completed
+      `)
+    : await db.execute<TaskCompletionRow>(sql`
+        WITH target AS (
+          SELECT ${tasks.id}
+          FROM ${tasks}
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.id} = ${id}
+            AND ${tasks.completedAt} IS NOT NULL
+        ),
+        shifted AS (
+          UPDATE ${tasks}
+          SET ${sql.identifier('position')} = ${tasks.position} + 1
+          FROM target
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.completedAt} IS NULL
+            AND ${tasks.id} <> target.id
+          RETURNING ${tasks.id}
+        ),
+        restored AS (
+          UPDATE ${tasks}
+          SET
+            ${sql.identifier('completed_at')} = NULL,
+            ${sql.identifier('position')} = 0,
+            ${sql.identifier('changed_on')} = ${changedOn}
+          FROM target
+          WHERE ${tasks.id} = target.id
+            AND ${tasks.userId} = ${userId}
+          RETURNING ${tasks.id}
+        )
+        SELECT count(*)::int AS "updatedCount"
+        FROM restored
+      `);
+  const [row] = result.rows;
+
+  return row?.updatedCount === 1;
+};
+
 interface ReorderTasksRow extends Record<string, unknown> {
   inputCount: number;
   userCount: number;
@@ -73,6 +153,7 @@ export const reorderTasks = async (userId: string, ids: string[]) => {
       SELECT ${tasks.id}
       FROM ${tasks}
       WHERE ${tasks.userId} = ${userId}
+        AND ${tasks.completedAt} IS NULL
     ),
     counts AS (
       SELECT

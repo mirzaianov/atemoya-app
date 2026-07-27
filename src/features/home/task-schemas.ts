@@ -8,6 +8,10 @@ export const taskIdSchema = z.object({
   id: z.string().min(1, 'Missing task id'),
 });
 
+export const taskCompletionSchema = taskIdSchema.extend({
+  completed: z.boolean(),
+});
+
 export const taskOrderSchema = z.object({
   ids: z.array(z.string().min(1, 'Missing task id')).min(1, 'Missing task order'),
 });

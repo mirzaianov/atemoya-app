@@ -8,7 +8,7 @@
     "build": "next build",
     "build:local": "varlock run -- next build",
     "start": "varlock run -- next start",
-    "test": "node --test --experimental-strip-types src/features/auth/*.test.ts",
+    "test": "node --test --experimental-strip-types src/features/auth/*.test.ts src/features/home/*.test.ts",
     "db:generate": "varlock run -- drizzle-kit generate",
     "db:migrate": "varlock run -- drizzle-kit migrate",
     "lint": "oxlint .",
