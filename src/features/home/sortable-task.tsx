@@ -1,21 +1,12 @@
 'use client';
 
-import { Menu } from '@base-ui/react/menu';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import clsx from 'clsx';
-import { EllipsisVertical, FilePen, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 
-import IconTooltip from '../../components/icon-tooltip';
 import type { Task } from '../../types';
-import TaskDeleteDialog from './task-delete-dialog';
+import TaskRow from './task-row';
 
-import buttonStyles from '../../components/button.module.css';
-import styles from './task.module.css';
-
-const actionIconSize = 20;
 const dragTransition = {
   duration: 260,
   easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
@@ -28,14 +19,20 @@ const visualTransition =
   'background-color 180ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 180ms cubic-bezier(0.23, 1, 0.32, 1), opacity 180ms cubic-bezier(0.23, 1, 0.32, 1)';
 
 interface SortableTaskProps {
+  completionDisabled: boolean;
+  onCompletedChange: (task: Task, completed: boolean) => void;
   onEdit: (task: Task) => void;
   reducedMotion: boolean;
   task: Task;
 }
 
-export default function SortableTask({ onEdit, reducedMotion, task }: SortableTaskProps) {
-  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const menuActionsRef = useRef<Menu.Root.Actions | null>(null);
+export default function SortableTask({
+  completionDisabled,
+  onCompletedChange,
+  onEdit,
+  reducedMotion,
+  task,
+}: SortableTaskProps) {
   const {
     attributes,
     isDragging,
@@ -57,67 +54,18 @@ export default function SortableTask({ onEdit, reducedMotion, task }: SortableTa
     transition: taskTransition || undefined,
   };
 
-  useEffect(() => {
-    if (isDragging) {
-      menuActionsRef.current?.close();
-    }
-  }, [isDragging]);
-
   return (
-    <li className={clsx(styles.task, isDragging && styles.dragging)} ref={setNodeRef} style={style}>
-      <div className={styles.dragArea} ref={setActivatorNodeRef} {...attributes} {...listeners}>
-        <span className={styles.taskTitle}>{task.title}</span>
-      </div>
-      <Menu.Root actionsRef={menuActionsRef}>
-        <IconTooltip label="Task options">
-          <Menu.Trigger
-            aria-label="Task options"
-            className={clsx(buttonStyles.button, styles.optionsButton)}
-          >
-            <EllipsisVertical size="1.25rem" />
-          </Menu.Trigger>
-        </IconTooltip>
-        <Menu.Portal>
-          <Menu.Positioner
-            align="end"
-            className={styles.optionsPositioner}
-            side="bottom"
-            sideOffset={4}
-          >
-            <Menu.Popup className={styles.optionsPanel}>
-              <Menu.Item
-                className={clsx(
-                  buttonStyles.button,
-                  buttonStyles.standard,
-                  buttonStyles.fullWidth,
-                  buttonStyles.primary,
-                )}
-                onClick={() => onEdit(task)}
-              >
-                <span className={buttonStyles.buttonTop}>
-                  <FilePen size={actionIconSize} />
-                  Edit
-                </span>
-              </Menu.Item>
-              <Menu.Item
-                className={clsx(
-                  buttonStyles.button,
-                  buttonStyles.standard,
-                  buttonStyles.fullWidth,
-                  buttonStyles.destructive,
-                )}
-                onClick={() => setIsDeleteOpen(true)}
-              >
-                <span className={buttonStyles.buttonTop}>
-                  <Trash2 size={actionIconSize} />
-                  Delete
-                </span>
-              </Menu.Item>
-            </Menu.Popup>
-          </Menu.Positioner>
-        </Menu.Portal>
-      </Menu.Root>
-      <TaskDeleteDialog id={task.id} onOpenChange={setIsDeleteOpen} open={isDeleteOpen} />
-    </li>
+    <TaskRow
+      completionDisabled={completionDisabled}
+      draggable
+      dragHandleProps={{ ...attributes, ...listeners }}
+      dragHandleRef={setActivatorNodeRef}
+      isDragging={isDragging}
+      onCompletedChange={onCompletedChange}
+      onEdit={onEdit}
+      rowRef={setNodeRef}
+      style={style}
+      task={task}
+    />
   );
 }
