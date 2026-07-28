@@ -1,5 +1,14 @@
-import { relations } from 'drizzle-orm';
-import { bigint, boolean, index, integer, pgTable, text, timestamp } from 'drizzle-orm/pg-core';
+import { relations, sql } from 'drizzle-orm';
+import {
+  bigint,
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 
 export const user = pgTable('user', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -97,6 +106,7 @@ export const tasks = pgTable(
   'tasks',
   {
     changedOn: bigint('changed_on', { mode: 'number' }).notNull(),
+    completedAt: timestamp('completed_at'),
     id: text('id').primaryKey(),
     position: integer('position').notNull(),
     title: text('title').notNull(),
@@ -105,6 +115,7 @@ export const tasks = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
   },
   (table) => [
+    uniqueIndex('tasks_user_id_title_unique_idx').on(table.userId, sql`lower(${table.title})`),
     index('tasks_user_id_position_idx').on(table.userId, table.position),
     index('tasks_user_id_changed_on_idx').on(table.userId, table.changedOn),
   ],

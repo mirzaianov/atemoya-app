@@ -50,13 +50,15 @@ Current migration progress:
 - `app/settings/page.tsx` validates a Better Auth session and renders account settings with account removal.
 - `app/api/auth/[...all]/route.ts` mounts Better Auth route handlers.
 - The signed-in task-list shell and list render as Server Components; client islands are limited to forms, sign-out, edit-selection controls, and sortable task reordering.
-- Task mutations run through authenticated server actions with Zod validation.
-- `src/db` contains the Drizzle schema, Neon client, and task query helpers, with generated migrations under `drizzle/`.
+- Task mutations run through authenticated server actions with Zod validation. Completion retains rows through nullable `completed_at` state, while active-only positions preserve drag order and completed tasks sort newest first.
+- `src/db` contains the Drizzle schema, Neon client, and task query helpers, with generated migrations under `drizzle/`. A database unique index enforces case-insensitive task-title uniqueness per user across active and completed tasks.
 - The legacy Vite/Firebase route surface has been removed.
 
 State boundary decisions: `../decisions/ADR-003-rsc-first-client-state-boundaries.md` and `../decisions/ADR-007-use-local-ui-state-and-query-mutations.md`
 
 Task drag-reorder decision: `../decisions/ADR-005-use-dnd-kit-for-task-reordering.md`
+
+Retained task-completion decision: `../decisions/ADR-012-retain-completed-tasks.md`
 
 UI component system decision: `../decisions/ADR-006-use-base-ui-as-default-ui-system.md`
 

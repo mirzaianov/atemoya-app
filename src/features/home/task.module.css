@@ -1,12 +1,11 @@
 .task {
   --task-edge-icon-hover: color-mix(in oklab, var(--color-base-content) 70%, white);
-  --task-edge-control-offset: -0.5rem;
+  --task-edge-control-offset: -0.25rem;
 
   position: relative;
   display: flex;
   align-items: center;
   gap: 0;
-  padding-inline-start: 0.25rem;
   background: var(--color-surface);
 }
 
@@ -26,12 +25,21 @@
 
 .dragging {
   z-index: 1;
+  opacity: 0.35;
 }
 
-.dragging::after {
+.dragPreview {
+  isolation: isolate;
+  width: 100%;
+  pointer-events: none;
+}
+
+.dragPreview::after {
   z-index: -1;
-  inset-block: -0.125rem;
-  inset-inline: calc(var(--task-edge-control-offset) - 0.125rem);
+  top: -0.125rem;
+  left: -0.25rem;
+  bottom: -0.125rem;
+  right: -0.25rem;
   background: var(--color-surface);
   opacity: 1;
 }
@@ -48,22 +56,76 @@
   text-align: left;
 }
 
-.dragArea {
+.completionControl {
+  display: grid;
+  flex: 0 0 var(--task-size-control);
+  width: var(--task-size-control);
+  height: var(--task-size-control);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-surface);
+}
+
+.completionBox {
+  display: grid;
+  box-sizing: border-box;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border: 1px solid var(--color-text);
+  border-radius: 0.375rem;
+  background: var(--color-surface);
+  transition:
+    border-color 140ms cubic-bezier(0.23, 1, 0.32, 1),
+    background-color 140ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.completionIndicator {
+  display: flex;
+}
+
+.completionControl:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: -0.25rem;
+  border-radius: var(--radius-control);
+}
+
+.completionControl[data-checked] .completionBox {
+  border-color: var(--color-text);
+  background: var(--color-text);
+}
+
+.completionControl[data-disabled] {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.taskContent {
   display: flex;
   flex: 1 1 auto;
   align-self: stretch;
   align-items: center;
   min-width: 0;
+}
+
+.dragHandle {
   cursor: grab;
   touch-action: none;
 }
 
-.dragArea:active {
+.dragHandle:active {
   cursor: grabbing;
 }
 
-.dragging .dragArea {
+.dragging .dragHandle {
   cursor: grabbing;
+}
+
+.completed .taskTitle {
+  color: var(--color-placeholder);
+  text-decoration: line-through;
 }
 
 .optionsButton {
@@ -105,6 +167,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .task::after,
+  .completionBox,
   .optionsButton {
     transition-duration: 0ms;
   }

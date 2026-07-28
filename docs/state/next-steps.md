@@ -4,18 +4,16 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Continue the approved security-hardening sequence one step at a time:
+Complete the retained-task rollout:
 
-1. Deploy the manually accepted password-reset flow and run a production smoke test.
-2. Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
+1. Check production for case-insensitive duplicate titles before applying `0006_lively_lorna_dane.sql`.
+2. Apply the migration, manually accept completion, restoration, collapsing, ordering, duplicate validation, and deletion, then deploy and smoke test.
 
 ## Immediate Goal
 
-Deploy the password-reset flow, run its production smoke test, and monitor the rollout.
-
 ## Open Questions
 
-None for password-reset rollout.
+- Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
 
 ## Deferred UI Notes
 
