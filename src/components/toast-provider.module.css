@@ -2,10 +2,9 @@
   position: fixed;
   z-index: 100;
   inset-block-end: 1rem;
-  inset-inline: 0;
+  inset-inline: 1rem;
   display: flex;
-  width: min(18rem, calc(100vw - 2rem));
-  margin-inline: auto;
+  align-items: center;
   flex-direction: column;
   gap: 0.75rem;
   outline: none;
@@ -19,7 +18,8 @@
 
   position: relative;
   box-sizing: border-box;
-  width: 100%;
+  width: fit-content;
+  max-width: 18rem;
   overflow: hidden;
   border: 1px solid var(--toast-accent);
   border-radius: var(--radius-control);
