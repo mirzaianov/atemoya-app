@@ -211,21 +211,19 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
             </DragOverlay>
           </DndContext>
         </TaskGroup>
-        {completedTasks.length > 0 ? (
-          <TaskGroup count={completedTasks.length} label="Completed">
-            <ul className={listStyles.tasks}>
-              {completedTasks.map((task) => (
-                <TaskRow
-                  completionDisabled={completionMutation.isPending}
-                  key={task.id}
-                  onCompletedChange={handleCompletedChange}
-                  onEdit={setEditingTask}
-                  task={task}
-                />
-              ))}
-            </ul>
-          </TaskGroup>
-        ) : null}
+        <TaskGroup count={completedTasks.length} defaultOpen label="Completed">
+          <ul className={listStyles.tasks}>
+            {completedTasks.map((task) => (
+              <TaskRow
+                completionDisabled={completionMutation.isPending}
+                key={task.id}
+                onCompletedChange={handleCompletedChange}
+                onEdit={setEditingTask}
+                task={task}
+              />
+            ))}
+          </ul>
+        </TaskGroup>
       </div>
       <TaskEditDialog editingTask={editingTask} onClose={() => setEditingTask(null)} />
     </>
