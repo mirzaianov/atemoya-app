@@ -1,12 +1,11 @@
 .task {
   --task-edge-icon-hover: color-mix(in oklab, var(--color-base-content) 70%, white);
-  --task-edge-control-offset: -0.5rem;
+  --task-edge-control-offset: -0.25rem;
 
   position: relative;
   display: flex;
   align-items: center;
   gap: 0;
-  padding-inline-start: 0.25rem;
   background: var(--color-surface);
 }
 
@@ -38,7 +37,7 @@
 .dragPreview::after {
   z-index: -1;
   top: -0.125rem;
-  left: 0rem;
+  left: -0.25rem;
   bottom: -0.125rem;
   right: -0.25rem;
   background: var(--color-surface);
