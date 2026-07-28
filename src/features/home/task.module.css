@@ -74,7 +74,7 @@
   width: 1rem;
   height: 1rem;
   place-items: center;
-  border: 1px solid color-mix(in oklab, var(--color-base-content) 40%, white);
+  border: 1px solid var(--color-text);
   border-radius: 0.375rem;
   background: var(--color-surface);
   transition:
@@ -84,10 +84,6 @@
 
 .completionIndicator {
   display: flex;
-}
-
-.completionControl:hover:not([data-disabled], [data-checked]) .completionBox {
-  border-color: var(--color-primary);
 }
 
 .completionControl:focus-visible {
