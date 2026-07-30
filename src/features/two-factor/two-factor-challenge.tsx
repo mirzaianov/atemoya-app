@@ -126,7 +126,7 @@ export default function TwoFactorChallenge() {
                 </Field.Label>
                 <Field.Control
                   autoComplete={mode === 'totp' ? 'one-time-code' : 'off'}
-                  className={styles.input}
+                  className={clsx(styles.input, formStyles.validationErrorInput)}
                   inputMode={mode === 'totp' ? 'numeric' : 'text'}
                   maxLength={mode === 'totp' ? 6 : undefined}
                   onBlur={() => field.onBlur()}

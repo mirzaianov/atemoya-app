@@ -18,6 +18,7 @@ import type { ForgotPasswordFormValues } from '../auth/auth-schemas';
 import { passwordResetCallbackURL } from '../auth/password-reset';
 
 import buttonStyles from '../../components/button.module.css';
+import validationStyles from '../../styles/form.module.css';
 import authStyles from '../auth/auth-page.module.css';
 import formStyles from '../signup/signup-form.module.css';
 import styles from './forgot-password.module.css';
@@ -113,7 +114,7 @@ export default function ForgotPassword() {
                     <Field.Control
                       autoComplete="username"
                       autoFocus
-                      className={formStyles.input}
+                      className={clsx(formStyles.input, validationStyles.validationInput)}
                       enterKeyHint="send"
                       id="reset-email"
                       onBlur={onBlur}
