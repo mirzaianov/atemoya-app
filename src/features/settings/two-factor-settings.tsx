@@ -20,6 +20,7 @@ import { getTwoFactorErrorMessage } from '../auth/two-factor-errors';
 
 import buttonStyles from '../../components/button.module.css';
 import formStyles from '../../components/modal-form-layout.module.css';
+import validationStyles from '../../styles/form.module.css';
 import styles from './settings.module.css';
 
 const iconSize = 20;
@@ -309,7 +310,7 @@ export default function TwoFactorSettings({ enabled }: TwoFactorSettingsProps) {
                   <Field.Label className={formStyles.label}>Password</Field.Label>
                   <Field.Control
                     autoComplete="current-password"
-                    className={styles.input}
+                    className={clsx(styles.input, validationStyles.validationErrorInput)}
                     onBlur={() => field.onBlur()}
                     onValueChange={(value) => {
                       field.onChange(value);
@@ -383,7 +384,7 @@ export default function TwoFactorSettings({ enabled }: TwoFactorSettingsProps) {
                   <Field.Label className={formStyles.label}>Authenticator code</Field.Label>
                   <Field.Control
                     autoComplete="one-time-code"
-                    className={styles.input}
+                    className={clsx(styles.input, validationStyles.validationErrorInput)}
                     inputMode="numeric"
                     maxLength={6}
                     onBlur={() => field.onBlur()}

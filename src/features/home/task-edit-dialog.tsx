@@ -4,6 +4,7 @@ import { Dialog } from '@base-ui/react/dialog';
 import { Field } from '@base-ui/react/field';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -17,6 +18,7 @@ import { taskSchema } from './task-schemas';
 import type { TaskFormValues } from './task-schemas';
 
 import formStyles from '../../components/modal-form-layout.module.css';
+import validationStyles from '../../styles/form.module.css';
 import inputStyles from './task-form.module.css';
 
 interface TaskEditDialogProps {
@@ -110,7 +112,7 @@ export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogP
                 <Field.Label className={formStyles.label}>Task</Field.Label>
                 <Field.Control
                   autoComplete="off"
-                  className={inputStyles.input}
+                  className={clsx(inputStyles.input, validationStyles.validationInput)}
                   id="edit-task"
                   onBlur={onBlur}
                   onValueChange={onChange}

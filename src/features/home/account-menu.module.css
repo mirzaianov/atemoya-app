@@ -13,6 +13,12 @@
     transform 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
+.trigger::before,
+.trigger::after {
+  border-radius: 50%;
+  corner-shape: round;
+}
+
 .trigger::before {
   position: absolute;
   z-index: 1;
@@ -20,7 +26,6 @@
   left: -0.1875rem;
   width: 0.625rem;
   height: 0.625rem;
-  border-radius: 50%;
   background-color: var(--color-surface);
   content: '';
   pointer-events: none;
@@ -33,11 +38,7 @@
   left: -0.125rem;
   width: 0.5rem;
   height: 0.5rem;
-  border-radius: 50%;
   background: var(--color-success);
-  box-shadow:
-    0 0 0.1875rem color-mix(in oklab, var(--color-success) 85%, transparent),
-    0 0 0.5rem color-mix(in oklab, var(--color-success) 55%, transparent);
   content: '';
 }
 

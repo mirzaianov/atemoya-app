@@ -70,7 +70,7 @@ const LoginForm = ({
               </Field.Label>
               <Field.Control
                 autoComplete="username"
-                className={styles.input}
+                className={clsx(styles.input, formStyles.validationInput)}
                 enterKeyHint="next"
                 id="email"
                 onBlur={onBlur}
@@ -109,7 +109,11 @@ const LoginForm = ({
               <div className={formStyles.passwordControl}>
                 <Field.Control
                   autoComplete="current-password"
-                  className={clsx(styles.input, formStyles.passwordInput)}
+                  className={clsx(
+                    styles.input,
+                    formStyles.passwordInput,
+                    formStyles.validationErrorInput,
+                  )}
                   enterKeyHint="done"
                   id="current-password"
                   onBlur={onBlur}
