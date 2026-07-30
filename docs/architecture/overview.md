@@ -25,6 +25,26 @@ Decision: `../decisions/ADR-013-use-neon-branches-for-environment-isolation.md`
 
 Execution details: `neon-environment-isolation-plan.md`
 
+## Planned Database-Theft Protection
+
+ADR-009 accepts application-level encryption for sensitive task, identity,
+session, and verification values. The design preserves readable relational and
+operational metadata, uses separate production and development/Preview key
+pairs, and retains current uniqueness behavior through HMAC blind indexes.
+Better Auth continues to own password hashing and native TOTP and backup-code
+encryption.
+
+Implementation has not started. Production adoption requires a controlled
+maintenance window, a fully verified in-place conversion from a trusted local
+machine, and a recorded timestamp within Neon's 6-hour restore window.
+Development rehearsal and implementation review must complete before
+production conversion is scheduled.
+
+Decision:
+`../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`
+
+Execution details: `database-theft-encryption-plan.md`
+
 ## Key Dependencies
 
 - React renders the application and component state.

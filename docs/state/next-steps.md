@@ -4,15 +4,20 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Design the email-change confirmation flow:
+Implement the accepted database-theft encryption design in development:
 
-1. Review Better Auth's email-change capabilities and the existing Resend delivery boundary.
-2. Specify current-address approval, new-address verification, session handling, and failure behavior.
-3. Record and approve the design before implementation.
+1. Add the cryptography boundary, blind-index schema, verification metadata, and
+   maintenance gate.
+2. Integrate task and Better Auth persistence, including encrypted backup-code
+   storage, against synthetic development data.
+3. Build and fully verify the one-time conversion command in development.
+4. Review the completed development implementation before scheduling the
+   production maintenance window.
 
 ## Immediate Goal
 
-Produce an approved email-change design without changing the accepted authentication or database-environment boundaries.
+Complete and verify the development implementation without converting
+production data.
 
 ## Open Questions
 
@@ -20,4 +25,6 @@ Produce an approved email-change design without changing the accepted authentica
 
 ## Deferred UI Notes
 
+- Design the email-change confirmation flow around current-address approval,
+  new-address verification, session handling, and failure behavior.
 - Design the password-change confirmation flow around Better Auth's current-password check and decide whether to revoke other sessions.

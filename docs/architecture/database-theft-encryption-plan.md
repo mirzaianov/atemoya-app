@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed; not implemented.
+Accepted; implementation has not started.
 
 ## Context
 
@@ -21,7 +21,7 @@ Better Auth, and Resend flows can continue to work.
 - Preserve the current Next.js, Drizzle, Better Auth, and Resend behavior.
 - Keep encryption and lookup keys outside Neon.
 - Detect ciphertext modification or movement between records.
-- Support migration, recovery, and encryption-key rotation without data loss.
+- Support a fully verified maintenance conversion and justified key rotation.
 - Avoid adding a cryptography dependency when Node provides the required
   authenticated encryption and HMAC primitives.
 
@@ -35,6 +35,9 @@ Better Auth, and Resend flows can continue to work.
   positions needed by PostgreSQL.
 - Adding managed KMS, per-user data keys, searchable encryption, or online
   lookup-key rotation in the first release.
+- Zero-downtime or dual-write production conversion.
+- Encrypting dormant OAuth token columns before Atemoya supports OAuth.
+- Building privileged production decryption or database-inspection tooling.
 
 ## Approaches Considered
 
@@ -77,9 +80,20 @@ Use AES-256-GCM through Node's built-in `node:crypto` module:
   wrong keys, and values moved to another record or field.
 
 Use a separate 32-byte HMAC-SHA-256 key for blind indexes. Never derive the
-lookup key from or reuse the encryption key. Normalize email and nickname using
-the same existing application rules before computing their blind indexes.
-Unkeyed hashes and deterministic encryption are not acceptable substitutes.
+lookup key from or reuse the encryption key. Prefix each HMAC input with its
+model, field, and normalization version. Include the owning user ID for task
+titles so equality is scoped per user. Unkeyed hashes and deterministic
+encryption are not acceptable substitutes.
+
+Preserve the current normalization behavior:
+
+- email uses Better Auth's trimmed, lowercase representation
+- nickname uses the existing trimmed, lowercase ASCII validation
+- task title uses the existing trimmed, lowercase comparison
+
+Do not introduce Unicode normalization or broader case folding during this
+migration. Preflight checks stop on any normalized collision so a person can
+resolve it without automatic merging, renaming, or deletion.
 
 The server-only cryptography boundary validates all configured keys during
 application startup. Missing keys, invalid base64, incorrect key lengths, or an
@@ -87,31 +101,39 @@ unknown active version prevent startup.
 
 ## Key Management
 
-The first release uses two independent versioned secrets:
+Each environment uses two independent versioned secrets:
 
 - a data-encryption key
 - a blind-index lookup key
 
-KeePass remains the recoverable source of truth for local and production key
-material. Varlock supplies local values, and production supplies server-only
-secrets. Keys must never be committed, stored in Neon, exposed through
-`NEXT_PUBLIC_*`, or written to logs. `BETTER_AUTH_SECRET` remains independent
-and is not reused.
+Production has its own key pair. Local development and Vercel Preview share a
+different development key pair because they use the same schema-only
+development database branch. A development secret leak must not enable
+production decryption.
 
-Ciphertext records carry their encryption-key version. Encryption-key rotation
+KeePass is the sole recoverable source of truth for application encryption key
+material. Varlock supplies local values, and Vercel receives environment-scoped
+server-only copies. Keys must never be committed, stored in Neon, exposed
+through `NEXT_PUBLIC_*`, or written to logs. `BETTER_AUTH_SECRET` remains an
+independent Better Auth key and is not reused by the application encryption
+module. The accepted tradeoff is that losing the KeePass vault makes protected
+data permanently unreadable; no second recovery copy is maintained.
+
+Ciphertext records carry their encryption-key version. Keys rotate only after
+suspected exposure, relevant access changes, or a cryptographic or
+configuration change; there is no calendar rotation. Encryption-key rotation
 adds a new active version, writes new data with it, re-encrypts older records,
-verifies the result, and retires the old key only after backup recovery has
-been tested.
+verifies the result, and retires the old key only after the Neon restore window
+containing old ciphertext has expired.
 
 Blind-index rotation is a separate maintenance operation because HMAC output is
-irreversible and participates in unique lookups. The first release may briefly
-disable identity writes while it decrypts identity values, recomputes all blind
-indexes under the new lookup key, verifies uniqueness, and switches versions.
-Online dual-index rotation should be added only if uptime requirements justify
-its extra schema and race-handling complexity.
+irreversible and participates in unique lookups. Pause all writes, recompute
+every blind index under the new lookup key, verify uniqueness, switch versions,
+and then resume service. Online dual-index rotation should be added only if
+uptime requirements justify its extra schema and race-handling complexity.
 
 Loss of the active and retained decryption keys means permanent data loss.
-Deployment secrets are not the only key backup.
+Vercel deployment secrets are operational copies, not key backups.
 
 ## Data Classification
 
@@ -131,19 +153,40 @@ Deployment secrets are not the only key backup.
 
 - normalized user email
 - normalized nickname
+- normalized task title, scoped by owning user ID
 - session token
 - verification identifier
 
 Unique constraints move from randomized ciphertext to the corresponding blind
-index. The adapter must check every active lookup-key version during a lookup or
-maintenance rotation.
+index. Task titles use a unique `(user_id, title_lookup)` constraint so the
+existing case-insensitive, per-user uniqueness rule continues across active and
+completed tasks. Lookup-key rotation occurs only during maintenance, so a
+single active lookup version owns uniqueness at any moment.
 
-### Hash, do not encrypt
+### Better Auth-owned protection
 
 Better Auth credential passwords remain one-way `scrypt` hashes. They are never
 decrypted or included in the general encryption format. A database thief can
 still attempt offline password guessing, so encryption does not replace strong
 passwords or Better Auth's memory-hard password hashing.
+
+Better Auth continues to own encryption for:
+
+- `two_factor.secret`, which the installed TOTP plugin already encrypts with
+  `BETTER_AUTH_SECRET`
+- `two_factor.backup_codes`, after setting
+  `backupCodeOptions.storeBackupCodes` to `encrypted`
+
+The production conversion detects the existing backup-code representation,
+encrypts any plaintext JSON code sets with `BETTER_AUTH_SECRET`, and verifies
+that Better Auth can decode every converted set. Do not double-encrypt either
+field in the application adapter.
+
+The app currently has no OAuth provider. Preflight verifies that
+`account.access_token`, `account.refresh_token`, and `account.id_token` are
+empty. The first release adds no speculative handling for them. Enabling OAuth
+later requires a separate review and Better Auth token-encryption
+configuration before any provider is activated.
 
 ### Leave readable
 
@@ -151,6 +194,8 @@ passwords or Better Auth's memory-hard password hashing.
 - provider type
 - credential account IDs when they duplicate opaque application user IDs
 - email-verification state
+- `verification.purpose` and nullable `verification.subject_user_id`
+- two-factor enabled, verified, failure-count, and lockout state
 - creation, update, expiry, and task change timestamps
 - task position
 
@@ -170,12 +215,22 @@ list and returning operations decrypt before producing the existing
 `Task` DTO. Ordering continues to use readable IDs, positions, and
 timestamps.
 
-Better Auth identity, session, account, and verification encryption uses a
-custom database adapter. The adapter transforms:
+Better Auth identity, session, and verification encryption uses a custom
+database adapter. The adapter transforms:
 
 - create and update data into ciphertext and blind indexes
 - equality conditions into blind-index conditions
 - database output back into the logical values Better Auth expects
+
+The verification adapter also derives readable operational metadata:
+
+- `purpose` identifies records such as `trust-device`, two-factor challenge,
+  attempt counter, email verification, and password reset
+- `subject_user_id` stores the owning opaque user ID when the flow supplies one
+
+Password reset revokes trusted-device grants by indexed `purpose` and
+`subject_user_id` conditions. It never decrypts and scans the verification
+table or relies on a ciphertext prefix query.
 
 Database hooks alone are insufficient for email, nickname, session, and
 verification fields because they do not consistently transform query
@@ -193,7 +248,7 @@ zero-knowledge.
 Sensitive writes follow this order:
 
 1. Validate the plaintext with existing Zod or Better Auth rules.
-2. Normalize equality-lookup values.
+2. Normalize equality-lookup values with the field's existing rule.
 3. Compute required blind indexes.
 4. Encrypt the original logical values.
 5. Persist ciphertext and indexes atomically.
@@ -210,32 +265,66 @@ progress, analytics, or server diagnostics.
 
 ## Migration
 
-Use an expand, backfill, verify, and contract rollout:
+Use an immediate in-place conversion during a production maintenance window.
+There is no dual-write or mixed-row production phase.
 
-1. Add nullable ciphertext, blind-index, and version storage without removing
-   plaintext columns.
-2. Deploy cryptography helpers and mixed-row reads while continuing existing
+### Development preparation
+
+1. Add nullable blind-index columns plus `verification.purpose` and
+   `verification.subject_user_id` through the normal development-first Drizzle
+   workflow. Existing protected text columns remain in place because PostgreSQL
+   `text` can store the versioned ciphertext envelopes.
+2. Implement the server-only cryptography boundary, task query changes, custom
+   Better Auth adapter, encrypted backup-code configuration, maintenance gate,
+   and one-time conversion command.
+3. Use deterministic test keys only in tests. Configure separate development
+   keys through KeePass/Varlock and Vercel Preview.
+4. Rehearse the complete conversion against synthetic development data.
+5. Preflight production read-only checks for normalized collisions, unexpected
+   nulls, unsupported values, and any populated dormant OAuth token columns.
+   Abort without writes if any check fails.
+
+### Production conversion
+
+1. Confirm Neon still provides the accepted 6-hour restore window and record
+   the production restore timestamp. Do not create a second full-data database
+   branch.
+2. Confirm the production encryption and lookup keys exist in KeePass and as
+   Vercel Production secrets. Configure the encrypted Better Auth backup-code
    behavior.
-3. Enable encrypted writes and the custom Better Auth adapter.
-4. Backfill existing rows in bounded, restartable batches.
-5. Verify that every encrypted value decrypts, every blind index matches its
-   normalized plaintext, uniqueness holds, and row counts are unchanged.
-6. Switch to encrypted-only reads and writes.
-7. Make required encrypted fields non-null and move unique constraints to blind
-   indexes.
-8. Remove plaintext columns only after rollback and backup-restoration checks
-   pass.
+3. Apply the reviewed additive schema migration to production.
+4. Enable the application maintenance gate. It returns a controlled `503`
+   response and blocks page, auth, and server-action database access.
+5. From the trusted local machine, run the one-time conversion command with an
+   explicitly confirmed production connection and keys loaded from KeePass.
+   Do not copy application encryption keys into GitHub Actions.
+6. Inside one database transaction, replace protected plaintext column values
+   in place with ciphertext, populate blind indexes and verification metadata,
+   convert plaintext backup-code sets to Better Auth ciphertext, replace
+   plaintext unique constraints with blind-index constraints, and make required
+   blind-index columns non-null.
+7. Before committing, verify every protected value decrypts with the expected
+   AAD, every blind index recomputes exactly, every converted backup-code set
+   decodes through Better Auth, uniqueness holds, row counts are unchanged, and
+   no protected plaintext remains.
+8. Commit only after the full verification succeeds. Any conversion or
+   verification failure rolls back the transaction and leaves maintenance mode
+   enabled.
+9. Deploy the encrypted application while maintenance mode remains enabled,
+   then disable maintenance and run focused production smoke checks.
+10. If post-commit verification fails, re-enable maintenance, restore the
+    recorded Neon point, and redeploy the previous application version. Writes
+    remain blocked throughout the conversion, so this rollback does not discard
+    accepted in-window user changes.
+11. Treat database-theft encryption as complete only after the production
+    smoke checks pass and Neon's 6-hour restore history containing plaintext
+    has expired.
 
-The migration records only stable IDs, state, counts, and failures. It never
-logs plaintext. Each batch is idempotent and can resume after interruption.
-
-Rollback remains possible while plaintext columns exist. After the contract
-step, any rollback release must understand the encrypted schema; plaintext
-shadow writes are not retained.
-
-Existing plaintext backups remain sensitive until their retention period
-expires or they are securely removed. New backup-restoration tests must require
-the separately supplied application keys.
+The command requires an explicit environment and typed production
+confirmation. It records only stable IDs, counts, phases, and error types; it
+never logs plaintext, keys, blind indexes, or full ciphertext. The temporary
+production connection is removed from the local environment after the
+maintenance operation.
 
 ## Failure Handling
 
@@ -244,7 +333,8 @@ the separately supplied application keys.
 - User-facing responses remain generic.
 - Operational logs may include a stable record ID, model, field, and key
   version, but never plaintext, keys, blind indexes, or full ciphertext.
-- Migration failures preserve the source row and record restartable progress.
+- Conversion failures roll back the transaction and preserve every source
+  value.
 - Database writes containing ciphertext and blind indexes are atomic.
 
 ## Verification
@@ -255,28 +345,37 @@ Focused cryptography tests cover:
 - different ciphertext for repeated encryption of the same plaintext
 - tamper, wrong-key, wrong-record, and wrong-field rejection
 - malformed envelopes and unknown versions
-- stable normalized blind indexes
+- stable domain-separated blind indexes
+- current email, nickname, and task-title normalization
 
 Application tests cover:
 
 - task create, list, update, reorder, and delete
+- case-insensitive per-user task-title duplicate rejection
 - sign-up, email verification, sign-in, and sign-out
 - duplicate email and nickname rejection
 - nickname update and account deletion
 - session creation, lookup, expiry, and revocation
+- password-reset revocation of trusted-device verification records
+- TOTP and encrypted backup-code enrollment, verification, regeneration, and
+  recovery
 
 Migration checks cover:
 
-- mixed plaintext and encrypted rows
-- restartable batches
+- read-only collision and dormant OAuth-token preflight
+- complete transactional rollback on an injected conversion failure
 - unchanged ownership, order, timestamps, and row counts
-- full decryptability before plaintext removal
+- full decryptability and blind-index recomputation before commit
+- Better Auth decoding of every converted backup-code set
+- maintenance-mode blocking of page, auth, and server-action database access
 - encryption-key rotation
 - maintenance-mode blind-index rotation
-- isolated backup restoration with and without supplied keys
+- Neon point-in-time restoration with the previous application release
 
 Finally, inspect representative database rows and captured application logs to
-confirm that sensitive plaintext is absent.
+confirm that sensitive plaintext is absent. Do not build an admin decryption
+utility for this inspection; production SQL support intentionally sees
+ciphertext.
 
 ## Consequences
 
@@ -287,8 +386,13 @@ confirm that sensitive plaintext is absent.
 - Database metadata remains visible.
 - A custom Better Auth adapter becomes security-critical and needs focused
   integration coverage.
-- Key loss is unrecoverable, while key compromise exposes every value protected
-  by that key.
+- KeePass loss is unrecoverable, while key compromise exposes every value
+  protected by that key.
+- Development and production key compromise have separate blast radii.
+- Production conversion requires a controlled maintenance window and trusted
+  local operator access.
+- Neon SQL cannot directly inspect protected values, and the first release has
+  no privileged decryption tool.
 - Password hashes remain subject to offline guessing; they are intentionally
   hashed rather than reversibly encrypted.
 - Managed KMS and per-user keys remain a future upgrade rather than first-release

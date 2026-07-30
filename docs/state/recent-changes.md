@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-30: Accepted ADR-009 and revised the database-theft encryption plan around sensitive-content scope, separate environment keys, Better Auth-owned secret encryption, blind-indexed uniqueness, and a fully verified maintenance conversion with Neon point-in-time rollback. [Reason why added: records the approved security design while keeping implementation and production conversion explicitly unstarted.]
+
 - 2026-07-30: Closed the retained-task rollout after manually accepting completion, restoration, collapsing, ordering, duplicate validation, editing, and deletion; verifying development isolation; and repeating the production smoke test. [Reason why added: records that no retained-task acceptance or monitoring work remains.]
 
 - 2026-07-30: Split Neon into production and schema-only development branches, isolated local and `develop` Preview credentials, verified writes stay in development, and accepted the approval-gated migration workflow through idempotency and negative-guard tests. [Reason why added: prevents development and migration testing from modifying production data.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-27: Deployed the manually accepted password-reset flow. [Reason why added: records production availability before verification.]
 
 - 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance before deployment.]
-
-- 2026-07-22: Clarified password-reset success and resend timing, made forgot-password feedback mutually exclusive within a reserved two-line area, and standardized login, signup, and forgot-password controls at the existing auth width. [Reason why added: keeps recovery feedback unambiguous and prevents auth-page sizing drift.]
