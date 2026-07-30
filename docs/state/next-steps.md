@@ -4,11 +4,11 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Complete the retained-task rollout:
+Complete the database-environment workflow rollout:
 
-1. Check production for case-insensitive duplicate titles before applying `0006_lively_lorna_dane.sql`.
-2. Apply `0006_lively_lorna_dane.sql`, followed by the data-preserving `0007_worried_darkstar.sql`.
-3. Manually accept completion, restoration, collapsing, ordering, duplicate validation, and deletion, then deploy and smoke test.
+1. Merge the `migrate-database` workflow and environment documentation into the default branch.
+2. Run the workflow twice against `Preview` to prove migration idempotency.
+3. Run the guarded negative `Production` test with a ref other than current `develop`, confirming Drizzle never executes.
 
 ## Immediate Goal
 
