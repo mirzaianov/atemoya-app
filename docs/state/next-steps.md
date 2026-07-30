@@ -7,7 +7,8 @@ Status: project-state immediate recommendation
 Complete the retained-task rollout:
 
 1. Check production for case-insensitive duplicate titles before applying `0006_lively_lorna_dane.sql`.
-2. Apply the migration, manually accept completion, restoration, collapsing, ordering, duplicate validation, and deletion, then deploy and smoke test.
+2. Apply `0006_lively_lorna_dane.sql`, followed by the data-preserving `0007_worried_darkstar.sql`.
+3. Manually accept completion, restoration, collapsing, ordering, duplicate validation, and deletion, then deploy and smoke test.
 
 ## Immediate Goal
 
