@@ -18,6 +18,7 @@ import { updateNicknameAction } from './settings-actions';
 
 import buttonStyles from '../../components/button.module.css';
 import formStyles from '../../components/modal-form-layout.module.css';
+import validationStyles from '../../styles/form.module.css';
 import styles from './settings.module.css';
 
 const iconSize = 20;
@@ -116,7 +117,7 @@ export default function NicknameEditDialog({ currentNickname }: NicknameEditDial
                 <Field.Label className={formStyles.label}>Nickname</Field.Label>
                 <Field.Control
                   autoComplete="off"
-                  className={styles.input}
+                  className={clsx(styles.input, validationStyles.validationInput)}
                   id="edit-nickname"
                   onBlur={onBlur}
                   onValueChange={onChange}

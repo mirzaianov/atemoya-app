@@ -62,7 +62,7 @@ const SignupForm = ({
               </Field.Label>
               <Field.Control
                 autoComplete="off"
-                className={styles.input}
+                className={clsx(styles.input, formStyles.validationInput)}
                 enterKeyHint="next"
                 id="nickname"
                 onBlur={onBlur}
@@ -100,7 +100,7 @@ const SignupForm = ({
               </Field.Label>
               <Field.Control
                 autoComplete="username"
-                className={styles.input}
+                className={clsx(styles.input, formStyles.validationInput)}
                 enterKeyHint="next"
                 id="email"
                 onBlur={onBlur}
@@ -138,7 +138,7 @@ const SignupForm = ({
               </Field.Label>
               <Field.Control
                 autoComplete="email"
-                className={styles.input}
+                className={clsx(styles.input, formStyles.validationInput)}
                 enterKeyHint="next"
                 id="emailConfirm"
                 onBlur={onBlur}
@@ -177,7 +177,11 @@ const SignupForm = ({
               <div className={formStyles.passwordControl}>
                 <Field.Control
                   autoComplete="new-password"
-                  className={clsx(styles.input, formStyles.passwordInput)}
+                  className={clsx(
+                    styles.input,
+                    formStyles.passwordInput,
+                    formStyles.validationInput,
+                  )}
                   enterKeyHint="next"
                   id="new-password"
                   onBlur={onBlur}
@@ -236,7 +240,11 @@ const SignupForm = ({
               <div className={formStyles.passwordControl}>
                 <Field.Control
                   autoComplete="new-password"
-                  className={clsx(styles.input, formStyles.passwordInput)}
+                  className={clsx(
+                    styles.input,
+                    formStyles.passwordInput,
+                    formStyles.validationInput,
+                  )}
                   enterKeyHint="done"
                   id="confirm-password"
                   onBlur={onBlur}

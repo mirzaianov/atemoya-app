@@ -123,7 +123,11 @@ export default function ResetPassword({ state }: Props) {
                   <Field.Control
                     autoComplete="new-password"
                     autoFocus
-                    className={clsx(formStyles.input, sharedFormStyles.passwordInput)}
+                    className={clsx(
+                      formStyles.input,
+                      sharedFormStyles.passwordInput,
+                      sharedFormStyles.validationInput,
+                    )}
                     enterKeyHint="next"
                     id="new-password"
                     onBlur={onBlur}
@@ -182,7 +186,11 @@ export default function ResetPassword({ state }: Props) {
                 <div className={sharedFormStyles.passwordControl}>
                   <Field.Control
                     autoComplete="new-password"
-                    className={clsx(formStyles.input, sharedFormStyles.passwordInput)}
+                    className={clsx(
+                      formStyles.input,
+                      sharedFormStyles.passwordInput,
+                      sharedFormStyles.validationInput,
+                    )}
                     enterKeyHint="done"
                     id="confirm-password"
                     onBlur={onBlur}

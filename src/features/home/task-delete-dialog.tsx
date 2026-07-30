@@ -36,7 +36,7 @@ export default function TaskDeleteDialog({ id, onOpenChange, open }: TaskDeleteD
         return;
       }
 
-      toast.error('Task deleted');
+      toast.info('Task deleted');
       onOpenChange(false);
       router.refresh();
     } catch {
