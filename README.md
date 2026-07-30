@@ -58,20 +58,36 @@ atemoya-app/BETTER_AUTH_SECRET
 atemoya-app/BETTER_AUTH_URL
 ```
 
+Local `DATABASE_URL` and `BETTER_AUTH_SECRET` values belong to the Neon
+`development` branch. Keep production credentials out of `.env.local` and the
+active local KeePass entries.
+
 Use `http://localhost:3000` for `BETTER_AUTH_URL` in local development.
 
-For Vercel, set these values directly in Project Settings -> Environment Variables:
+For Vercel, set `DATABASE_URL` and `BETTER_AUTH_SECRET` directly in Project
+Settings -> Environment Variables:
 
-```text
-DATABASE_URL
-BETTER_AUTH_SECRET
-```
+| Vercel scope | Git branch | Neon branch   |
+| ------------ | ---------- | ------------- |
+| Preview      | `develop`  | `development` |
+| Production   | `main`     | `production`  |
+
+The Preview and local runtimes share the development Better Auth secret because
+they use the same authentication tables. Production uses a separate secret.
 
 Do not add `BETTER_AUTH_URL` on Vercel for normal deployments. The app trusts the active Vercel request host through Vercel System Environment Variables, so Preview uses `VERCEL_URL` or `VERCEL_BRANCH_URL`, and Production uses `VERCEL_PROJECT_PRODUCTION_URL`.
 
 In Vercel Project Settings -> Environment Variables, enable System Environment Variables. Vercel then provides `VERCEL_PROJECT_PRODUCTION_URL` for the current production domain, `VERCEL_URL` for the current deployment URL, and `VERCEL_BRANCH_URL` for branch previews.
 
 Do not configure KeePass variables on Vercel. The default `pnpm build` script uses Vercel environment variables directly; use `pnpm build:local` when you want a local production build through Varlock.
+
+Database migrations run separately from application builds. Promote migrations
+through the repository's `migrate-database` GitHub Actions workflow: test the
+reviewed ref against the `Preview` environment first, then approve the same
+current `develop` commit for `Production`. See
+[`ADR-013`](./docs/decisions/ADR-013-use-neon-branches-for-environment-isolation.md)
+and the
+[environment-isolation plan](./docs/architecture/neon-environment-isolation-plan.md).
 
 ### Run in the development mode
 

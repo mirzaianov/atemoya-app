@@ -6,6 +6,10 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-30: Split Neon into production and schema-only development branches, isolated local and `develop` Preview credentials, verified writes stay in development, and added an approval-gated migration workflow. [Reason why added: prevents development and migration testing from modifying production data.]
+
+- 2026-07-30: Changed task `changed_on` storage from epoch-millisecond `bigint` values to UTC timestamps while preserving the numeric client contract. [Reason why added: aligns task change times with `completed_at` and records the required data-preserving migration.]
+
 - 2026-07-28: Added opt-in real-time validation borders with transitioned danger and success states while keeping sign-in passwords and 2FA credentials red-only. [Reason why added: records the deliberate validation-color scope and avoids implying that locally valid credentials were accepted by the server.]
 
 - 2026-07-28: Moved content-sized toast notifications to the bottom center, capped long messages at `18rem`, and reserved red styling for failures by changing successful task deletion to the existing info state. [Reason why added: records the user-visible notification layout and semantic color behavior.]
@@ -21,7 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-22: Clarified password-reset success and resend timing, made forgot-password feedback mutually exclusive within a reserved two-line area, and standardized login, signup, and forgot-password controls at the existing auth width. [Reason why added: keeps recovery feedback unambiguous and prevents auth-page sizing drift.]
 
 - 2026-07-22: Added a Settings password-reset action that sends the existing one-hour recovery link directly to the authenticated account email, with inline status and a 30-second resend cooldown. [Reason why added: makes password recovery discoverable without requiring a signed-in user to leave Settings or re-enter a known email.]
-
-- 2026-07-22: Implemented Better Auth password recovery through Resend with generic requests, one-hour single-use links, shared password validation, no automatic sign-in, all-session and trusted-device revocation, preserved 2FA state, and password-changed notices. [Reason why added: records the completed local implementation and its security behavior before acceptance.]
-
-- 2026-07-22: Closed the HSTS follow-up after verifying Vercel's two-year HSTS header on the apex redirect and primary host and confirming that the `.app` namespace is already HSTS-preloaded. [Reason why added: records why no application-level HSTS configuration or individual preload registration is needed.]

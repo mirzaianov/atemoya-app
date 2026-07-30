@@ -1,0 +1,80 @@
+name: migrate-database
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Database environment
+        required: true
+        type: choice
+        options:
+          - Preview
+          - Production
+      ref:
+        description: Exact branch, tag, or commit to migrate
+        required: true
+        default: develop
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: migrate-database-${{ inputs.target }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    name: Migrate ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+
+    steps:
+      - name: Check out migration source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Verify production source
+        if: inputs.target == 'Production'
+        shell: bash
+        run: |
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]]; then
+            echo "Production migrations must use the current develop commit."
+            exit 1
+          fi
+
+      - name: Review migration source
+        shell: bash
+        run: |
+          echo "Target: ${{ inputs.target }}"
+          echo "Commit: $(git rev-parse HEAD)"
+          git log -1 --format="Subject: %s"
+          find drizzle -maxdepth 1 -type f -name "*.sql" -printf "%f\n" | sort
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable pnpm
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify database secret
+        shell: bash
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          if [[ -z "$DATABASE_URL" ]]; then
+            echo "DATABASE_URL is not configured for this environment."
+            exit 1
+          fi
+
+      - name: Apply Drizzle migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec drizzle-kit migrate

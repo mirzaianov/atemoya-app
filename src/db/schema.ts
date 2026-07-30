@@ -1,6 +1,5 @@
 import { relations, sql } from 'drizzle-orm';
 import {
-  bigint,
   boolean,
   index,
   integer,
@@ -105,7 +104,7 @@ export const twoFactor = pgTable(
 export const tasks = pgTable(
   'tasks',
   {
-    changedOn: bigint('changed_on', { mode: 'number' }).notNull(),
+    changedOn: timestamp('changed_on').notNull(),
     completedAt: timestamp('completed_at'),
     id: text('id').primaryKey(),
     position: integer('position').notNull(),

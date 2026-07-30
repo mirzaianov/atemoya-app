@@ -6,6 +6,25 @@ The project is a Next.js App Router personal task-management app. Routes live un
 
 Primary local `dev`, `build:local`, and `start` scripts run Next.js through Varlock. The default `build` script runs plain `next build` so hosted builds can use platform environment variables directly.
 
+## Database Environments
+
+One Neon project contains two long-lived branches:
+
+```text
+local + develop Preview -> development
+main Production         -> production
+```
+
+The `development` branch contains schema and synthetic test data only.
+Environment-scoped `DATABASE_URL` and `BETTER_AUTH_SECRET` values select the
+branch without runtime environment-switching logic. Drizzle migrations move
+development-first through the manually dispatched `migrate-database` GitHub
+Actions workflow and never run during the Vercel build.
+
+Decision: `../decisions/ADR-013-use-neon-branches-for-environment-isolation.md`
+
+Execution details: `neon-environment-isolation-plan.md`
+
 ## Key Dependencies
 
 - React renders the application and component state.
