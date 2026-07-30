@@ -16,7 +16,7 @@ export default async function Page() {
 
   const tasks = await listTasks(session.user.id);
   const initialTasks = tasks.map((task) => ({
-    changedOn: task.changedOn,
+    changedOn: task.changedOn.getTime(),
     completedAt: task.completedAt?.getTime() ?? null,
     id: task.id,
     position: task.position,

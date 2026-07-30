@@ -19,7 +19,6 @@ export const listTasks = (userId: string) =>
 
 export const createTask = async (userId: string, title: string) => {
   const id = crypto.randomUUID();
-  const changedOn = Date.now();
 
   await db.execute(sql`
     WITH shifted AS (
@@ -35,16 +34,14 @@ export const createTask = async (userId: string, title: string) => {
       ${sql.identifier('changed_on')},
       ${sql.identifier('position')}
     )
-    VALUES (${id}, ${userId}, ${title}, ${changedOn}, 0)
+    VALUES (${id}, ${userId}, ${title}, now(), 0)
   `);
-
-  return { changedOn, id, position: 0, title, userId };
 };
 
 export const updateTask = async (userId: string, id: string, title: string) => {
   const [task] = await db
     .update(tasks)
-    .set({ changedOn: Date.now(), title })
+    .set({ changedOn: sql`now()`, title })
     .where(and(eq(tasks.userId, userId), eq(tasks.id, id)))
     .returning();
 
@@ -65,7 +62,6 @@ interface TaskCompletionRow extends Record<string, unknown> {
 }
 
 export const setTaskCompleted = async (userId: string, id: string, completed: boolean) => {
-  const changedOn = Date.now();
   const result = completed
     ? await db.execute<TaskCompletionRow>(sql`
         WITH target AS (
@@ -79,7 +75,7 @@ export const setTaskCompleted = async (userId: string, id: string, completed: bo
           UPDATE ${tasks}
           SET
             ${sql.identifier('completed_at')} = now(),
-            ${sql.identifier('changed_on')} = ${changedOn}
+            ${sql.identifier('changed_on')} = now()
           FROM target
           WHERE ${tasks.id} = target.id
             AND ${tasks.userId} = ${userId}
@@ -120,7 +116,7 @@ export const setTaskCompleted = async (userId: string, id: string, completed: bo
           SET
             ${sql.identifier('completed_at')} = NULL,
             ${sql.identifier('position')} = 0,
-            ${sql.identifier('changed_on')} = ${changedOn}
+            ${sql.identifier('changed_on')} = now()
           FROM target
           WHERE ${tasks.id} = target.id
             AND ${tasks.userId} = ${userId}
