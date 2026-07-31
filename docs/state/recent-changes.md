@@ -6,6 +6,10 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-31: Selected versioned application normalizers as the sole equality authority for encrypted email, nickname, and per-user task titles, replacing PostgreSQL `lower()` uniqueness after conversion. [Reason why added: resolves the JavaScript/PostgreSQL normalization conflict and makes blind-index behavior deterministic.]
+
+- 2026-07-31: Selected a root Next.js Proxy maintenance gate, a drain based on the confirmed platform execution limit, and source-to-shadow verification before plaintext removal. [Reason why added: resolves the late-write barrier without introducing separate database roles while accounting for Server Actions and `after()` work.]
+
 - 2026-07-31: Selected a thin decorator around Better Auth 1.6.23's Drizzle adapter, preserving joins, transactions, set-valued conditions, and native `consumeOne` and `incrementOne` operations. [Reason why added: resolves the adapter-contract blocker without reimplementing Better Auth database behavior or weakening atomic security operations.]
 
 - 2026-07-31: Selected maintenance-only shadow columns for ADR-009 conversion, with restartable data writes and additive and contract schema changes owned by reviewed Drizzle migrations. [Reason why added: resolves the unsupported interactive-transaction and migration-history blockers without adding another database client or a live dual-write path.]
@@ -21,7 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-30: Split Neon into production and schema-only development branches, isolated local and `develop` Preview credentials, verified writes stay in development, and accepted the approval-gated migration workflow through idempotency and negative-guard tests. [Reason why added: prevents development and migration testing from modifying production data.]
 
 - 2026-07-30: Changed task `changed_on` storage from epoch-millisecond `bigint` values to UTC timestamps while preserving the numeric client contract. [Reason why added: aligns task change times with `completed_at` and records the required data-preserving migration.]
-
-- 2026-07-28: Added opt-in real-time validation borders with transitioned danger and success states while keeping sign-in passwords and 2FA credentials red-only. [Reason why added: records the deliberate validation-color scope and avoids implying that locally valid credentials were accepted by the server.]
-
-- 2026-07-28: Moved content-sized toast notifications to the bottom center, capped long messages at `18rem`, and reserved red styling for failures by changing successful task deletion to the existing info state. [Reason why added: records the user-visible notification layout and semantic color behavior.]

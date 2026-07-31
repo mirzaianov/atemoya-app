@@ -29,23 +29,22 @@ implementation tasks under the current design.
    set-valued conditions, `consumeOne`, and `incrementOne`. Atomic methods
    delegate exactly once; the decorator never replaces them with
    find-then-write sequences.
-
-### Critical
-
-1. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
-   route, and server-action requests can already be in flight when a `503` gate
-   becomes active. The rollout must predeploy the gate-aware release, drain or
-   fence earlier writes, and prove that no late plaintext write can land during
-   conversion.
+4. **The maintenance write barrier was resolved on 2026-07-31.** A root Next.js
+   Proxy returns `503` before page, Better Auth route, and Server Action
+   execution. After the maintenance deployment receives the production alias,
+   the operator waits longer than the confirmed maximum invocation duration,
+   including `after()` work. Full source-to-shadow comparison then detects any
+   late plaintext mutation before the contract migration can remove source
+   columns.
+5. **Normalization authority was resolved on 2026-07-31.** Versioned
+   application normalizers define email, nickname, and task-title equality.
+   Blind indexes and their unique constraints use those values. PostgreSQL
+   `lower()` and database collation no longer participate after the contract
+   migration.
 
 ### High
 
-1. **Task-title normalization has two existing authorities.** Application code
-   uses JavaScript `toLowerCase()`, PostgreSQL uniqueness uses `lower()`, and
-   task titles permit unrestricted Unicode. A blind index cannot promise to
-   preserve both behaviors. Define one canonical normalizer and run collision
-   preflight against that exact implementation.
-2. **The no-plaintext-logging requirement is not enforced.** The installed
+1. **The no-plaintext-logging requirement is not enforced.** The installed
    Better Auth signup route can log a duplicate email at info level, while the
    current auth configuration has no explicit redacting logger policy. Logging
    configuration and captured-log verification are part of the security
@@ -170,15 +169,33 @@ model, field, and normalization version. Include the owning user ID for task
 titles so equality is scoped per user. Unkeyed hashes and deterministic
 encryption are not acceptable substitutes.
 
-Preserve the current normalization behavior:
+Application normalization is the sole equality authority. The cryptography
+module owns fixed, versioned lookup mappings:
 
-- email uses Better Auth's trimmed, lowercase representation
-- nickname uses the existing trimmed, lowercase ASCII validation
-- task title uses the existing trimmed, lowercase comparison
+- `email:v1` applies `trim().toLowerCase()`, matching the application's trimmed
+  input and Better Auth's lowercase storage and lookup behavior.
+- `nickname:v1` applies the existing `nicknameSchema`, which trims input and
+  permits only lowercase ASCII letters, numbers, hyphens, and underscores.
+- `task-title:v1` applies `trim().toLowerCase()` using JavaScript's standard
+  Unicode case conversion and includes the owning user ID in the HMAC input.
+- session tokens and verification identifiers use exact, case-sensitive values
+  with no text normalization.
 
-Do not introduce Unicode normalization or broader case folding during this
-migration. Preflight checks stop on any normalized collision so a person can
-resolve it without automatic merging, renaming, or deletion.
+Do not use PostgreSQL `lower()`, locale-sensitive `toLocaleLowerCase()`, Unicode
+normalization, accent folding, or broader case folding. Every lookup and write
+uses the same mapping and includes its normalization version in the
+domain-separated HMAC input.
+
+Before conversion, run the application normalizers over every source row and
+stop on:
+
+- duplicate normalized email values
+- duplicate normalized nickname values
+- duplicate normalized task titles within one owning user
+
+Report only stable row IDs and collision type, never the colliding plaintext or
+blind index. A person resolves collisions before rerunning preflight; the
+command never merges, renames, or deletes records automatically.
 
 The server-only cryptography boundary validates all configured keys during
 application startup. Missing keys, invalid base64, incorrect key lengths, or an
@@ -247,6 +264,12 @@ index. Task titles use a unique `(user_id, title_lookup)` constraint so the
 existing case-insensitive, per-user uniqueness rule continues across active and
 completed tasks. Lookup-key rotation occurs only during maintenance, so a
 single active lookup version owns uniqueness at any moment.
+
+The contract migration removes the PostgreSQL `lower(title)` index. Blind-index
+constraints become the only database uniqueness authority for protected
+values. Once those constraints are active, remove the task create and update
+full-list duplicate scans and retain the existing unique-violation error
+mapping.
 
 ### Better Auth-owned protection
 
@@ -393,6 +416,45 @@ Sensitive reads follow this order:
 No plaintext user value is included in query logging, error context, migration
 progress, analytics, or server diagnostics.
 
+## Maintenance Write Barrier
+
+Add one root `proxy.ts` maintenance gate controlled by
+`MAINTENANCE_MODE=1`. The gate runs before application routes and returns a
+plain `503 Service Unavailable` response with `Cache-Control: no-store` and a
+`Retry-After` header. Its static matcher covers:
+
+- all rendered application pages
+- `/api/auth/:path*`
+- POST requests that invoke Server Actions on their owning page routes
+
+Only framework static assets, image optimization, and public static files are
+excluded. There is no database-backed bypass or public health route. The
+trusted local conversion command connects directly to Neon and does not pass
+through the application gate.
+
+The gate-aware release is deployed with maintenance disabled before production
+conversion. To activate it, set the Production-scoped environment variable and
+complete a new Vercel deployment so the production alias points to the gated
+release. Confirm that representative page GET, Better Auth POST, and Server
+Action POST requests all return `503` without database access.
+
+After alias cutover, wait longer than the maximum execution duration configured
+or imposed for every application route. This drain includes work registered
+through Next.js `after()`, which can keep an invocation alive until that limit.
+Record the confirmed limit and drain timestamps in the private rollout record;
+do not hard-code an assumed Vercel default into the conversion command.
+
+The conversion's final global verification decrypts each shadow value and
+compares it with its unchanged plaintext source, recomputes every blind index,
+and confirms row counts. A write that survives the drain therefore blocks the
+contract migration instead of producing mixed or stale ciphertext. Keep
+maintenance enabled and restart verification after any mismatch.
+
+The implementation must test the Proxy matcher through Next.js's Proxy testing
+utilities and exercise page, auth, and Server Action requests. An integration
+test starts a delayed mutation before gate activation, completes the drain, and
+proves that conversion cannot proceed until source and shadow values agree.
+
 ## Migration
 
 Use an immediate shadow-column conversion during a production maintenance
@@ -426,8 +488,9 @@ window. There is no application dual-write or mixed-read production phase.
    Vercel Production secrets. Configure the encrypted Better Auth backup-code
    behavior.
 3. Predeploy the gate-aware release, apply the reviewed additive Drizzle
-   migration, enable maintenance, and drain or fence requests that began before
-   the gate became active.
+   migration, activate the Production maintenance deployment, verify page,
+   auth, and Server Action `503` responses, and complete the recorded drain
+   window.
 4. From the trusted local machine, run the one-time conversion command with an
    explicitly confirmed production connection and keys loaded from KeePass.
    Do not copy application encryption keys into GitHub Actions.
@@ -483,7 +546,8 @@ Focused cryptography tests cover:
 - tamper, wrong-key, wrong-record, and wrong-field rejection
 - malformed envelopes and unknown versions
 - stable domain-separated blind indexes
-- current email, nickname, and task-title normalization
+- exact `email:v1`, `nickname:v1`, and `task-title:v1` behavior, including
+  whitespace, ASCII case, and representative Unicode task titles
 
 Application tests cover:
 
@@ -499,7 +563,7 @@ Application tests cover:
 
 Migration checks cover:
 
-- read-only collision and dormant OAuth-token preflight
+- application-normalizer collision and dormant OAuth-token preflight
 - restart after an injected partial conversion failure without source changes
 - unchanged ownership, order, timestamps, and row counts
 - full decryptability and blind-index recomputation before the contract
@@ -507,6 +571,8 @@ Migration checks cover:
 - transactional rollback of an injected contract-migration failure
 - Better Auth decoding of every converted backup-code set
 - maintenance-mode blocking of page, auth, and server-action database access
+- drain coverage for delayed work registered through Next.js `after()`
+- rejection of a source-to-shadow mismatch caused by an injected late write
 - encryption-key rotation
 - maintenance-mode blind-index rotation
 - Neon point-in-time restoration with the previous application release

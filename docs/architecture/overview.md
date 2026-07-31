@@ -41,11 +41,14 @@ scope. Production conversion now uses maintenance-only shadow columns, a
 restartable data command, and two canonical Drizzle migrations instead of a
 database-wide interactive transaction. Better Auth encryption uses a thin
 decorator around the installed Drizzle adapter that preserves joins,
-transactions, set-valued conditions, and native atomic operations. The
-remaining plan requires proven maintenance write fencing, consistent
-normalization, redacted logging, and real-PostgreSQL integration tests. Revise
-and approve the plan before development implementation or production
-scheduling.
+transactions, set-valued conditions, and native atomic operations. Maintenance
+uses a root Next.js Proxy gate, a drain based on the confirmed platform
+execution limit, and source-to-shadow verification before plaintext removal.
+Versioned application normalizers become the sole authority for email,
+nickname, and task-title equality; PostgreSQL `lower()` no longer participates
+after conversion. The remaining plan requires redacted logging and
+real-PostgreSQL integration tests. Revise and approve the plan before
+development implementation or production scheduling.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`

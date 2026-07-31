@@ -12,8 +12,8 @@ Accepted
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. The current implementation plan is blocked after
-the 2026-07-30 architecture review found unresolved maintenance,
-normalization, logging, and test-design problems.
+the 2026-07-30 architecture review found unresolved logging and test-design
+problems.
 
 Do not implement or schedule production conversion until the linked
 architecture plan is revised and approved again. The threat-model boundary was
@@ -43,6 +43,8 @@ Use versioned application-level encryption for sensitive values:
   binding each value to its model, field, and record
 - an independent HMAC-SHA-256 key with domain-separated inputs for normalized
   equality-search blind indexes
+- versioned application normalizers as the sole authority for email, nickname,
+  and per-user task-title equality
 - keys stored outside Neon in the existing local and production secret systems
 - separate encryption and lookup keys for production and development/Preview
 - database-boundary encryption for tasks and a decorator around the installed
@@ -54,7 +56,8 @@ Use versioned application-level encryption for sensitive values:
 - readable verification purpose and subject-user metadata so password resets
   can revoke trusted devices without scanning ciphertext
 - an immediate, fully verified production conversion through temporary shadow
-  columns while a maintenance gate blocks application access
+  columns while a root Next.js Proxy gate blocks application access and the
+  operator drains earlier invocations
 
 The detailed field classification and rollout are in
 `docs/architecture/database-theft-encryption-plan.md`.
@@ -111,6 +114,8 @@ The detailed field classification and rollout are in
 - The Better Auth Drizzle adapter decorator becomes security-critical.
 - Relational metadata remains visible. Active database writes, application
   compromise, and application-oracle attacks remain out of scope.
+- PostgreSQL collation no longer defines protected-value equality; reviewed
+  application normalizers and blind-index constraints do.
 - KeePass is the sole recovery source for application encryption keys; losing
   that vault causes permanent data loss.
 - Production conversion relies on Neon's recorded 6-hour restore point rather
@@ -118,6 +123,9 @@ The detailed field classification and rollout are in
 - Production conversion retains plaintext source columns until all shadow
   ciphertext is verified, then removes plaintext through a reviewed Drizzle
   contract migration.
+- Maintenance activation requires a new production deployment, a drain window
+  based on the confirmed platform execution limit, and source-stability
+  verification before plaintext removal.
 - Production support through Neon SQL sees ciphertext; no privileged
   decryption utility is included in the first release.
 - The encryption direction is accepted, but implementation and production
