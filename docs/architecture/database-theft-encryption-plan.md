@@ -2,13 +2,13 @@
 
 ## Status
 
-Revised architecture ready for final review; implementation has not started.
+Approved architecture and rollout plan; implementation has not started.
 
 ## Architecture Review Findings
 
-The 2026-07-30 repository review found that this plan is not implementation
-ready. The following findings are requirements for the next revision, not
-implementation tasks under the current design.
+The 2026-07-30 repository review found that the original plan was not
+implementation ready. The following findings were requirements for the
+approved revision, not implementation tasks.
 
 ### Resolved
 
@@ -261,6 +261,16 @@ existing case-insensitive, per-user uniqueness rule continues across active and
 completed tasks. Lookup-key rotation occurs only during maintenance, so a
 single active lookup version owns uniqueness at any moment.
 
+The additive migration creates partial unique indexes over non-null lookup
+values and temporarily relaxes `NOT NULL` on the protected plaintext source
+columns. This keeps the existing plaintext application compatible while
+allowing the dedicated integration database to exercise encrypted writes
+before the contract migration. Production never deploys encrypted writes in
+this intermediate state, and conversion preflight rejects any null source
+value. The contract migration makes lookup columns non-null, making the partial
+indexes complete uniqueness authorities, then removes the old plaintext
+constraints and columns.
+
 The contract migration removes the PostgreSQL `lower(title)` index. Blind-index
 constraints become the only database uniqueness authority for protected
 values. Once those constraints are active, remove the task create and update
@@ -338,8 +348,13 @@ The contract is verified against Better Auth 1.6.23. An upgrade that changes
 the adapter interface requires review and contract-test updates before
 deployment.
 
-- `create`, `update`, and `updateMany` encrypt protected write values and
-  calculate their blind indexes before one call to the base operation.
+- `create` encrypts protected write values and calculates blind indexes before
+  one call to the base operation. A protected create must include its stable
+  row ID so the ciphertext can bind to that record.
+- `update` encrypts protected write values only when one exact ID condition
+  identifies the record. Protected updates without that ID fail closed.
+- `updateMany` delegates unprotected changes once but fails closed for protected
+  values because record-bound AAD requires a distinct ciphertext per row.
 - `findOne` and `findMany` rewrite protected lookup conditions, preserve
   selection, pagination, joins, and unprotected sorting, then decrypt the main
   model and known joined model results.
@@ -348,9 +363,9 @@ deployment.
 - `consumeOne` rewrites its conditions, calls the base atomic delete-and-return
   operation exactly once, and decrypts the returned row.
 - `incrementOne` rewrites its selector and guard conditions, transforms any
-  protected values in its atomic `set` map, calls the base guarded update
-  exactly once, and decrypts the returned row. Protected text fields are never
-  increment targets.
+  protected values in its atomic `set` map only when an exact ID selector is
+  present, calls the base guarded update exactly once, and decrypts the
+  returned row. Protected text fields are never increment targets.
 - `transaction` delegates to the base adapter and decorates the transaction
   adapter supplied to its callback so encrypted operations cannot bypass the
   boundary.
@@ -551,8 +566,10 @@ window. There is no application dual-write or mixed-read production phase.
 
 1. Create an additive Drizzle migration that adds nullable shadow ciphertext
    and blind-index columns plus `verification.purpose` and
-   `verification.subject_user_id`. Existing plaintext columns remain
-   authoritative until the contract migration.
+   `verification.subject_user_id`, adds partial unique lookup indexes, and
+   relaxes `NOT NULL` only on protected plaintext source columns. Existing
+   plaintext columns remain authoritative until the contract migration, and
+   production preflight rejects any unexpected source null.
 2. Implement the server-only cryptography boundary, task query changes, Better
    Auth Drizzle adapter decorator, encrypted backup-code configuration,
    maintenance gate, and one-time conversion command.

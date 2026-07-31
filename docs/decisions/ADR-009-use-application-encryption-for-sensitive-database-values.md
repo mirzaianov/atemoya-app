@@ -12,11 +12,11 @@ Accepted
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. All findings from the 2026-07-30 architecture
-review have approved design resolutions as of 2026-07-31. The revised
-architecture is ready for final review; implementation has not started.
+review received approved design resolutions on 2026-07-31, and the revised
+architecture and rollout plan are approved; implementation has not started.
 
-Do not implement or schedule production conversion until the linked revised
-architecture plan is approved and an implementation plan is reviewed. The
+Do not schedule production conversion until the linked architecture plan's
+development implementation and rehearsal steps have passed. The
 threat-model boundary protects against passive database
 exfiltration and read-only database exposure. Active database writes,
 relationship manipulation, deletion, rollback, and use of the application as

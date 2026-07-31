@@ -4,16 +4,19 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Review ADR-009 and its revised encryption plan before implementation:
+Begin ADR-009 development implementation from the existing architecture plan:
 
-1. Approve or request changes to the revised architecture record.
-2. After approval, write and review a staged implementation plan before changing
-   application code, Neon schema, or secrets.
+1. Implement only the isolated test-database harness and its exact database/role
+   guard.
+2. Report verification and a focused commit suggestion, then wait before
+   continuing to cryptography code or manual Neon setup.
+3. Keep Production conversion behind the separate rehearsal and runbook
+   approval in `docs/architecture/database-theft-encryption-plan.md`.
 
 ## Immediate Goal
 
-Review the implementation-ready encryption design without changing application
-code, Neon resources, secrets, or production data.
+Implement and verify the isolated test harness without changing application
+behavior, production resources, secrets, or production data.
 
 ## Open Questions
 
