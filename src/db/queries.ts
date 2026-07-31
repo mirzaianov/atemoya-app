@@ -3,10 +3,10 @@ import { and, desc, eq, sql } from 'drizzle-orm';
 import { db } from './client';
 import { tasks } from './schema';
 
-export type TaskRecord = typeof tasks.$inferSelect;
+export type TaskRecord = Omit<typeof tasks.$inferSelect, 'title'> & { title: string };
 
-export const listTasks = (userId: string) =>
-  db
+export const listTasks = async (userId: string): Promise<TaskRecord[]> => {
+  const records = await db
     .select()
     .from(tasks)
     .where(eq(tasks.userId, userId))
@@ -16,6 +16,15 @@ export const listTasks = (userId: string) =>
       desc(tasks.completedAt),
       desc(tasks.changedOn),
     );
+
+  return records.map((record) => {
+    if (record.title === null) {
+      throw new Error('TASK_DATA_UNAVAILABLE');
+    }
+
+    return { ...record, title: record.title };
+  });
+};
 
 export const createTask = async (userId: string, title: string) => {
   const id = crypto.randomUUID();

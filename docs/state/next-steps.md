@@ -4,23 +4,23 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Create the ADR-009 additive shadow-column migration:
+Add the ADR-009 development-key configuration boundary:
 
-1. Add nullable ciphertext and blind-index shadow columns for the protected
-   user, session, verification, and task values.
-2. Add readable `verification.purpose` and `verification.subject_user_id`
-   metadata plus the approved partial unique lookup indexes.
-3. Relax `NOT NULL` only on protected plaintext source columns; keep those
-   source columns authoritative during development preparation.
-4. Generate and review one additive Drizzle migration, then verify it through
-   the guarded `atemoya_test` integration database.
-5. Report verification and a focused commit suggestion before adding keys or
-   connecting encryption to application data.
+1. Declare independent versioned data-encryption and blind-index keyrings plus
+   active versions in `.env.schema` and the server-only configuration boundary.
+2. Generate two independent 32-byte development keys and store only their
+   version-one JSON keyrings in the existing KeePass group.
+3. Add the same development values to Vercel Preview only; do not create or
+   expose production keys yet.
+4. Verify fail-closed startup for missing, malformed, reused, and unknown-version
+   configuration without connecting encryption to application data.
+5. Report verification and a focused commit suggestion before applying the
+   additive migration to the application development database.
 
 ## Immediate Goal
 
-Create and verify the additive schema only; do not configure KeePass or Vercel
-keys, convert rows, or connect application reads and writes yet.
+Configure and verify development keys only; do not create production keys,
+promote migration `0008`, convert rows, or connect encrypted reads and writes.
 
 ## Open Questions
 
