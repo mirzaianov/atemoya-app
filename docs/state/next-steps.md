@@ -4,23 +4,22 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Add the ADR-009 development-key configuration boundary:
+Apply additive migration `0008_productive_paibok.sql` to the application
+development database only:
 
-1. Declare independent versioned data-encryption and blind-index keyrings plus
-   active versions in `.env.schema` and the server-only configuration boundary.
-2. Generate two independent 32-byte development keys and store only their
-   version-one JSON keyrings in the existing KeePass group.
-3. Add the same development values to Vercel Preview only; do not create or
-   expose production keys yet.
-4. Verify fail-closed startup for missing, malformed, reused, and unknown-version
-   configuration without connecting encryption to application data.
-5. Report verification and a focused commit suggestion before applying the
-   additive migration to the application development database.
+1. Confirm local `DATABASE_URL` still identifies the Neon `development` branch
+   and not production.
+2. Run the normal Drizzle migration command once against development.
+3. Verify migration count/latest migration and inspect the expected shadow
+   columns, verification metadata, and partial indexes.
+4. Run a focused Preview smoke check while plaintext columns remain
+   authoritative.
+5. Stop and report results before implementing encrypted task reads or writes.
 
 ## Immediate Goal
 
-Configure and verify development keys only; do not create production keys,
-promote migration `0008`, convert rows, or connect encrypted reads and writes.
+Promote and verify the additive schema in development only; do not apply it to
+production, convert rows, or connect encrypted reads and writes.
 
 ## Open Questions
 

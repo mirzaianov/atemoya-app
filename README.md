@@ -57,7 +57,14 @@ atemoya-app/DATABASE_URL
 atemoya-app/TEST_DATABASE_URL
 atemoya-app/BETTER_AUTH_SECRET
 atemoya-app/BETTER_AUTH_URL
+atemoya-app/DATA_ENCRYPTION_KEYS
+atemoya-app/BLIND_INDEX_KEYS
 ```
+
+Each encryption keyring is one-line JSON in the form
+`{"1":"<base64url-encoded 32-byte key>"}`. Generate the two values
+independently; never reuse either key or `BETTER_AUTH_SECRET`. `.env.schema`
+sets both local active versions to `1`.
 
 `TEST_DATABASE_URL` is used only by `pnpm test:integration`. It must be the
 direct connection string for database `atemoya_test` and role
@@ -90,6 +97,12 @@ they use the same authentication tables. Production uses a separate secret.
 Do not add `BETTER_AUTH_URL` on Vercel for normal deployments. The app trusts the active Vercel request host through Vercel System Environment Variables, so Preview uses `VERCEL_URL` or `VERCEL_BRANCH_URL`, and Production uses `VERCEL_PROJECT_PRODUCTION_URL`.
 
 In Vercel Project Settings -> Environment Variables, enable System Environment Variables. Vercel then provides `VERCEL_PROJECT_PRODUCTION_URL` for the current production domain, `VERCEL_URL` for the current deployment URL, and `VERCEL_BRANCH_URL` for branch previews.
+
+Before deploying encryption work, add `DATA_ENCRYPTION_KEYS` and
+`BLIND_INDEX_KEYS` as Sensitive Preview variables, and add
+`DATA_ENCRYPTION_ACTIVE_VERSION=1` and `BLIND_INDEX_ACTIVE_VERSION=1` to Preview.
+Use the same development keyrings stored in KeePass. Do not add production
+keyrings until the production-conversion checkpoint.
 
 Do not configure KeePass variables on Vercel. The default `pnpm build` script uses Vercel environment variables directly; use `pnpm build:local` when you want a local production build through Varlock.
 
