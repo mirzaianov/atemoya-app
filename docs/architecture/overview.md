@@ -46,9 +46,10 @@ uses a root Next.js Proxy gate, a drain based on the confirmed platform
 execution limit, and source-to-shadow verification before plaintext removal.
 Versioned application normalizers become the sole authority for email,
 nickname, and task-title equality; PostgreSQL `lower()` no longer participates
-after conversion. The remaining plan requires redacted logging and
-real-PostgreSQL integration tests. Revise and approve the plan before
-development implementation or production scheduling.
+after conversion. A strict allowlist logger discards Better Auth messages and
+raw database or cryptography errors before they reach Next.js or Vercel. The
+remaining plan requires a real-PostgreSQL integration-test seam. Revise and
+approve the plan before development implementation or production scheduling.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`

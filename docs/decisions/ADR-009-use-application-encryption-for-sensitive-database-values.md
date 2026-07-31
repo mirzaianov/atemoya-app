@@ -12,8 +12,8 @@ Accepted
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. The current implementation plan is blocked after
-the 2026-07-30 architecture review found unresolved logging and test-design
-problems.
+the 2026-07-30 architecture review found an unresolved integration-test design
+problem.
 
 Do not implement or schedule production conversion until the linked
 architecture plan is revised and approved again. The threat-model boundary was
@@ -45,6 +45,8 @@ Use versioned application-level encryption for sensitive values:
   equality-search blind indexes
 - versioned application normalizers as the sole authority for email, nickname,
   and per-user task-title equality
+- strict allowlist logging that discards Better Auth messages and raw
+  application, database, and cryptography errors
 - keys stored outside Neon in the existing local and production secret systems
 - separate encryption and lookup keys for production and development/Preview
 - database-boundary encryption for tasks and a decorator around the installed
@@ -116,6 +118,8 @@ The detailed field classification and rollout are in
   compromise, and application-oracle attacks remain out of scope.
 - PostgreSQL collation no longer defines protected-value equality; reviewed
   application normalizers and blind-index constraints do.
+- Operational diagnostics lose raw Better Auth, database, and cryptography
+  error details in exchange for preventing plaintext leakage into logs.
 - KeePass is the sole recovery source for application encryption keys; losing
   that vault causes permanent data loss.
 - Production conversion relies on Neon's recorded 6-hour restore point rather

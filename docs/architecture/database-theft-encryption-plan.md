@@ -41,14 +41,11 @@ implementation tasks under the current design.
    Blind indexes and their unique constraints use those values. PostgreSQL
    `lower()` and database collation no longer participate after the contract
    migration.
-
-### High
-
-1. **The no-plaintext-logging requirement is not enforced.** The installed
-   Better Auth signup route can log a duplicate email at info level, while the
-   current auth configuration has no explicit redacting logger policy. Logging
-   configuration and captured-log verification are part of the security
-   design.
+6. **The no-plaintext logging policy was resolved on 2026-07-31.** Better Auth
+   uses a custom logger that discards upstream messages and arguments. One
+   application logger accepts only fixed event codes and typed allowlisted
+   metadata. Raw errors, causes, SQL, parameters, request data, and protected
+   values are never logged or rethrown across a framework boundary.
 
 ### Medium
 
@@ -416,6 +413,51 @@ Sensitive reads follow this order:
 No plaintext user value is included in query logging, error context, migration
 progress, analytics, or server diagnostics.
 
+## Logging Policy
+
+Use one small server-only structured logger with a closed event-code union and
+typed allowlisted fields. It may emit:
+
+- fixed event code and severity
+- operation or conversion phase
+- model and field names
+- stable record ID
+- encryption-key version
+- row counts
+- classified error category, PostgreSQL SQLSTATE, or constraint name
+
+It must reject additional fields at compile time. Never pass it a raw `Error`,
+`cause`, stack, arbitrary message, SQL query, query parameters, request body,
+headers, cookies, plaintext, key material, blind index, or full ciphertext.
+Do not use regex or value-based redaction as the primary control; unknown
+sensitive values cannot be redacted reliably.
+
+Configure Better Auth 1.6.23 with warning-level logging and a custom `log`
+function. The function ignores Better Auth's message and argument parameters
+and emits only a fixed `better_auth_event` code plus the supplied severity.
+This suppresses the installed duplicate-email info message and prevents future
+upstream messages from entering application logs.
+
+Task queries, the Better Auth adapter decorator, cryptography operations, and
+the conversion command catch raw failures at their owning boundary. They
+classify known cases such as uniqueness conflict, malformed envelope,
+authentication failure, unknown key version, and database availability. They
+then log allowlisted metadata and return or throw a new sanitized application
+error without attaching the original failure as `cause`. Next.js and Vercel
+therefore receive only the sanitized error.
+
+Startup key validation may name the missing environment variable, expected key
+length, and key version, but never the configured value. User-facing responses
+remain generic. The conversion command prints only phases, counts, stable IDs,
+and fixed error categories.
+
+Captured-log tests place unique marker strings in email, nickname, task title,
+session token, verification data, keys, blind indexes, and ciphertext. The
+tests exercise successful and failing auth, duplicate constraints, malformed
+ciphertext, database failure, and interrupted conversion, then assert that no
+marker, SQL parameter, key, index, or envelope appears in captured stdout or
+stderr.
+
 ## Maintenance Write Barrier
 
 Add one root `proxy.ts` maintenance gate controlled by
@@ -577,8 +619,8 @@ Migration checks cover:
 - maintenance-mode blind-index rotation
 - Neon point-in-time restoration with the previous application release
 
-Finally, inspect representative database rows and captured application logs to
-confirm that sensitive plaintext is absent. Do not build an admin decryption
+Finally, inspect representative database rows and run captured-log assertions
+to confirm that sensitive plaintext is absent. Do not build an admin decryption
 utility for this inspection; production SQL support intentionally sees
 ciphertext.
 
