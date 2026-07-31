@@ -4,19 +4,20 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement the ADR-009 cryptography primitives:
+Implement the ADR-009 no-plaintext logging boundary:
 
-1. Add one server-only Node cryptography module for versioned AES-256-GCM
-   envelopes and independent HMAC-SHA-256 blind indexes.
-2. Add database-free tests for key parsing, round trips, fresh IVs, tampering,
-   wrong context/key/version rejection, and the approved equality normalizers.
-3. Report verification and a focused commit suggestion before adding keys,
+1. Add one small server-only logger that accepts only fixed event codes and
+   typed allowlisted operational metadata.
+2. Configure Better Auth logging to discard upstream messages and arguments.
+3. Add captured-output tests proving marker plaintext, keys, indexes, SQL
+   parameters, and ciphertext envelopes cannot reach stdout or stderr.
+4. Report verification and a focused commit suggestion before adding keys,
    changing schema, or connecting encryption to application data.
 
 ## Immediate Goal
 
-Implement and verify cryptography primitives with deterministic test keys only;
-do not change Neon schema, KeePass, Vercel, or application persistence yet.
+Implement and verify the strict logging allowlist; do not change Neon schema,
+KeePass, Vercel, or application persistence yet.
 
 ## Open Questions
 

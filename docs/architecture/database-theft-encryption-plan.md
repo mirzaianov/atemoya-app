@@ -159,6 +159,16 @@ Use AES-256-GCM through Node's built-in `node:crypto` module:
 - Decryption rejects unknown versions, malformed envelopes, incorrect tags,
   wrong keys, and values moved to another record or field.
 
+The version-one byte formats are fixed:
+
+- Envelopes use
+  `enc:v1:<key-version>:<iv-base64url>:<tag-base64url>:<ciphertext-base64url>`.
+- Additional authenticated data is the UTF-8 encoding of
+  `atemoya:data:v1\0<model>\0<field>\0<record-id>`.
+- Blind-index input is the UTF-8 encoding of
+  `atemoya:lookup:v1\0<model>\0<field>\0<normalizer>\0<owner-id>\0<normalized-value>`;
+  `owner-id` is empty except for task-title indexes.
+
 Use a separate 32-byte HMAC-SHA-256 key for blind indexes. Never derive the
 lookup key from or reuse the encryption key. Prefix each HMAC input with its
 model, field, and normalization version. Include the owning user ID for task
