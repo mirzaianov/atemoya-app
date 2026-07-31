@@ -4,25 +4,24 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement the Better Auth Drizzle adapter decorator on the feature branch:
+Enable and verify Better Auth's native encrypted backup-code storage on the
+feature branch:
 
-1. Decorate the installed adapter instead of reimplementing it, transforming
-   protected user, session, and verification writes, equality conditions, and
-   returned records while preserving metadata and unprotected operations.
-2. Preserve native transaction, `consumeOne`, and `incrementOne` behavior and
-   fail closed for unsupported protected multi-row writes, operators, and sorts.
-3. Derive readable verification purpose/subject metadata needed by trusted-device
-   revocation without plaintext scans.
-4. Cover the approved adapter contract through guarded `atemoya_test` integration
-   tests with deterministic keys and captured-log assertions.
-5. Keep the encrypted runtime off Preview until authentication encryption,
-   backup-code handling, conversion rehearsal, and the contract migration are
-   ready together.
+1. Set `backupCodeOptions.storeBackupCodes` to `encrypted` without adding
+   application-layer encryption around Better Auth-owned TOTP or backup-code
+   values.
+2. Verify newly generated and regenerated backup-code sets are stored as Better
+   Auth ciphertext and still support recovery through focused tests.
+3. Keep existing plaintext backup-code rows unchanged for the restartable
+   conversion command; do not deploy the encrypted runtime to Preview yet.
+4. Preserve the independent `BETTER_AUTH_SECRET` boundary and strict captured-log
+   assertions.
 
 ## Immediate Goal
 
-Implement and verify encrypted Better Auth persistence in isolation; keep
-Preview on the plaintext-authoritative release and leave production unchanged.
+Implement and verify encrypted Better Auth backup-code persistence in isolation;
+keep Preview on the plaintext-authoritative release and leave production
+unchanged.
 
 ## Open Questions
 

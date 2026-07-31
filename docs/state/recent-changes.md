@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-31: Implemented and verified a thin encryption decorator around Better Auth 1.6.23's Drizzle adapter, including protected writes and lookups, selected/joined decryption, verification metadata, fail-closed unsupported operations, native atomic delegation, transaction decoration, and indexed trusted-device cleanup. [Reason why added: completes encrypted identity, session, and verification persistence in isolation while keeping the runtime off Preview until conversion readiness.]
+
 - 2026-07-31: Implemented and verified ciphertext-only task-title writes, record-bound decryption through a narrow DTO, per-user blind-index duplicate checks, sanitized task-query failures, and the complete guarded encrypted task lifecycle. [Reason why added: completes the first encrypted application persistence boundary while keeping it off Preview until development conversion is ready.]
 
 - 2026-07-31: Applied additive migration `0008_productive_paibok.sql` to the Neon development application database, verified journal timestamp `1785509374785`, all 22 nullable-column and 10 index definitions, and the plaintext-authoritative Preview create/read/delete path. [Reason why added: completes development schema promotion while confirming production and encrypted persistence remain untouched.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Approved the revised ADR-009 architecture and consolidated its implementation sequence, manual checkpoints, development rehearsal, rollback boundaries, and separate production approval gate in the existing architecture plan. [Reason why added: keeps the encryption decision and execution guidance in the repository's canonical ADR and architecture documents without adding a redundant documentation hierarchy.]
 
 - 2026-07-31: Selected an isolated `atemoya_test` database and `atemoya_test_owner` role inside the Neon development branch for explicit real-driver integration tests. [Reason why added: resolves the final architecture-review blocker without adding another branch or touching Preview data.]
-
-- 2026-07-31: Selected strict allowlist logging that discards Better Auth messages and raw application, database, and cryptography errors while retaining fixed event codes and safe operational metadata. [Reason why added: resolves plaintext-log leakage without relying on incomplete pattern redaction.]

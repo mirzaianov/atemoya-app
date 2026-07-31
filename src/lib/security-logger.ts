@@ -10,6 +10,23 @@ interface BetterAuthSecurityEvent {
   severity: Parameters<BetterAuthLog>[0];
 }
 
+interface BetterAuthAdapterSecurityEvent {
+  code: 'better_auth_adapter_failure';
+  operation:
+    | 'consumeOne'
+    | 'count'
+    | 'create'
+    | 'delete'
+    | 'deleteMany'
+    | 'findMany'
+    | 'findOne'
+    | 'incrementOne'
+    | 'transaction'
+    | 'update'
+    | 'updateMany';
+  severity: 'error';
+}
+
 interface TaskQuerySecurityEvent {
   category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
   code: 'task_query_failure';
@@ -26,7 +43,10 @@ interface TaskQuerySecurityEvent {
   severity: 'error';
 }
 
-type SecurityEvent = BetterAuthSecurityEvent | TaskQuerySecurityEvent;
+type SecurityEvent =
+  | BetterAuthAdapterSecurityEvent
+  | BetterAuthSecurityEvent
+  | TaskQuerySecurityEvent;
 
 export const logSecurityEvent = (event: SecurityEvent) => {
   stderr.write(`${JSON.stringify(event)}\n`);

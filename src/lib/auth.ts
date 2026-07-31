@@ -1,14 +1,19 @@
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
 import { APIError, betterAuth } from 'better-auth';
 import { twoFactor } from 'better-auth/plugins';
-import { and, eq, like } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { after } from 'next/server';
 
 import { db } from '../db/client';
 import * as schema from '../db/schema';
 import { sendAuthEmail } from './auth-email';
+import {
+  betterAuthDataProtectionFields,
+  protectBetterAuthAdapter,
+} from './better-auth-data-protection';
 import { nicknameSchema } from './auth-nickname';
 import { authPasswordPolicy, authRateLimitPolicy } from './auth-policy';
+import { getDataProtection } from './data-protection-config';
 import { betterAuthLogger } from './security-logger';
 
 const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
@@ -64,10 +69,13 @@ export const auth = betterAuth({
           protocol: 'https',
         }
       : betterAuthFallbackUrl,
-  database: drizzleAdapter(db, {
-    provider: 'pg',
-    schema,
-  }),
+  database: protectBetterAuthAdapter(
+    drizzleAdapter(db, {
+      provider: 'pg',
+      schema,
+    }),
+    getDataProtection(),
+  ),
   databaseHooks: {
     user: {
       create: {
@@ -98,8 +106,8 @@ export const auth = betterAuth({
         .delete(schema.verification)
         .where(
           and(
-            eq(schema.verification.value, user.id),
-            like(schema.verification.identifier, 'trust-device-%'),
+            eq(schema.verification.purpose, 'trust-device'),
+            eq(schema.verification.subjectUserId, user.id),
           ),
         );
 
@@ -155,10 +163,13 @@ export const auth = betterAuth({
     window: authRateLimitPolicy.windowSeconds,
   },
   secret: betterAuthSecret,
+  session: betterAuthDataProtectionFields.session,
   trustedOrigins: trustedDevOrigins,
   user: {
+    ...betterAuthDataProtectionFields.user,
     deleteUser: {
       enabled: true,
     },
   },
+  verification: betterAuthDataProtectionFields.verification,
 });

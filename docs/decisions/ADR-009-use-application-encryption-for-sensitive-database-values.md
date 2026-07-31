@@ -136,6 +136,6 @@ The detailed field classification and rollout are in
   verification before plaintext removal.
 - Production support through Neon SQL sees ciphertext; no privileged
   decryption utility is included in the first release.
-- The encryption direction is accepted, but implementation and production
-  conversion remain blocked until the architecture-review findings are
-  resolved and the revised plan is approved.
+- The architecture-review findings were resolved and the revised plan was
+  approved on 2026-07-31. Feature-branch implementation is in progress;
+  production conversion remains a separate explicitly approved operation.
