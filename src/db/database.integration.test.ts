@@ -20,6 +20,15 @@ interface AdditiveIndexState extends Record<string, unknown> {
   foundCount: number;
 }
 
+interface PersistedTask extends Record<string, unknown> {
+  id: string;
+  title: string | null;
+  titleCiphertext: string | null;
+  titleLookup: string | null;
+}
+
+const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
+
 test('migrates and resets only the dedicated integration database', async () => {
   const testDatabase = await createTestDatabase();
 
@@ -156,4 +165,133 @@ test('migrates and resets only the dedicated integration database', async () => 
   `);
 
   assert.deepEqual(result.rows[0], { taskCount: 0, userCount: 0 });
+});
+
+test('persists and reads encrypted task titles through the guarded database', async (context) => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  process.env.DATA_ENCRYPTION_KEYS = JSON.stringify({ 1: key(1) });
+  process.env.DATA_ENCRYPTION_ACTIVE_VERSION = '1';
+  process.env.BLIND_INDEX_KEYS = JSON.stringify({ 1: key(2) });
+  process.env.BLIND_INDEX_ACTIVE_VERSION = '1';
+
+  const {
+    createTask,
+    deleteTask,
+    listTasks,
+    reorderTasks,
+    setTaskCompleted,
+    TaskQueryError,
+    taskTitleExists,
+    updateTask,
+  } = await import('./queries.ts');
+  const userId = crypto.randomUUID();
+  const alphaTitle = 'Encrypted Alpha';
+  const betaTitle = 'Encrypted Beta';
+  const gammaTitle = 'Encrypted Gamma';
+  const stderr: string[] = [];
+
+  context.mock.method(process.stderr, 'write', (chunk: string | Uint8Array) => {
+    stderr.push(String(chunk));
+
+    return true;
+  });
+
+  await testDatabase.db.execute(sql`
+    INSERT INTO "user" ("id", "email", "name")
+    VALUES (${userId}, ${`${userId}@example.test`}, ${`test_${userId}`})
+  `);
+
+  const alphaId = await createTask(userId, alphaTitle);
+  const betaId = await createTask(userId, betaTitle);
+  const createdTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    createdTasks.map(({ id, position, title }) => ({ id, position, title })),
+    [
+      { id: betaId, position: 0, title: betaTitle },
+      { id: alphaId, position: 1, title: alphaTitle },
+    ],
+  );
+  assert.equal(await taskTitleExists(userId, ` ${alphaTitle.toUpperCase()} `), true);
+  await assert.rejects(createTask(userId, alphaTitle.toLowerCase()), (error: unknown) => {
+    assert.ok(error instanceof TaskQueryError);
+    assert.equal(error.code, 'DUPLICATE_TITLE');
+
+    return true;
+  });
+
+  assert.equal(await updateTask(userId, betaId, gammaTitle), true);
+  assert.equal(await taskTitleExists(userId, gammaTitle, betaId), false);
+  assert.equal(await taskTitleExists(userId, gammaTitle), true);
+  await assert.rejects(updateTask(userId, betaId, alphaTitle), (error: unknown) => {
+    assert.ok(error instanceof TaskQueryError);
+    assert.equal(error.code, 'DUPLICATE_TITLE');
+
+    return true;
+  });
+
+  assert.equal(await setTaskCompleted(userId, alphaId, true), true);
+
+  const completedTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    completedTasks.map(({ id, title }) => ({ id, title })),
+    [
+      { id: betaId, title: gammaTitle },
+      { id: alphaId, title: alphaTitle },
+    ],
+  );
+  assert.notEqual(completedTasks[1]?.completedAt, null);
+
+  assert.equal(await setTaskCompleted(userId, alphaId, false), true);
+  assert.equal(await reorderTasks(userId, [betaId, alphaId]), true);
+
+  const reorderedTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    reorderedTasks.map(({ id, position }) => ({ id, position })),
+    [
+      { id: betaId, position: 0 },
+      { id: alphaId, position: 1 },
+    ],
+  );
+  assert.equal(await deleteTask(userId, betaId), true);
+
+  const remainingTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    remainingTasks.map(({ id, title }) => ({ id, title })),
+    [{ id: alphaId, title: alphaTitle }],
+  );
+
+  const persisted = await testDatabase.db.execute<PersistedTask>(sql`
+    SELECT
+      "id",
+      "title",
+      "title_ciphertext" AS "titleCiphertext",
+      "title_lookup" AS "titleLookup"
+    FROM "tasks"
+    WHERE "user_id" = ${userId}
+  `);
+
+  assert.equal(persisted.rows.length, 1);
+  assert.equal(persisted.rows[0]?.id, alphaId);
+  assert.equal(persisted.rows[0]?.title, null);
+  assert.match(persisted.rows[0]?.titleCiphertext ?? '', /^enc:v1:1:/u);
+  assert.ok(persisted.rows[0]?.titleLookup);
+
+  const capturedOutput = stderr.join('');
+
+  assert.match(capturedOutput, /"category":"DUPLICATE_TITLE"/u);
+
+  for (const title of [alphaTitle, betaTitle, gammaTitle]) {
+    assert.equal(capturedOutput.includes(title), false);
+  }
+
+  await testDatabase.reset();
 });

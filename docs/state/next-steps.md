@@ -4,23 +4,25 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement the encrypted task database boundary on the feature branch:
+Implement the Better Auth Drizzle adapter decorator on the feature branch:
 
-1. Encrypt task titles with record-bound context and calculate per-user title
-   lookups before create and update writes.
-2. Read duplicate-title conditions through the lookup column and decrypt task
-   titles before returning the existing `Task` DTO.
-3. Keep ordering, completion, restoration, reordering, and deletion on readable
-   operational columns.
-4. Cover create, list, update, duplicate rejection, completion, restoration,
-   reordering, and deletion through the guarded `atemoya_test` integration path.
-5. Do not merge or deploy the encrypted runtime to Preview until the development
-   conversion rehearsal and contract migration are ready.
+1. Decorate the installed adapter instead of reimplementing it, transforming
+   protected user, session, and verification writes, equality conditions, and
+   returned records while preserving metadata and unprotected operations.
+2. Preserve native transaction, `consumeOne`, and `incrementOne` behavior and
+   fail closed for unsupported protected multi-row writes, operators, and sorts.
+3. Derive readable verification purpose/subject metadata needed by trusted-device
+   revocation without plaintext scans.
+4. Cover the approved adapter contract through guarded `atemoya_test` integration
+   tests with deterministic keys and captured-log assertions.
+5. Keep the encrypted runtime off Preview until authentication encryption,
+   backup-code handling, conversion rehearsal, and the contract migration are
+   ready together.
 
 ## Immediate Goal
 
-Implement and verify encrypted task persistence in isolation; keep Preview on
-the plaintext-authoritative release and leave production unchanged.
+Implement and verify encrypted Better Auth persistence in isolation; keep
+Preview on the plaintext-authoritative release and leave production unchanged.
 
 ## Open Questions
 

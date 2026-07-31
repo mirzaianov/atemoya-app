@@ -6,9 +6,10 @@ import { headers } from 'next/headers';
 import {
   createTask,
   deleteTask,
-  listTasks,
   reorderTasks,
   setTaskCompleted,
+  TaskQueryError,
+  taskTitleExists,
   updateTask,
 } from '../../db/queries';
 import { auth } from '../../lib/auth';
@@ -32,8 +33,8 @@ const getUserId = async () => {
   return session?.user.id ?? null;
 };
 
-const isUniqueViolation = (error: unknown) =>
-  typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
+const isDuplicateTitle = (error: unknown) =>
+  error instanceof TaskQueryError && error.code === 'DUPLICATE_TITLE';
 
 export const createTaskAction = async (title: string): Promise<ActionResult> => {
   const parsed = taskSchema.safeParse({ title });
@@ -48,19 +49,14 @@ export const createTaskAction = async (title: string): Promise<ActionResult> => 
     return { error: 'Please sign in again.' };
   }
 
-  const tasks = await listTasks(userId);
-  const hasDuplicate = tasks.some(
-    (task) => task.title.toLowerCase() === parsed.data.title.toLowerCase(),
-  );
-
-  if (hasDuplicate) {
+  if (await taskTitleExists(userId, parsed.data.title)) {
     return { error: 'Task already exists' };
   }
 
   try {
     await createTask(userId, parsed.data.title);
   } catch (error) {
-    if (isUniqueViolation(error)) {
+    if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
     }
 
@@ -84,20 +80,14 @@ export const updateTaskAction = async (id: string, title: string): Promise<Actio
     return { error: 'Please sign in again.' };
   }
 
-  const tasks = await listTasks(userId);
-  const hasDuplicate = tasks.some(
-    (task) =>
-      task.id !== parsed.data.id && task.title.toLowerCase() === parsed.data.title.toLowerCase(),
-  );
-
-  if (hasDuplicate) {
+  if (await taskTitleExists(userId, parsed.data.title, parsed.data.id)) {
     return { error: 'Task already exists' };
   }
 
   try {
     await updateTask(userId, parsed.data.id, parsed.data.title);
   } catch (error) {
-    if (isUniqueViolation(error)) {
+    if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
     }
 

@@ -10,12 +10,25 @@ interface BetterAuthSecurityEvent {
   severity: Parameters<BetterAuthLog>[0];
 }
 
-type ExactSecurityEvent<Event extends BetterAuthSecurityEvent> = Event &
-  Record<Exclude<keyof Event, keyof BetterAuthSecurityEvent>, never>;
+interface TaskQuerySecurityEvent {
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
+  code: 'task_query_failure';
+  operation:
+    | 'complete'
+    | 'create'
+    | 'delete'
+    | 'find_duplicate'
+    | 'list'
+    | 'reorder'
+    | 'restore'
+    | 'update';
+  recordId?: string;
+  severity: 'error';
+}
 
-export const logSecurityEvent = <const Event extends BetterAuthSecurityEvent>(
-  event: ExactSecurityEvent<Event>,
-) => {
+type SecurityEvent = BetterAuthSecurityEvent | TaskQuerySecurityEvent;
+
+export const logSecurityEvent = (event: SecurityEvent) => {
   stderr.write(`${JSON.stringify(event)}\n`);
 };
 
