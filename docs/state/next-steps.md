@@ -4,15 +4,16 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Revise ADR-009 and its encryption plan before implementation:
+Review ADR-009 and its revised encryption plan before implementation:
 
-1. Specify the PostgreSQL integration-test seam.
-2. Review and approve the revised record before writing an implementation plan.
+1. Approve or request changes to the revised architecture record.
+2. After approval, write and review a staged implementation plan before changing
+   application code, Neon schema, or secrets.
 
 ## Immediate Goal
 
-Produce an implementation-ready encryption design without changing application
-code or production data.
+Review the implementation-ready encryption design without changing application
+code, Neon resources, secrets, or production data.
 
 ## Open Questions
 

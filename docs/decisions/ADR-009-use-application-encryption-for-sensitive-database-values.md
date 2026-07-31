@@ -11,19 +11,18 @@ Accepted
 ## Implementation Readiness
 
 The high-level decision to protect sensitive database values with application
-encryption remains accepted. The current implementation plan is blocked after
-the 2026-07-30 architecture review found an unresolved integration-test design
-problem.
+encryption remains accepted. All findings from the 2026-07-30 architecture
+review have approved design resolutions as of 2026-07-31. The revised
+architecture is ready for final review; implementation has not started.
 
-Do not implement or schedule production conversion until the linked
-architecture plan is revised and approved again. The threat-model boundary was
-resolved on 2026-07-31: this decision protects against passive database
+Do not implement or schedule production conversion until the linked revised
+architecture plan is approved and an implementation plan is reviewed. The
+threat-model boundary protects against passive database
 exfiltration and read-only database exposure. Active database writes,
 relationship manipulation, deletion, rollback, and use of the application as
 a decryption or authentication oracle are explicitly out of scope. The
-conversion and migration-history blockers were also resolved on 2026-07-31 by
-selecting maintenance-only shadow columns, restartable data conversion, and
-two reviewed Drizzle migrations.
+conversion uses maintenance-only shadow columns, restartable data conversion,
+and two reviewed Drizzle migrations.
 
 ## Context
 
@@ -47,6 +46,8 @@ Use versioned application-level encryption for sensitive values:
   and per-user task-title equality
 - strict allowlist logging that discards Better Auth messages and raw
   application, database, and cryptography errors
+- an isolated `atemoya_test` database and `atemoya_test_owner` role inside the
+  Neon development branch for real-driver integration tests
 - keys stored outside Neon in the existing local and production secret systems
 - separate encryption and lookup keys for production and development/Preview
 - database-boundary encryption for tasks and a decorator around the installed
@@ -120,6 +121,9 @@ The detailed field classification and rollout are in
   application normalizers and blind-index constraints do.
 - Operational diagnostics lose raw Better Auth, database, and cryptography
   error details in exchange for preventing plaintext leakage into logs.
+- Integration tests require one additional database and role inside the
+  existing development branch, but do not add another Neon branch or touch
+  Preview application data.
 - KeePass is the sole recovery source for application encryption keys; losing
   that vault causes permanent data loss.
 - Production conversion relies on Neon's recorded 6-hour restore point rather

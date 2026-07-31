@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted direction; implementation is blocked pending architecture revision.
+Revised architecture ready for final review; implementation has not started.
 
 ## Architecture Review Findings
 
@@ -46,15 +46,14 @@ implementation tasks under the current design.
    application logger accepts only fixed event codes and typed allowlisted
    metadata. Raw errors, causes, SQL, parameters, request data, and protected
    values are never logged or rethrown across a framework boundary.
-
-### Medium
-
-1. Nickname availability, nickname update, and trusted-device cleanup directly
-   query protected fields outside the proposed adapter. Route these callers
-   through narrow blind-index helpers; do not introduce a generic repository.
-2. The current `pnpm test` command discovers only feature-level pure tests. The
-   planned cryptography, adapter, database, conversion, and restore checks need
-   an explicit real-PostgreSQL integration-test seam and test discovery.
+7. **Protected-field callers outside the adapter have a narrow path.** Nickname
+   availability, nickname update, and trusted-device cleanup use dedicated
+   blind-index helpers. No generic encrypted repository is introduced.
+8. **The real-PostgreSQL test seam was resolved on 2026-07-31.** A dedicated
+   `atemoya_test` database and `atemoya_test_owner` role live inside the Neon
+   development branch. Explicit integration tests use `TEST_DATABASE_URL`,
+   verify the exact database and role before writing, and never share tables
+   with the development or Preview application.
 
 ### Complexity Audit
 
@@ -457,6 +456,52 @@ tests exercise successful and failing auth, duplicate constraints, malformed
 ciphertext, database failure, and interrupted conversion, then assert that no
 marker, SQL parameter, key, index, or envelope appears in captured stdout or
 stderr.
+
+## Integration Test Environment
+
+Keep the existing two Neon branches. Inside the `development` branch, create:
+
+- database `atemoya_test`
+- login role `atemoya_test_owner`, owning only `atemoya_test`
+
+Use the Neon Console for the one-time setup:
+
+1. Open the Atemoya project and select the `development` branch.
+2. Create role `atemoya_test_owner` and retain its generated password only in
+   KeePass.
+3. Create database `atemoya_test` with `atemoya_test_owner` as owner.
+4. Generate its pooled connection string and store it as
+   `atemoya-app/TEST_DATABASE_URL` in KeePass.
+5. Do not add this value to Vercel, GitHub Actions, `.env` files, or command
+   history.
+
+Implementation adds `TEST_DATABASE_URL` to `.env.schema` for local Varlock
+resolution only. The application runtime and migration workflow continue to
+use `DATABASE_URL`; there is no fallback between the two variables.
+
+Before applying migrations, seeding, truncating, or testing, the integration
+harness queries:
+
+```sql
+SELECT current_database() AS database_name, current_user AS role_name;
+```
+
+It proceeds only when the values are exactly `atemoya_test` and
+`atemoya_test_owner`. A missing URL or mismatch stops without writes. Cleanup
+may truncate known application tables only after the same guard passes; it
+never drops a database or schema.
+
+Add an explicit `pnpm test:integration` command that runs serially against the
+real Neon HTTP and Drizzle path. It applies the canonical Drizzle migrations,
+uses synthetic marker data, resets only the dedicated database, and fails when
+`TEST_DATABASE_URL` is unavailable. The existing `pnpm test` remains the fast,
+database-free unit suite.
+
+Integration coverage includes the encrypted task boundary, the complete Better
+Auth adapter decorator contract, unique blind indexes, atomic `consumeOne` and
+`incrementOne`, maintenance gating, conversion restart and verification,
+contract-migration rollback, and captured-log assertions. Production data and
+production encryption keys are never used.
 
 ## Maintenance Write Barrier
 

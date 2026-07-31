@@ -48,8 +48,10 @@ Versioned application normalizers become the sole authority for email,
 nickname, and task-title equality; PostgreSQL `lower()` no longer participates
 after conversion. A strict allowlist logger discards Better Auth messages and
 raw database or cryptography errors before they reach Next.js or Vercel. The
-remaining plan requires a real-PostgreSQL integration-test seam. Revise and
-approve the plan before development implementation or production scheduling.
+real-PostgreSQL suite uses a dedicated `atemoya_test` database and test-only
+role inside the Neon development branch, leaving Preview tables isolated. All
+architecture-review findings now have design resolutions. Review and approve
+the revised plan before development implementation or production scheduling.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`
