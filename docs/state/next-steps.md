@@ -4,13 +4,22 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Complete the database-environment workflow rollout:
+Apply additive migration `0008_productive_paibok.sql` to the application
+development database only:
 
-1. Merge the `migrate-database` workflow and environment documentation into the default branch.
-2. Run the workflow twice against `Preview` to prove migration idempotency.
-3. Run the guarded negative `Production` test with a ref other than current `develop`, confirming Drizzle never executes.
+1. Confirm local `DATABASE_URL` still identifies the Neon `development` branch
+   and not production.
+2. Run the normal Drizzle migration command once against development.
+3. Verify migration count/latest migration and inspect the expected shadow
+   columns, verification metadata, and partial indexes.
+4. Run a focused Preview smoke check while plaintext columns remain
+   authoritative.
+5. Stop and report results before implementing encrypted task reads or writes.
 
 ## Immediate Goal
+
+Promote and verify the additive schema in development only; do not apply it to
+production, convert rows, or connect encrypted reads and writes.
 
 ## Open Questions
 
@@ -18,5 +27,6 @@ Complete the database-environment workflow rollout:
 
 ## Deferred UI Notes
 
-- Design the email-change confirmation flow after outbound email is configured; require current-address approval and new-address verification.
+- Design the email-change confirmation flow around current-address approval,
+  new-address verification, session handling, and failure behavior.
 - Design the password-change confirmation flow around Better Auth's current-password check and decide whether to revoke other sessions.

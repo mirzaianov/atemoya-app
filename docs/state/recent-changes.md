@@ -6,22 +6,22 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
-- 2026-07-30: Split Neon into production and schema-only development branches, isolated local and `develop` Preview credentials, verified writes stay in development, and added an approval-gated migration workflow. [Reason why added: prevents development and migration testing from modifying production data.]
+- 2026-07-31: Added and verified the ADR-009 four-variable development-key boundary, fail-closed database startup validation, KeePass-backed independent version-one keyrings, and matching Vercel Preview configuration; production keys remain absent. [Reason why added: completes development key provisioning before the additive migration reaches the application development database.]
 
-- 2026-07-30: Changed task `changed_on` storage from epoch-millisecond `bigint` values to UTC timestamps while preserving the numeric client contract. [Reason why added: aligns task change times with `completed_at` and records the required data-preserving migration.]
+- 2026-07-31: Generated and verified additive Drizzle migration `0008_productive_paibok.sql` with nullable encryption shadows, verification metadata, retained plaintext constraints, and partial lookup indexes; guarded Neon catalog, plaintext-write, shadow-write, and reset checks pass. [Reason why added: establishes the schema needed for encrypted persistence without deploying encrypted writes or converting application data.]
 
-- 2026-07-28: Added opt-in real-time validation borders with transitioned danger and success states while keeping sign-in passwords and 2FA credentials red-only. [Reason why added: records the deliberate validation-color scope and avoids implying that locally valid credentials were accepted by the server.]
+- 2026-07-31: Added a strict structured security logger, configured Better Auth 1.6.23 for warning-level fixed-event output, and verified that upstream messages, arguments, and raw errors cannot leak representative sensitive markers to stdout or stderr. [Reason why added: establishes the no-plaintext logging boundary before encrypted persistence and conversion code begins.]
 
-- 2026-07-28: Moved content-sized toast notifications to the bottom center, capped long messages at `18rem`, and reserved red styling for failures by changing successful task deletion to the existing info state. [Reason why added: records the user-visible notification layout and semantic color behavior.]
+- 2026-07-31: Added and verified the ADR-009 database-free cryptography boundary with versioned AES-256-GCM envelopes, record-bound authenticated data, independent HMAC-SHA-256 blind indexes, approved normalizers, strict key validation, and sanitized failures. [Reason why added: completes the cryptographic foundation before any environment, schema, or persistence integration.]
 
-- 2026-07-27: Implemented retained task completion with Base UI checkbox controls, collapsible Active and Completed groups, optimistic completion and restoration, active-only reordering, and case-insensitive title uniqueness across both groups. [Reason why added: records the local implementation before migration, manual acceptance, and deployment.]
+- 2026-07-31: Added and verified the ADR-009 test-only Neon/Drizzle harness, explicit `TEST_DATABASE_URL` contract, exact `atemoya_test`/`atemoya_test_owner` write guards, known-table cleanup, and separate unit and integration commands; the live migration/insert/reset test passes. [Reason why added: starts encryption implementation with a proven fail-closed real-driver boundary while leaving every encryption change pending explicit follow-up.]
 
-- 2026-07-27: Production-verified the deployed password-reset flow. [Reason why added: records successful production smoke testing while rollout monitoring remains pending.]
+- 2026-07-31: Approved the revised ADR-009 architecture and consolidated its implementation sequence, manual checkpoints, development rehearsal, rollback boundaries, and separate production approval gate in the existing architecture plan. [Reason why added: keeps the encryption decision and execution guidance in the repository's canonical ADR and architecture documents without adding a redundant documentation hierarchy.]
 
-- 2026-07-27: Deployed the manually accepted password-reset flow. [Reason why added: records production availability before verification.]
+- 2026-07-31: Selected an isolated `atemoya_test` database and `atemoya_test_owner` role inside the Neon development branch for explicit real-driver integration tests. [Reason why added: resolves the final architecture-review blocker without adding another branch or touching Preview data.]
 
-- 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance before deployment.]
+- 2026-07-31: Selected strict allowlist logging that discards Better Auth messages and raw application, database, and cryptography errors while retaining fixed event codes and safe operational metadata. [Reason why added: resolves plaintext-log leakage without relying on incomplete pattern redaction.]
 
-- 2026-07-22: Clarified password-reset success and resend timing, made forgot-password feedback mutually exclusive within a reserved two-line area, and standardized login, signup, and forgot-password controls at the existing auth width. [Reason why added: keeps recovery feedback unambiguous and prevents auth-page sizing drift.]
+- 2026-07-31: Selected versioned application normalizers as the sole equality authority for encrypted email, nickname, and per-user task titles, replacing PostgreSQL `lower()` uniqueness after conversion. [Reason why added: resolves the JavaScript/PostgreSQL normalization conflict and makes blind-index behavior deterministic.]
 
-- 2026-07-22: Added a Settings password-reset action that sends the existing one-hour recovery link directly to the authenticated account email, with inline status and a 30-second resend cooldown. [Reason why added: makes password recovery discoverable without requiring a signed-in user to leave Settings or re-enter a known email.]
+- 2026-07-31: Selected a root Next.js Proxy maintenance gate, a drain based on the confirmed platform execution limit, and source-to-shadow verification before plaintext removal. [Reason why added: resolves the late-write barrier without introducing separate database roles while accounting for Server Actions and `after()` work.]

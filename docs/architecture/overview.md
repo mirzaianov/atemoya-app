@@ -25,6 +25,41 @@ Decision: `../decisions/ADR-013-use-neon-branches-for-environment-isolation.md`
 
 Execution details: `neon-environment-isolation-plan.md`
 
+## Planned Database-Theft Protection
+
+ADR-009 accepts application-level encryption for sensitive task, identity,
+session, and verification values. The design preserves readable relational and
+operational metadata, uses separate production and development/Preview key
+pairs, and retains current uniqueness behavior through HMAC blind indexes.
+Better Auth continues to own password hashing and native TOTP and backup-code
+encryption.
+
+Implementation has not started. The 2026-07-30 architecture-review findings
+were resolved and the revised architecture was approved on 2026-07-31. The
+threat model was narrowed to passive database
+exfiltration; active database writes and application-oracle attacks are out of
+scope. Production conversion now uses maintenance-only shadow columns, a
+restartable data command, and two canonical Drizzle migrations instead of a
+database-wide interactive transaction. Better Auth encryption uses a thin
+decorator around the installed Drizzle adapter that preserves joins,
+transactions, set-valued conditions, and native atomic operations. Maintenance
+uses a root Next.js Proxy gate, a drain based on the confirmed platform
+execution limit, and source-to-shadow verification before plaintext removal.
+Versioned application normalizers become the sole authority for email,
+nickname, and task-title equality; PostgreSQL `lower()` no longer participates
+after conversion. A strict allowlist logger discards Better Auth messages and
+raw database or cryptography errors before they reach Next.js or Vercel. The
+real-PostgreSQL suite uses a dedicated `atemoya_test` database and test-only
+role inside the Neon development branch, leaving Preview tables isolated. All
+architecture-review findings now have approved design resolutions. Development
+implementation follows the staged migration and verification sequence in the
+existing architecture plan; production scheduling remains a separate approval.
+
+Decision:
+`../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`
+
+Execution details: `database-theft-encryption-plan.md`
+
 ## Key Dependencies
 
 - React renders the application and component state.
