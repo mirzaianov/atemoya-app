@@ -17,20 +17,21 @@ implementation tasks under the current design.
    Active database writes, relationship manipulation, deletion, rollback, and
    application-oracle attacks are explicitly out of scope. A row-integrity
    authentication system is therefore not required by this ADR.
+2. **Conversion and migration ownership were resolved on 2026-07-31.**
+   Maintenance-only shadow columns preserve plaintext source values until full
+   verification. Restartable row updates use the existing Neon HTTP client,
+   while additive and contract schema changes remain in two reviewed Drizzle
+   migrations. No database-wide interactive transaction or command-owned DDL
+   is required.
 
 ### Critical
 
-1. **The in-place transaction cannot use the current database client.**
-   `src/db/client.ts` uses `drizzle-orm/neon-http`, whose installed
-   `transaction()` implementation throws because interactive transactions are
-   unsupported. The current read, encrypt, write, read back, verify, and commit
-   sequence therefore cannot execute as specified.
-2. **The Better Auth adapter contract is incomplete.** Better Auth uses more
+1. **The Better Auth adapter contract is incomplete.** Better Auth uses more
    than create, update, equality lookup, and output transforms. The design must
    preserve set-valued `IN` queries and atomic operations such as
    `consumeOne`, `incrementOne`, and compare-and-set updates. A find-then-write
    replacement would reopen replay and concurrency races.
-3. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
+2. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
    route, and server-action requests can already be in flight when a `503` gate
    becomes active. The rollout must predeploy the gate-aware release, drain or
    fence earlier writes, and prove that no late plaintext write can land during
@@ -38,16 +39,12 @@ implementation tasks under the current design.
 
 ### High
 
-1. **The conversion command would bypass canonical Drizzle schema history.**
-   Constraint replacement and `NOT NULL` changes belong in reviewed Drizzle
-   migrations, not unrecorded DDL inside the local conversion command. Keep
-   ADR-013's migration workflow authoritative.
-2. **Task-title normalization has two existing authorities.** Application code
+1. **Task-title normalization has two existing authorities.** Application code
    uses JavaScript `toLowerCase()`, PostgreSQL uniqueness uses `lower()`, and
    task titles permit unrestricted Unicode. A blind index cannot promise to
    preserve both behaviors. Define one canonical normalizer and run collision
    preflight against that exact implementation.
-3. **The no-plaintext-logging requirement is not enforced.** The installed
+2. **The no-plaintext-logging requirement is not enforced.** The installed
    Better Auth signup route can log a duplicate email at info level, while the
    current auth configuration has no explicit redacting logger policy. Logging
    configuration and captured-log verification are part of the security
@@ -74,21 +71,18 @@ implementation tasks under the current design.
   uniqueness becomes authoritative; retain the existing unique-violation error
   path.
 
-### Revision Options
+### Conversion Decision
 
-These conversion alternatives require user review before this plan changes:
+Use maintenance-only shadow columns. An additive Drizzle migration creates
+temporary ciphertext and blind-index columns. While application writes are
+blocked, a restartable command populates and verifies those columns without
+modifying plaintext source values. A contract Drizzle migration switches to
+the verified ciphertext, replaces constraints, and removes plaintext.
 
-1. **Maintenance-only shadow columns (recommended).** Populate separate
-   ciphertext columns while writes are blocked, verify every row, then apply a
-   canonical contract migration. This uses the existing database client,
-   retains plaintext until verification succeeds, and introduces no live
-   dual-write path.
-2. **Dedicated transaction-capable conversion client.** Add a separate database
-   connection path for one interactive in-place conversion transaction. This
-   reduces temporary schema work but adds a dependency and a second database
-   access path that must be configured, tested, and removed or maintained.
-3. **Live expand, backfill, and contract.** This avoids downtime but restores
-   the mixed-read and dual-write complexity already rejected.
+A dedicated transaction-capable client was rejected because preserving source
+columns makes a database-wide interactive transaction unnecessary. Live
+expand, backfill, and contract remains rejected because it introduces
+mixed-read and dual-write behavior without a current uptime requirement.
 
 ## Context
 
@@ -355,15 +349,15 @@ progress, analytics, or server diagnostics.
 
 ## Migration
 
-Use an immediate in-place conversion during a production maintenance window.
-There is no dual-write or mixed-row production phase.
+Use an immediate shadow-column conversion during a production maintenance
+window. There is no application dual-write or mixed-read production phase.
 
 ### Development preparation
 
-1. Add nullable blind-index columns plus `verification.purpose` and
-   `verification.subject_user_id` through the normal development-first Drizzle
-   workflow. Existing protected text columns remain in place because PostgreSQL
-   `text` can store the versioned ciphertext envelopes.
+1. Create an additive Drizzle migration that adds nullable shadow ciphertext
+   and blind-index columns plus `verification.purpose` and
+   `verification.subject_user_id`. Existing plaintext columns remain
+   authoritative until the contract migration.
 2. Implement the server-only cryptography boundary, task query changes, custom
    Better Auth adapter, encrypted backup-code configuration, maintenance gate,
    and one-time conversion command.
@@ -373,6 +367,9 @@ There is no dual-write or mixed-row production phase.
 5. Preflight production read-only checks for normalized collisions, unexpected
    nulls, unsupported values, and any populated dormant OAuth token columns.
    Abort without writes if any check fails.
+6. Create a contract Drizzle migration that replaces plaintext columns with
+   their verified ciphertext shadows, installs blind-index constraints, and
+   makes required columns non-null. The conversion command contains no DDL.
 
 ### Production conversion
 
@@ -382,30 +379,32 @@ There is no dual-write or mixed-row production phase.
 2. Confirm the production encryption and lookup keys exist in KeePass and as
    Vercel Production secrets. Configure the encrypted Better Auth backup-code
    behavior.
-3. Apply the reviewed additive schema migration to production.
-4. Enable the application maintenance gate. It returns a controlled `503`
-   response and blocks page, auth, and server-action database access.
-5. From the trusted local machine, run the one-time conversion command with an
+3. Predeploy the gate-aware release, apply the reviewed additive Drizzle
+   migration, enable maintenance, and drain or fence requests that began before
+   the gate became active.
+4. From the trusted local machine, run the one-time conversion command with an
    explicitly confirmed production connection and keys loaded from KeePass.
    Do not copy application encryption keys into GitHub Actions.
-6. Inside one database transaction, replace protected plaintext column values
-   in place with ciphertext, populate blind indexes and verification metadata,
-   convert plaintext backup-code sets to Better Auth ciphertext, replace
-   plaintext unique constraints with blind-index constraints, and make required
-   blind-index columns non-null.
-7. Before committing, verify every protected value decrypts with the expected
-   AAD, every blind index recomputes exactly, every converted backup-code set
-   decodes through Better Auth, uniqueness holds, row counts are unchanged, and
-   no protected plaintext remains.
-8. Commit only after the full verification succeeds. Any conversion or
-   verification failure rolls back the transaction and leaves maintenance mode
-   enabled.
-9. Deploy the encrypted application while maintenance mode remains enabled,
-   then disable maintenance and run focused production smoke checks.
-10. If post-commit verification fails, re-enable maintenance, restore the
-    recorded Neon point, and redeploy the previous application version. Writes
-    remain blocked throughout the conversion, so this rollback does not discard
-    accepted in-window user changes.
+5. Read rows in stable batches. For each row whose shadow values are missing,
+   encrypt from the unchanged plaintext source and atomically write its
+   ciphertext, blind indexes, and verification metadata. Read back and verify
+   each batch before continuing. Existing non-null verified shadows make the
+   command restartable after interruption.
+6. Convert plaintext backup-code sets to Better Auth ciphertext in their
+   shadows and verify that Better Auth decodes every converted set.
+7. Run a global read-only verification: every protected value decrypts with
+   the expected AAD, every blind index recomputes exactly, uniqueness holds,
+   row counts are unchanged, and every source row has a verified shadow.
+8. Apply the reviewed contract Drizzle migration only after global verification
+   passes. It replaces plaintext columns with verified ciphertext, installs
+   blind-index constraints, and makes required columns non-null.
+9. Deploy the encrypted application while maintenance remains enabled, then
+   disable maintenance and run focused production smoke checks.
+10. If verification fails before the contract migration, leave maintenance
+    enabled, correct the issue, and resume from the verified shadows; plaintext
+    remains unchanged. If verification fails after the contract migration,
+    restore the recorded Neon point and redeploy the previous application
+    version.
 11. Treat database-theft encryption as complete only after the production
     smoke checks pass and Neon's 6-hour restore history containing plaintext
     has expired.
@@ -423,8 +422,10 @@ maintenance operation.
 - User-facing responses remain generic.
 - Operational logs may include a stable record ID, model, field, and key
   version, but never plaintext, keys, blind indexes, or full ciphertext.
-- Conversion failures roll back the transaction and preserve every source
-  value.
+- Conversion failures preserve every plaintext source value and leave verified
+  shadow rows available for a restart.
+- The contract migration runs only after global verification and uses the
+  normal transactional Drizzle migration path.
 - Database writes containing ciphertext and blind indexes are atomic.
 
 ## Verification
@@ -453,9 +454,11 @@ Application tests cover:
 Migration checks cover:
 
 - read-only collision and dormant OAuth-token preflight
-- complete transactional rollback on an injected conversion failure
+- restart after an injected partial conversion failure without source changes
 - unchanged ownership, order, timestamps, and row counts
-- full decryptability and blind-index recomputation before commit
+- full decryptability and blind-index recomputation before the contract
+  migration
+- transactional rollback of an injected contract-migration failure
 - Better Auth decoding of every converted backup-code set
 - maintenance-mode blocking of page, auth, and server-action database access
 - encryption-key rotation

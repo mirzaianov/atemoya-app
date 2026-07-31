@@ -12,15 +12,18 @@ Accepted
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. The current implementation plan is blocked after
-the 2026-07-30 architecture review found unresolved security, transaction,
-adapter, migration, normalization, logging, and test-design problems.
+the 2026-07-30 architecture review found unresolved adapter, maintenance,
+normalization, logging, and test-design problems.
 
 Do not implement or schedule production conversion until the linked
 architecture plan is revised and approved again. The threat-model boundary was
 resolved on 2026-07-31: this decision protects against passive database
 exfiltration and read-only database exposure. Active database writes,
 relationship manipulation, deletion, rollback, and use of the application as
-a decryption or authentication oracle are explicitly out of scope.
+a decryption or authentication oracle are explicitly out of scope. The
+conversion and migration-history blockers were also resolved on 2026-07-31 by
+selecting maintenance-only shadow columns, restartable data conversion, and
+two reviewed Drizzle migrations.
 
 ## Context
 
@@ -50,8 +53,8 @@ Use versioned application-level encryption for sensitive values:
   task-title behavior
 - readable verification purpose and subject-user metadata so password resets
   can revoke trusted devices without scanning ciphertext
-- an immediate, fully verified production conversion while a maintenance gate
-  blocks application access
+- an immediate, fully verified production conversion through temporary shadow
+  columns while a maintenance gate blocks application access
 
 The detailed field classification and rollout are in
 `docs/architecture/database-theft-encryption-plan.md`.
@@ -112,6 +115,9 @@ The detailed field classification and rollout are in
   that vault causes permanent data loss.
 - Production conversion relies on Neon's recorded 6-hour restore point rather
   than a second full-data branch.
+- Production conversion retains plaintext source columns until all shadow
+  ciphertext is verified, then removes plaintext through a reviewed Drizzle
+  contract migration.
 - Production support through Neon SQL sees ciphertext; no privileged
   decryption utility is included in the first release.
 - The encryption direction is accepted, but implementation and production

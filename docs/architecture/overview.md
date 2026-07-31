@@ -37,11 +37,13 @@ encryption.
 Implementation has not started and is blocked by the 2026-07-30 architecture
 review. The threat model was narrowed on 2026-07-31 to passive database
 exfiltration; active database writes and application-oracle attacks are out of
-scope. The remaining plan requires a feasible conversion strategy, complete
-Better Auth adapter semantics, proven maintenance write fencing, canonical
-Drizzle migration ownership, consistent normalization, redacted logging, and
-real-PostgreSQL integration tests. Revise and approve the plan before
-development implementation or production scheduling.
+scope. Production conversion now uses maintenance-only shadow columns, a
+restartable data command, and two canonical Drizzle migrations instead of a
+database-wide interactive transaction. The remaining plan requires complete
+Better Auth adapter semantics, proven maintenance write fencing, consistent
+normalization, redacted logging, and real-PostgreSQL integration tests. Revise
+and approve the plan before development implementation or production
+scheduling.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`

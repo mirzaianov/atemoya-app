@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-31: Selected maintenance-only shadow columns for ADR-009 conversion, with restartable data writes and additive and contract schema changes owned by reviewed Drizzle migrations. [Reason why added: resolves the unsupported interactive-transaction and migration-history blockers without adding another database client or a live dual-write path.]
+
 - 2026-07-31: Narrowed ADR-009 to passive database exfiltration and read-only database exposure; active database writes, relationship manipulation, deletion, rollback, and application-oracle attacks are explicitly out of scope. [Reason why added: resolves the first architecture-review blocker without introducing a row-integrity system.]
 
 - 2026-07-30: Recorded the ADR-009 architecture review and blocked implementation pending correction of the threat model, transaction strategy, Better Auth adapter contract, maintenance write barrier, migration ownership, normalization, logging, and integration-test design. [Reason why added: prevents implementation from proceeding against a security design that the repository cannot currently execute or substantiate.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-28: Moved content-sized toast notifications to the bottom center, capped long messages at `18rem`, and reserved red styling for failures by changing successful task deletion to the existing info state. [Reason why added: records the user-visible notification layout and semantic color behavior.]
 
 - 2026-07-27: Implemented retained task completion with Base UI checkbox controls, collapsible Active and Completed groups, optimistic completion and restoration, active-only reordering, and case-insensitive title uniqueness across both groups. [Reason why added: records the local implementation before migration, manual acceptance, and deployment.]
-
-- 2026-07-27: Production-verified the deployed password-reset flow. [Reason why added: records successful production smoke testing while rollout monitoring remains pending.]
