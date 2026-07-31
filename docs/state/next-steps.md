@@ -4,21 +4,19 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Complete the ADR-009 integration-harness checkpoint:
+Implement the ADR-009 cryptography primitives:
 
-1. In the Neon `development` branch, create role `atemoya_test_owner` and
-   database `atemoya_test` with that role as owner.
-2. Store only its pooled connection string in KeePass as
-   `atemoya-app/TEST_DATABASE_URL`; do not add it to Vercel or GitHub.
-3. Run `pnpm test:integration` and confirm migration, guarded cleanup, and
-   synthetic insert/reset checks pass.
-4. Report the result before implementing cryptography or changing application
-   schema.
+1. Add one server-only Node cryptography module for versioned AES-256-GCM
+   envelopes and independent HMAC-SHA-256 blind indexes.
+2. Add database-free tests for key parsing, round trips, fresh IVs, tampering,
+   wrong context/key/version rejection, and the approved equality normalizers.
+3. Report verification and a focused commit suggestion before adding keys,
+   changing schema, or connecting encryption to application data.
 
 ## Immediate Goal
 
-Verify the guarded harness against its dedicated Neon development database
-without touching Preview tables, production resources, or production data.
+Implement and verify cryptography primitives with deterministic test keys only;
+do not change Neon schema, KeePass, Vercel, or application persistence yet.
 
 ## Open Questions
 

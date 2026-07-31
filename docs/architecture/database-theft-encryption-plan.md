@@ -485,7 +485,7 @@ Use the Neon Console for the one-time setup:
 2. Create role `atemoya_test_owner` and retain its generated password only in
    KeePass.
 3. Create database `atemoya_test` with `atemoya_test_owner` as owner.
-4. Generate its pooled connection string and store it as
+4. Generate its direct connection string and store it as
    `atemoya-app/TEST_DATABASE_URL` in KeePass.
 5. Do not add this value to Vercel, GitHub Actions, `.env` files, or command
    history.

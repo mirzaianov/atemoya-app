@@ -54,15 +54,27 @@ Add:
 
 ```text
 atemoya-app/DATABASE_URL
+atemoya-app/TEST_DATABASE_URL
 atemoya-app/BETTER_AUTH_SECRET
 atemoya-app/BETTER_AUTH_URL
 ```
+
+`TEST_DATABASE_URL` is used only by `pnpm test:integration`. It must be the
+direct connection string for database `atemoya_test` and role
+`atemoya_test_owner` on the Neon `development` branch. Do not configure it in
+Vercel or GitHub.
 
 Local `DATABASE_URL` and `BETTER_AUTH_SECRET` values belong to the Neon
 `development` branch. Keep production credentials out of `.env.local` and the
 active local KeePass entries.
 
 Use `http://localhost:3000` for `BETTER_AUTH_URL` in local development.
+
+Run the guarded database integration tests with:
+
+```bash
+  pnpm test:integration
+```
 
 For Vercel, set `DATABASE_URL` and `BETTER_AUTH_SECRET` directly in Project
 Settings -> Environment Variables:
