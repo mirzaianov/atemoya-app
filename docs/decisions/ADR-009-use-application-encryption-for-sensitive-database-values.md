@@ -12,7 +12,7 @@ Accepted
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. The current implementation plan is blocked after
-the 2026-07-30 architecture review found unresolved adapter, maintenance,
+the 2026-07-30 architecture review found unresolved maintenance,
 normalization, logging, and test-design problems.
 
 Do not implement or schedule production conversion until the linked
@@ -45,8 +45,8 @@ Use versioned application-level encryption for sensitive values:
   equality-search blind indexes
 - keys stored outside Neon in the existing local and production secret systems
 - separate encryption and lookup keys for production and development/Preview
-- database-boundary encryption for tasks and a custom Better Auth adapter for
-  identity, session, and verification data
+- database-boundary encryption for tasks and a decorator around the installed
+  Better Auth Drizzle adapter for identity, session, and verification data
 - Better Auth ownership of its native TOTP and backup-code encryption
 - Better Auth `scrypt` hashes retained for passwords
 - blind indexes that preserve unique email, nickname, and per-user normalized
@@ -108,7 +108,7 @@ The detailed field classification and rollout are in
 ## Consequences
 
 - Passive database exfiltration does not reveal protected plaintext.
-- A custom Better Auth adapter becomes security-critical.
+- The Better Auth Drizzle adapter decorator becomes security-critical.
 - Relational metadata remains visible. Active database writes, application
   compromise, and application-oracle attacks remain out of scope.
 - KeePass is the sole recovery source for application encryption keys; losing

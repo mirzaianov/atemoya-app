@@ -39,8 +39,10 @@ review. The threat model was narrowed on 2026-07-31 to passive database
 exfiltration; active database writes and application-oracle attacks are out of
 scope. Production conversion now uses maintenance-only shadow columns, a
 restartable data command, and two canonical Drizzle migrations instead of a
-database-wide interactive transaction. The remaining plan requires complete
-Better Auth adapter semantics, proven maintenance write fencing, consistent
+database-wide interactive transaction. Better Auth encryption uses a thin
+decorator around the installed Drizzle adapter that preserves joins,
+transactions, set-valued conditions, and native atomic operations. The
+remaining plan requires proven maintenance write fencing, consistent
 normalization, redacted logging, and real-PostgreSQL integration tests. Revise
 and approve the plan before development implementation or production
 scheduling.

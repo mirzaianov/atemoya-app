@@ -23,15 +23,16 @@ implementation tasks under the current design.
    while additive and contract schema changes remain in two reviewed Drizzle
    migrations. No database-wide interactive transaction or command-owned DDL
    is required.
+3. **The Better Auth adapter architecture was resolved on 2026-07-31.** A thin
+   decorator wraps the installed Better Auth 1.6.23 Drizzle adapter and
+   preserves its complete operation contract, including joins, transactions,
+   set-valued conditions, `consumeOne`, and `incrementOne`. Atomic methods
+   delegate exactly once; the decorator never replaces them with
+   find-then-write sequences.
 
 ### Critical
 
-1. **The Better Auth adapter contract is incomplete.** Better Auth uses more
-   than create, update, equality lookup, and output transforms. The design must
-   preserve set-valued `IN` queries and atomic operations such as
-   `consumeOne`, `incrementOne`, and compare-and-set updates. A find-then-write
-   replacement would reopen replay and concurrency races.
-2. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
+1. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
    route, and server-action requests can already be in flight when a `503` gate
    becomes active. The rollout must predeploy the gate-aware release, drain or
    fence earlier writes, and prove that no late plaintext write can land during
@@ -299,12 +300,57 @@ list and returning operations decrypt before producing the existing
 `Task` DTO. Ordering continues to use readable IDs, positions, and
 timestamps.
 
-Better Auth identity, session, and verification encryption uses a custom
-database adapter. The adapter transforms:
+Better Auth identity, session, and verification encryption uses a decorator
+around the installed Drizzle adapter. The decorator transforms:
 
 - create and update data into ciphertext and blind indexes
 - equality conditions into blind-index conditions
 - database output back into the logical values Better Auth expects
+
+The decorator wraps the adapter factory result rather than implementing a new
+database adapter. Unknown models and unprotected fields pass through unchanged.
+`createSchema`, adapter metadata, model mapping, selection, pagination, joins,
+and sorting retain the base adapter behavior unless a protected field requires
+the explicit handling below.
+
+### Better Auth Adapter Contract
+
+The contract is verified against Better Auth 1.6.23. An upgrade that changes
+the adapter interface requires review and contract-test updates before
+deployment.
+
+- `create`, `update`, and `updateMany` encrypt protected write values and
+  calculate their blind indexes before one call to the base operation.
+- `findOne` and `findMany` rewrite protected lookup conditions, preserve
+  selection, pagination, joins, and unprotected sorting, then decrypt the main
+  model and known joined model results.
+- `count`, `delete`, and `deleteMany` rewrite lookup conditions and return the
+  base operation result unchanged.
+- `consumeOne` rewrites its conditions, calls the base atomic delete-and-return
+  operation exactly once, and decrypts the returned row.
+- `incrementOne` rewrites its selector and guard conditions, transforms any
+  protected values in its atomic `set` map, calls the base guarded update
+  exactly once, and decrypts the returned row. Protected text fields are never
+  increment targets.
+- `transaction` delegates to the base adapter and decorates the transaction
+  adapter supplied to its callback so encrypted operations cannot bypass the
+  boundary.
+- `createSchema`, adapter `id`, and adapter `options` pass through unchanged.
+
+For blind-indexed protected fields, `eq`, `ne`, `in`, and `not_in` conditions
+rewrite to the corresponding lookup column while preserving connectors.
+Scalar and array values use the field's canonical normalizer before HMAC.
+Ordered and pattern operators (`lt`, `lte`, `gt`, `gte`, `contains`,
+`starts_with`, and `ends_with`), lookup modes that conflict with the field's
+canonical normalizer, and sorting on protected fields fail closed with a
+non-plaintext diagnostic because randomized ciphertext cannot support them.
+Existing prefix-based verification cleanup moves to readable `purpose` and
+`subject_user_id` metadata before encryption.
+
+The decorator does not add fallback find-then-write behavior. Better Auth's
+native Drizzle `consumeOne` and `incrementOne` implementations remain
+authoritative so verification consumption and two-factor counters retain their
+race guarantees.
 
 The verification adapter also derives readable operational metadata:
 
@@ -358,9 +404,9 @@ window. There is no application dual-write or mixed-read production phase.
    and blind-index columns plus `verification.purpose` and
    `verification.subject_user_id`. Existing plaintext columns remain
    authoritative until the contract migration.
-2. Implement the server-only cryptography boundary, task query changes, custom
-   Better Auth adapter, encrypted backup-code configuration, maintenance gate,
-   and one-time conversion command.
+2. Implement the server-only cryptography boundary, task query changes, Better
+   Auth Drizzle adapter decorator, encrypted backup-code configuration,
+   maintenance gate, and one-time conversion command.
 3. Use deterministic test keys only in tests. Configure separate development
    keys through KeePass/Varlock and Vercel Preview.
 4. Rehearse the complete conversion against synthetic development data.
@@ -477,8 +523,8 @@ ciphertext.
 - The application server can still decrypt data, which preserves the current
   product architecture.
 - Database metadata remains visible.
-- A custom Better Auth adapter becomes security-critical and needs focused
-  integration coverage.
+- The Better Auth Drizzle adapter decorator becomes security-critical and needs
+  focused integration coverage.
 - KeePass loss is unrecoverable, while key compromise exposes every value
   protected by that key.
 - Development and production key compromise have separate blast radii.

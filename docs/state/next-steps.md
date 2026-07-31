@@ -6,8 +6,7 @@ Status: project-state immediate recommendation
 
 Revise ADR-009 and its encryption plan before implementation:
 
-1. Specify the complete Better Auth adapter decorator contract, maintenance
-   write barrier, canonical normalizer, logging policy, two-migration workflow,
+1. Specify the maintenance write barrier, canonical normalizer, logging policy,
    and PostgreSQL integration-test seam.
 2. Review and approve the revised record before writing an implementation plan.
 
