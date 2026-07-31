@@ -4,19 +4,21 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Begin ADR-009 development implementation from the existing architecture plan:
+Complete the ADR-009 integration-harness checkpoint:
 
-1. Implement only the isolated test-database harness and its exact database/role
-   guard.
-2. Report verification and a focused commit suggestion, then wait before
-   continuing to cryptography code or manual Neon setup.
-3. Keep Production conversion behind the separate rehearsal and runbook
-   approval in `docs/architecture/database-theft-encryption-plan.md`.
+1. In the Neon `development` branch, create role `atemoya_test_owner` and
+   database `atemoya_test` with that role as owner.
+2. Store only its pooled connection string in KeePass as
+   `atemoya-app/TEST_DATABASE_URL`; do not add it to Vercel or GitHub.
+3. Run `pnpm test:integration` and confirm migration, guarded cleanup, and
+   synthetic insert/reset checks pass.
+4. Report the result before implementing cryptography or changing application
+   schema.
 
 ## Immediate Goal
 
-Implement and verify the isolated test harness without changing application
-behavior, production resources, secrets, or production data.
+Verify the guarded harness against its dedicated Neon development database
+without touching Preview tables, production resources, or production data.
 
 ## Open Questions
 
