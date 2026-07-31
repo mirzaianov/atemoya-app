@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-31: Added a strict structured security logger, configured Better Auth 1.6.23 for warning-level fixed-event output, and verified that upstream messages, arguments, and raw errors cannot leak representative sensitive markers to stdout or stderr. [Reason why added: establishes the no-plaintext logging boundary before encrypted persistence and conversion code begins.]
+
 - 2026-07-31: Added and verified the ADR-009 database-free cryptography boundary with versioned AES-256-GCM envelopes, record-bound authenticated data, independent HMAC-SHA-256 blind indexes, approved normalizers, strict key validation, and sanitized failures. [Reason why added: completes the cryptographic foundation before any environment, schema, or persistence integration.]
 
 - 2026-07-31: Added and verified the ADR-009 test-only Neon/Drizzle harness, explicit `TEST_DATABASE_URL` contract, exact `atemoya_test`/`atemoya_test_owner` write guards, known-table cleanup, and separate unit and integration commands; the live migration/insert/reset test passes. [Reason why added: starts encryption implementation with a proven fail-closed real-driver boundary while leaving every encryption change pending explicit follow-up.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Selected a thin decorator around Better Auth 1.6.23's Drizzle adapter, preserving joins, transactions, set-valued conditions, and native `consumeOne` and `incrementOne` operations. [Reason why added: resolves the adapter-contract blocker without reimplementing Better Auth database behavior or weakening atomic security operations.]
 
 - 2026-07-31: Selected maintenance-only shadow columns for ADR-009 conversion, with restartable data writes and additive and contract schema changes owned by reviewed Drizzle migrations. [Reason why added: resolves the unsupported interactive-transaction and migration-history blockers without adding another database client or a live dual-write path.]
-
-- 2026-07-31: Narrowed ADR-009 to passive database exfiltration and read-only database exposure; active database writes, relationship manipulation, deletion, rollback, and application-oracle attacks are explicitly out of scope. [Reason why added: resolves the first architecture-review blocker without introducing a row-integrity system.]

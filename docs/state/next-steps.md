@@ -4,20 +4,23 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement the ADR-009 no-plaintext logging boundary:
+Create the ADR-009 additive shadow-column migration:
 
-1. Add one small server-only logger that accepts only fixed event codes and
-   typed allowlisted operational metadata.
-2. Configure Better Auth logging to discard upstream messages and arguments.
-3. Add captured-output tests proving marker plaintext, keys, indexes, SQL
-   parameters, and ciphertext envelopes cannot reach stdout or stderr.
-4. Report verification and a focused commit suggestion before adding keys,
-   changing schema, or connecting encryption to application data.
+1. Add nullable ciphertext and blind-index shadow columns for the protected
+   user, session, verification, and task values.
+2. Add readable `verification.purpose` and `verification.subject_user_id`
+   metadata plus the approved partial unique lookup indexes.
+3. Relax `NOT NULL` only on protected plaintext source columns; keep those
+   source columns authoritative during development preparation.
+4. Generate and review one additive Drizzle migration, then verify it through
+   the guarded `atemoya_test` integration database.
+5. Report verification and a focused commit suggestion before adding keys or
+   connecting encryption to application data.
 
 ## Immediate Goal
 
-Implement and verify the strict logging allowlist; do not change Neon schema,
-KeePass, Vercel, or application persistence yet.
+Create and verify the additive schema only; do not configure KeePass or Vercel
+keys, convert rows, or connect application reads and writes yet.
 
 ## Open Questions
 

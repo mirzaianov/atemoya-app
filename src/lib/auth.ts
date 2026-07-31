@@ -9,6 +9,7 @@ import * as schema from '../db/schema';
 import { sendAuthEmail } from './auth-email';
 import { nicknameSchema } from './auth-nickname';
 import { authPasswordPolicy, authRateLimitPolicy } from './auth-policy';
+import { betterAuthLogger } from './security-logger';
 
 const betterAuthSecret = process.env.BETTER_AUTH_SECRET;
 const isProduction = process.env.NODE_ENV === 'production';
@@ -132,6 +133,7 @@ export const auth = betterAuth({
         to: user.email,
       }),
   },
+  logger: betterAuthLogger,
   plugins: [
     twoFactor({
       accountLockout: {
