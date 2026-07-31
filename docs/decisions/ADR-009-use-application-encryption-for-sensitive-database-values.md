@@ -8,14 +8,29 @@ Accepted
 
 2026-07-30
 
+## Implementation Readiness
+
+The high-level decision to protect sensitive database values with application
+encryption remains accepted. The current implementation plan is blocked after
+the 2026-07-30 architecture review found unresolved security, transaction,
+adapter, migration, normalization, logging, and test-design problems.
+
+Do not implement or schedule production conversion until the linked
+architecture plan is revised and approved again. The threat-model boundary was
+resolved on 2026-07-31: this decision protects against passive database
+exfiltration and read-only database exposure. Active database writes,
+relationship manipulation, deletion, rollback, and use of the application as
+a decryption or authentication oracle are explicitly out of scope.
+
 ## Context
 
-Neon encrypts physical storage, but a logical database dump or leaked database
-credentials can still expose Better Auth records and user-authored task
-titles. The selected threat model is a database-only compromise where the
-attacker does not also obtain application runtime secrets. The objective is
-confidentiality for sensitive content and credentials, not literal encryption
-of every user-linked identifier or operational value.
+Neon encrypts physical storage, but a logical database dump, copied snapshot,
+or read-only database exposure can still reveal Better Auth records and
+user-authored task titles. The selected threat model is passive database
+exfiltration where the attacker cannot modify the database and does not also
+obtain application runtime secrets. The objective is confidentiality for
+sensitive content and credentials, not literal encryption of every user-linked
+identifier or operational value.
 
 ## Decision
 
@@ -59,7 +74,8 @@ The detailed field classification and rollout are in
 ### Storage encryption only
 
 - Pros: No application complexity.
-- Cons: Does not protect logical dumps or leaked database credentials.
+- Cons: Does not protect logical dumps, copied snapshots, or read-only database
+  exposure.
 - Rejected: It does not cover the selected threat model.
 
 ### Encrypt every user-linked database value
@@ -88,15 +104,16 @@ The detailed field classification and rollout are in
 
 ## Consequences
 
-- Database-only theft does not reveal protected plaintext.
+- Passive database exfiltration does not reveal protected plaintext.
 - A custom Better Auth adapter becomes security-critical.
-- Relational metadata remains visible, and server compromise remains out of
-  scope.
+- Relational metadata remains visible. Active database writes, application
+  compromise, and application-oracle attacks remain out of scope.
 - KeePass is the sole recovery source for application encryption keys; losing
   that vault causes permanent data loss.
 - Production conversion relies on Neon's recorded 6-hour restore point rather
   than a second full-data branch.
 - Production support through Neon SQL sees ciphertext; no privileged
   decryption utility is included in the first release.
-- The decision is accepted, but implementation and production conversion
-  remain separate, unstarted work.
+- The encryption direction is accepted, but implementation and production
+  conversion remain blocked until the architecture-review findings are
+  resolved and the revised plan is approved.

@@ -4,23 +4,24 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement the accepted database-theft encryption design in development:
+Revise ADR-009 and its encryption plan before implementation:
 
-1. Add the cryptography boundary, blind-index schema, verification metadata, and
-   maintenance gate.
-2. Integrate task and Better Auth persistence, including encrypted backup-code
-   storage, against synthetic development data.
-3. Build and fully verify the one-time conversion command in development.
-4. Review the completed development implementation before scheduling the
-   production maintenance window.
+1. Choose a feasible conversion shape: maintenance-only shadow columns or a
+   dedicated transaction-capable client.
+2. Specify the complete Better Auth adapter decorator contract, maintenance
+   write barrier, canonical normalizer, logging policy, two-migration workflow,
+   and PostgreSQL integration-test seam.
+3. Review and approve the revised record before writing an implementation plan.
 
 ## Immediate Goal
 
-Complete and verify the development implementation without converting
-production data.
+Produce an implementation-ready encryption design without changing application
+code or production data.
 
 ## Open Questions
 
+- Choose between maintenance-only shadow columns and a dedicated
+  transaction-capable client for production conversion.
 - Decide whether Better Auth rate limiting needs shared storage before multi-instance production.
 
 ## Deferred UI Notes

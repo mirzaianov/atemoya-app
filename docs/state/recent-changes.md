@@ -6,6 +6,10 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-07-31: Narrowed ADR-009 to passive database exfiltration and read-only database exposure; active database writes, relationship manipulation, deletion, rollback, and application-oracle attacks are explicitly out of scope. [Reason why added: resolves the first architecture-review blocker without introducing a row-integrity system.]
+
+- 2026-07-30: Recorded the ADR-009 architecture review and blocked implementation pending correction of the threat model, transaction strategy, Better Auth adapter contract, maintenance write barrier, migration ownership, normalization, logging, and integration-test design. [Reason why added: prevents implementation from proceeding against a security design that the repository cannot currently execute or substantiate.]
+
 - 2026-07-30: Accepted ADR-009 and revised the database-theft encryption plan around sensitive-content scope, separate environment keys, Better Auth-owned secret encryption, blind-indexed uniqueness, and a fully verified maintenance conversion with Neon point-in-time rollback. [Reason why added: records the approved security design while keeping implementation and production conversion explicitly unstarted.]
 
 - 2026-07-30: Closed the retained-task rollout after manually accepting completion, restoration, collapsing, ordering, duplicate validation, editing, and deletion; verifying development isolation; and repeating the production smoke test. [Reason why added: records that no retained-task acceptance or monitoring work remains.]
@@ -21,7 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-27: Implemented retained task completion with Base UI checkbox controls, collapsible Active and Completed groups, optimistic completion and restoration, active-only reordering, and case-insensitive title uniqueness across both groups. [Reason why added: records the local implementation before migration, manual acceptance, and deployment.]
 
 - 2026-07-27: Production-verified the deployed password-reset flow. [Reason why added: records successful production smoke testing while rollout monitoring remains pending.]
-
-- 2026-07-27: Deployed the manually accepted password-reset flow. [Reason why added: records production availability before verification.]
-
-- 2026-07-27: Manually accepted the password-reset flow from Sign In and Settings, including 2FA preservation and session and trusted-device revocation. [Reason why added: records completion of local recovery acceptance before deployment.]

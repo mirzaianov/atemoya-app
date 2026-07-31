@@ -2,18 +2,105 @@
 
 ## Status
 
-Accepted; implementation has not started.
+Accepted direction; implementation is blocked pending architecture revision.
+
+## Architecture Review Findings
+
+The 2026-07-30 repository review found that this plan is not implementation
+ready. The following findings are requirements for the next revision, not
+implementation tasks under the current design.
+
+### Resolved
+
+1. **Threat-model scope was resolved on 2026-07-31.** The design protects
+   against passive database exfiltration and read-only database exposure.
+   Active database writes, relationship manipulation, deletion, rollback, and
+   application-oracle attacks are explicitly out of scope. A row-integrity
+   authentication system is therefore not required by this ADR.
+
+### Critical
+
+1. **The in-place transaction cannot use the current database client.**
+   `src/db/client.ts` uses `drizzle-orm/neon-http`, whose installed
+   `transaction()` implementation throws because interactive transactions are
+   unsupported. The current read, encrypt, write, read back, verify, and commit
+   sequence therefore cannot execute as specified.
+2. **The Better Auth adapter contract is incomplete.** Better Auth uses more
+   than create, update, equality lookup, and output transforms. The design must
+   preserve set-valued `IN` queries and atomic operations such as
+   `consumeOne`, `incrementOne`, and compare-and-set updates. A find-then-write
+   replacement would reopen replay and concurrency races.
+3. **The maintenance gate is not yet a proven write barrier.** Page, Better Auth
+   route, and server-action requests can already be in flight when a `503` gate
+   becomes active. The rollout must predeploy the gate-aware release, drain or
+   fence earlier writes, and prove that no late plaintext write can land during
+   conversion.
+
+### High
+
+1. **The conversion command would bypass canonical Drizzle schema history.**
+   Constraint replacement and `NOT NULL` changes belong in reviewed Drizzle
+   migrations, not unrecorded DDL inside the local conversion command. Keep
+   ADR-013's migration workflow authoritative.
+2. **Task-title normalization has two existing authorities.** Application code
+   uses JavaScript `toLowerCase()`, PostgreSQL uniqueness uses `lower()`, and
+   task titles permit unrestricted Unicode. A blind index cannot promise to
+   preserve both behaviors. Define one canonical normalizer and run collision
+   preflight against that exact implementation.
+3. **The no-plaintext-logging requirement is not enforced.** The installed
+   Better Auth signup route can log a duplicate email at info level, while the
+   current auth configuration has no explicit redacting logger policy. Logging
+   configuration and captured-log verification are part of the security
+   design.
+
+### Medium
+
+1. Nickname availability, nickname update, and trusted-device cleanup directly
+   query protected fields outside the proposed adapter. Route these callers
+   through narrow blind-index helpers; do not introduce a generic repository.
+2. The current `pnpm test` command discovers only feature-level pure tests. The
+   planned cryptography, adapter, database, conversion, and restore checks need
+   an explicit real-PostgreSQL integration-test seam and test discovery.
+
+### Complexity Audit
+
+- Keep one cryptography module with fixed field mappings. Do not split envelope,
+  key-provider, blind-index, and per-field classes into shallow modules.
+- Prefer a decorator around the installed Better Auth Drizzle adapter over a
+  from-scratch adapter, while preserving every atomic adapter operation.
+- Do not add OAuth hooks, generic encrypted repositories, KMS interfaces, or
+  provider abstractions before a real second implementation exists.
+- Remove the create and update full-task-list duplicate scans when blind-index
+  uniqueness becomes authoritative; retain the existing unique-violation error
+  path.
+
+### Revision Options
+
+These conversion alternatives require user review before this plan changes:
+
+1. **Maintenance-only shadow columns (recommended).** Populate separate
+   ciphertext columns while writes are blocked, verify every row, then apply a
+   canonical contract migration. This uses the existing database client,
+   retains plaintext until verification succeeds, and introduces no live
+   dual-write path.
+2. **Dedicated transaction-capable conversion client.** Add a separate database
+   connection path for one interactive in-place conversion transaction. This
+   reduces temporary schema work but adds a dependency and a second database
+   access path that must be configured, tested, and removed or maintained.
+3. **Live expand, backfill, and contract.** This avoids downtime but restores
+   the mixed-read and dual-write complexity already rejected.
 
 ## Context
 
 Atemoya stores Better Auth identity and session records plus task data
 in Neon PostgreSQL. Neon encrypts physical storage, but a logical database dump
-or leaked database credentials can still expose column values.
+or read-only database exposure can still reveal column values.
 
-The selected threat model is a database-only compromise: an attacker obtains
-the PostgreSQL contents without also obtaining the application runtime secrets.
-Trusted Atemoya servers may decrypt data so the current Server Component,
-Better Auth, and Resend flows can continue to work.
+The selected threat model is passive database exfiltration: an attacker obtains
+the PostgreSQL contents but cannot modify the database and does not also obtain
+the application runtime secrets. Trusted Atemoya servers may decrypt data so
+the current Server Component, Better Auth, and Resend flows can continue to
+work.
 
 ## Goals
 
@@ -29,6 +116,8 @@ Better Auth, and Resend flows can continue to work.
 
 - End-to-end or zero-knowledge encryption.
 - Protection after both the database and application secrets are compromised.
+- Protection from active database writes, relationship manipulation, deletion,
+  rollback, or application-oracle attacks.
 - Hiding relational metadata such as row counts, timestamps, ownership, or task
   order.
 - Encrypting opaque record IDs, foreign keys, booleans, timestamps, or numeric
@@ -46,8 +135,9 @@ Better Auth, and Resend flows can continue to work.
 Use Node's built-in cryptography, with independent encryption and lookup keys
 stored in the existing Varlock/KeePass and production server-secret systems.
 
-This is the selected approach. It directly covers the database-only threat,
-preserves the existing deployment model, and introduces no dependency.
+This is the selected approach. It directly covers passive database
+exfiltration, preserves the existing deployment model, and introduces no
+dependency.
 
 ### Managed KMS with envelope encryption
 
@@ -379,8 +469,8 @@ ciphertext.
 
 ## Consequences
 
-- A stolen Neon database no longer reveals user-authored values, identity
-  values, session secrets, or verification contents.
+- A passively exfiltrated Neon database no longer reveals user-authored values,
+  identity values, session secrets, or verification contents.
 - The application server can still decrypt data, which preserves the current
   product architecture.
 - Database metadata remains visible.

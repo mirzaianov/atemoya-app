@@ -34,11 +34,14 @@ pairs, and retains current uniqueness behavior through HMAC blind indexes.
 Better Auth continues to own password hashing and native TOTP and backup-code
 encryption.
 
-Implementation has not started. Production adoption requires a controlled
-maintenance window, a fully verified in-place conversion from a trusted local
-machine, and a recorded timestamp within Neon's 6-hour restore window.
-Development rehearsal and implementation review must complete before
-production conversion is scheduled.
+Implementation has not started and is blocked by the 2026-07-30 architecture
+review. The threat model was narrowed on 2026-07-31 to passive database
+exfiltration; active database writes and application-oracle attacks are out of
+scope. The remaining plan requires a feasible conversion strategy, complete
+Better Auth adapter semantics, proven maintenance write fencing, canonical
+Drizzle migration ownership, consistent normalization, redacted logging, and
+real-PostgreSQL integration tests. Revise and approve the plan before
+development implementation or production scheduling.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`
