@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
 import test from 'node:test';
+import { promisify } from 'node:util';
 
 import { symmetricDecrypt, symmetricEncrypt } from 'better-auth/crypto';
 import { sql } from 'drizzle-orm';
@@ -25,6 +27,7 @@ interface PersistedState extends Record<string, unknown> {
 }
 
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
+const execFileAsync = promisify(execFile);
 
 test('preflights and converts pending state through atomic batches', async (context) => {
   const testDatabase = await createTestDatabase();
@@ -179,7 +182,64 @@ test('preflights and converts pending state through atomic batches', async (cont
       valueCiphertext: null,
     });
 
-    assert.deepEqual(await runDataConversion(options), { converted: 5, counts });
+    const concurrentName = 'concurrent_conversion_user';
+    let sourceChanged = false;
+
+    await assert.rejects(
+      runDataConversion({
+        ...options,
+        testHooks: {
+          beforeBatchCommit: async () => {
+            if (sourceChanged) {
+              return;
+            }
+
+            sourceChanged = true;
+            await testDatabase.db.execute(sql`
+              UPDATE "user"
+              SET "name" = ${concurrentName}
+              WHERE "id" = ${userId}
+            `);
+          },
+        },
+      }),
+      DataConversionError,
+    );
+    assert.equal(sourceChanged, true);
+    assert.deepEqual(await readState(), pendingState);
+
+    let interrupted = false;
+
+    await assert.rejects(
+      runDataConversion({
+        ...options,
+        testHooks: {
+          afterBatchCommit: () => {
+            if (interrupted) {
+              return;
+            }
+
+            interrupted = true;
+            throw new Error('injected interruption');
+          },
+        },
+      }),
+      DataConversionError,
+    );
+    assert.equal(interrupted, true);
+
+    const interruptedState = await readState();
+
+    assert.match(interruptedState.emailCiphertext ?? '', /^enc:v1:1:/u);
+    assert.match(interruptedState.nameCiphertext ?? '', /^enc:v1:1:/u);
+    assert.equal(interruptedState.ipAddressCiphertext, null);
+    assert.equal(interruptedState.tokenCiphertext, null);
+    assert.equal(interruptedState.titleCiphertext, null);
+    assert.equal(interruptedState.identifierCiphertext, null);
+    assert.equal(interruptedState.valueCiphertext, null);
+    assert.equal(interruptedState.backupCodes, serializedBackupCodes);
+
+    assert.deepEqual(await runDataConversion(options), { converted: 4, counts });
 
     const completeState = await readState();
 
@@ -221,6 +281,7 @@ test('preflights and converts pending state through atomic batches', async (cont
       betterAuthSecret,
       email,
       nickname,
+      concurrentName,
       image,
       token,
       ipAddress,
@@ -231,6 +292,90 @@ test('preflights and converts pending state through atomic batches', async (cont
       'late-write-marker',
     ]) {
       assert.equal(capturedOutput.includes(marker), false);
+    }
+  } finally {
+    await testDatabase.reset();
+  }
+});
+
+test('runs the guarded local conversion command without leaking values', async () => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  const userId = 'operator-user';
+  const taskId = 'operator-task';
+  const email = 'operator@example.test';
+  const nickname = 'operator_user';
+  const title = 'Operator conversion marker';
+  const betterAuthSecret = 'operator-better-auth-secret-marker';
+  const dataEncryptionKeys = JSON.stringify({ 1: key(11) });
+  const blindIndexKeys = JSON.stringify({ 1: key(12) });
+  const now = new Date();
+
+  try {
+    await testDatabase.db.execute(sql`
+      INSERT INTO "user" (
+        "id", "name", "email", "email_verified", "created_at", "updated_at"
+      )
+      VALUES (${userId}, ${nickname}, ${email}, true, ${now}, ${now})
+    `);
+    await testDatabase.db.execute(sql`
+      INSERT INTO "tasks" ("id", "user_id", "title", "changed_on", "position")
+      VALUES (${taskId}, ${userId}, ${title}, ${now}, 0)
+    `);
+
+    const { stderr, stdout } = await execFileAsync(
+      process.execPath,
+      [
+        '--experimental-strip-types',
+        'src/db/data-conversion-cli.ts',
+        'test',
+        'CONVERT-ATEMOYA-TEST',
+      ],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          BETTER_AUTH_SECRET: betterAuthSecret,
+          BLIND_INDEX_ACTIVE_VERSION: '1',
+          BLIND_INDEX_KEYS: blindIndexKeys,
+          DATA_ENCRYPTION_ACTIVE_VERSION: '1',
+          DATA_ENCRYPTION_KEYS: dataEncryptionKeys,
+        },
+      },
+    );
+    const result = await testDatabase.db.execute<{
+      emailCiphertext: string | null;
+      titleCiphertext: string | null;
+    }>(sql`
+      SELECT
+        users."email_ciphertext" AS "emailCiphertext",
+        tasks."title_ciphertext" AS "titleCiphertext"
+      FROM "user" AS users
+      INNER JOIN "tasks" AS tasks ON tasks."id" = ${taskId}
+      WHERE users."id" = ${userId}
+    `);
+    const [state] = result.rows;
+
+    assert.ok(state);
+    assert.match(state.emailCiphertext ?? '', /^enc:v1:1:/u);
+    assert.match(state.titleCiphertext ?? '', /^enc:v1:1:/u);
+    assert.equal(stdout, '');
+    assert.match(stderr, /"code":"data_conversion_progress"/u);
+
+    for (const marker of [
+      betterAuthSecret,
+      blindIndexKeys,
+      dataEncryptionKeys,
+      email,
+      nickname,
+      title,
+      state.emailCiphertext,
+      state.titleCiphertext,
+    ]) {
+      assert.equal(stderr.includes(marker ?? ''), false);
     }
   } finally {
     await testDatabase.reset();

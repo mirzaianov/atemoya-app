@@ -19,6 +19,10 @@ interface ConversionPreflightOptions {
   dataProtection: DataProtection;
   db: ConversionDatabase;
   target: string | undefined;
+  testHooks?: {
+    afterBatchCommit?: () => Promise<void> | void;
+    beforeBatchCommit?: () => Promise<void> | void;
+  };
 }
 
 type DataConversionOptions = ConversionPreflightOptions;
@@ -495,6 +499,7 @@ interface ConvertBatchesOptions<Row extends { id: string }> {
   db: ConversionDatabase;
   isPending: (row: Row) => boolean;
   load: (afterId: string | undefined) => Promise<Row[]>;
+  testHooks?: ConversionPreflightOptions['testHooks'];
   verify: () => Promise<void>;
 }
 
@@ -505,6 +510,7 @@ const convertBatches = async <Row extends { id: string }>({
   db,
   isPending,
   load,
+  testHooks,
   verify,
 }: ConvertBatchesOptions<Row>) => {
   let afterId: string | undefined;
@@ -528,9 +534,13 @@ const convertBatches = async <Row extends { id: string }>({
         return fail();
       }
 
+      // oxlint-disable-next-line no-await-in-loop -- deterministic injection must finish before the batch.
+      await testHooks?.beforeBatchCommit?.();
       // oxlint-disable-next-line no-await-in-loop -- the next cursor must wait for commit and read-back.
       await db.batch([firstQuery, ...remainingQueries]);
       converted += pendingRows.length;
+      // oxlint-disable-next-line no-await-in-loop -- deterministic injection must observe the committed batch.
+      await testHooks?.afterBatchCommit?.();
       // ponytail: global read-back is simplest; use per-batch projections if conversion volume grows.
       // oxlint-disable-next-line no-await-in-loop -- verification must finish before advancing the cursor.
       await verify();
@@ -560,7 +570,7 @@ const assertSameCounts = (before: ConversionPreflightCounts, after: ConversionPr
 const convertPendingRows = async (
   options: Omit<DataConversionOptions, 'confirmation' | 'target'>,
 ) => {
-  const { batchSize = 100, betterAuthSecret, dataProtection, db } = options;
+  const { batchSize = 100, betterAuthSecret, dataProtection, db, testHooks } = options;
   const verify = async () => {
     await preflight(options);
   };
@@ -646,6 +656,7 @@ const convertPendingRows = async (
         .where(afterId ? gt(schema.user.id, afterId) : undefined)
         .orderBy(asc(schema.user.id))
         .limit(batchSize),
+    testHooks,
     verify,
   });
 
@@ -741,6 +752,7 @@ const convertPendingRows = async (
         .where(afterId ? gt(schema.session.id, afterId) : undefined)
         .orderBy(asc(schema.session.id))
         .limit(batchSize),
+    testHooks,
     verify,
   });
 
@@ -798,6 +810,7 @@ const convertPendingRows = async (
         .where(afterId ? gt(schema.tasks.id, afterId) : undefined)
         .orderBy(asc(schema.tasks.id))
         .limit(batchSize),
+    testHooks,
     verify,
   });
 
@@ -869,6 +882,7 @@ const convertPendingRows = async (
         .where(afterId ? gt(schema.verification.id, afterId) : undefined)
         .orderBy(asc(schema.verification.id))
         .limit(batchSize),
+    testHooks,
     verify,
   });
 
@@ -918,6 +932,7 @@ const convertPendingRows = async (
         })),
       );
     },
+    testHooks,
     verify,
   });
 

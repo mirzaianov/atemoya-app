@@ -17,10 +17,11 @@ architecture and rollout plan are approved. Feature-branch implementation now
 includes the guarded integration harness, cryptography and key boundaries,
 strict logging, additive shadow schema, encrypted task and Better Auth adapter
 persistence, Better Auth-native encrypted backup-code storage, and the
-default-off maintenance write barrier. The read-only preflight and restartable
-atomic conversion engine are verified against the guarded integration database;
-the operator command, interruption coverage, contract migration, rehearsal, and
-production rollout remain pending.
+default-off maintenance write barrier. The read-only preflight, restartable
+atomic conversion engine, guarded local operator command, and deterministic
+failure-injection coverage are verified against the guarded integration
+database; the contract migration, development rehearsal, and production rollout
+remain pending.
 
 Do not schedule production conversion until the linked architecture plan's
 development implementation and rehearsal steps have passed. The
