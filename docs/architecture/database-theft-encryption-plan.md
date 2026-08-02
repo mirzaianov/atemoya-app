@@ -2,9 +2,9 @@
 
 ## Status
 
-Approved architecture and rollout plan; guarded conversion implementation is
-complete, while development rehearsal, contract migration, and rollout remain
-pending.
+Approved architecture and rollout plan; guarded conversion implementation and
+the development rehearsal are complete, while contract migration and production
+rollout remain pending.
 
 ## Architecture Review Findings
 

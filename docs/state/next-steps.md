@@ -4,26 +4,24 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare and review the controlled Neon development rehearsal before changing
-any deployed environment:
+Draft and verify the contract migration without applying it to Neon:
 
-1. Commit the guarded operator boundary, then prepare its merge into `develop`.
-2. Before that merge can deploy the encrypted runtime, enable
-   `MAINTENANCE_MODE=1` for Vercel Preview and verify the maintenance response on
-   a deployment containing the gate.
-3. Record the Neon development restore point, wait for the invocation drain,
-   and verify source stability before conversion.
-4. Run the reviewed development conversion from the trusted local environment,
-   verify ciphertext, lookups, counts, and idempotency, then smoke-test the
-   encrypted Preview runtime while production remains unchanged.
-5. Draft the contract migration only after the complete development rehearsal
-   passes.
+1. Define the final Drizzle schema for protected columns and constraints.
+2. Generate one contract migration that removes plaintext protected columns,
+   promotes verified ciphertext and blind-index columns, removes obsolete
+   plaintext uniqueness indexes, and makes required final columns non-null.
+3. Preserve Better Auth-owned password hashes, TOTP secrets, and encrypted
+   backup-code storage unchanged.
+4. Add guarded integration coverage for converted legacy rows and new
+   ciphertext-only rows, including uniqueness, foreign keys, and readable
+   application behavior after migration.
+5. Review the generated SQL and rollback assumptions before applying it to any
+   Neon database.
 
 ## Immediate Goal
 
-Review the exact development rehearsal checklist. Do not merge, deploy, enable
-maintenance, or run `pnpm data:convert development` until that checklist is
-approved.
+Produce a reviewed, test-covered contract migration. Do not apply it to
+`atemoya_test`, development, Preview, or production yet.
 
 ## Open Questions
 

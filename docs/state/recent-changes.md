@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-02: Completed the maintenance-gated Neon development rehearsal: Preview page/auth/POST checks returned `503`, the 70-second drain completed, eight rows converted, ten scope rows verified, the rerun wrote zero rows, all aggregate shadows were complete, the encrypted task lifecycle passed, and production isolation/smoke checks remained clean. [Reason why added: establishes development acceptance before drafting the contract migration.]
+
 - 2026-08-02: Added and verified the local `pnpm data:convert` operator with exact target confirmations, Varlock-only secrets, guarded test-database identity, non-test `APP_ENV` checks, deterministic interruption and concurrent-source injection, and captured-output secrecy. [Reason why added: completes the conversion command and failure boundary without touching development, Preview, or production data.]
 
 - 2026-08-02: Added and verified restartable atomic conversion batches with stable cursors, source/shadow guards, rollback assertions, encrypted Better Auth backup-code conversion, per-batch readback, final global verification, and idempotent reruns. [Reason why added: completes the write engine only against guarded `atemoya_test` without exposing an operator command or modifying deployed databases.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Applied additive migration `0008_productive_paibok.sql` to the Neon development application database, verified journal timestamp `1785509374785`, all 22 nullable-column and 10 index definitions, and the plaintext-authoritative Preview create/read/delete path. [Reason why added: completes development schema promotion while confirming production and encrypted persistence remain untouched.]
 
 - 2026-07-31: Added and verified the ADR-009 four-variable development-key boundary, fail-closed database startup validation, KeePass-backed independent version-one keyrings, and matching Vercel Preview configuration; production keys remain absent. [Reason why added: completes development key provisioning before the additive migration reaches the application development database.]
-
-- 2026-07-31: Generated and verified additive Drizzle migration `0008_productive_paibok.sql` with nullable encryption shadows, verification metadata, retained plaintext constraints, and partial lookup indexes; guarded Neon catalog, plaintext-write, shadow-write, and reset checks pass. [Reason why added: establishes the schema needed for encrypted persistence without deploying encrypted writes or converting application data.]
