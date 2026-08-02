@@ -34,9 +34,19 @@ pairs, and retains current uniqueness behavior through HMAC blind indexes.
 Better Auth continues to own password hashing and native TOTP and backup-code
 encryption.
 
-Implementation has not started. The 2026-07-30 architecture-review findings
-were resolved and the revised architecture was approved on 2026-07-31. The
-threat model was narrowed to passive database
+Implementation is in progress on the feature branch. The guarded Neon test
+harness, cryptography and key-configuration boundaries, strict logger, additive
+shadow schema, encrypted task persistence, and encrypted Better Auth
+identity/session/verification adapter boundary plus Better Auth-native encrypted
+backup-code storage and the default-off maintenance Proxy are implemented and
+verified. The read-only preflight, restartable atomic conversion engine, guarded
+local operator command, and deterministic failure-injection coverage are also
+verified against the guarded integration database. Development rehearsal and
+the contract migration remain pending.
+Existing development application rows remain plaintext, Preview still runs the
+plaintext-authoritative release, and production is unchanged. The 2026-07-30
+architecture-review findings were resolved and the revised architecture was
+approved on 2026-07-31. The threat model was narrowed to passive database
 exfiltration; active database writes and application-oracle attacks are out of
 scope. Production conversion now uses maintenance-only shadow columns, a
 restartable data command, and two canonical Drizzle migrations instead of a

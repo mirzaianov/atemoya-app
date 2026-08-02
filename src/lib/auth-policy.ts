@@ -1,3 +1,8 @@
+export const authBackupCodePolicy = {
+  amount: 10,
+  storeBackupCodes: 'encrypted',
+} as const;
+
 export const authPasswordPolicy = {
   maxLength: 128,
   minLength: 8,

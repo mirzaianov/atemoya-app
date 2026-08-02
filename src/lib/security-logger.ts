@@ -10,12 +10,60 @@ interface BetterAuthSecurityEvent {
   severity: Parameters<BetterAuthLog>[0];
 }
 
-type ExactSecurityEvent<Event extends BetterAuthSecurityEvent> = Event &
-  Record<Exclude<keyof Event, keyof BetterAuthSecurityEvent>, never>;
+interface BetterAuthAdapterSecurityEvent {
+  code: 'better_auth_adapter_failure';
+  operation:
+    | 'consumeOne'
+    | 'count'
+    | 'create'
+    | 'delete'
+    | 'deleteMany'
+    | 'findMany'
+    | 'findOne'
+    | 'incrementOne'
+    | 'transaction'
+    | 'update'
+    | 'updateMany';
+  severity: 'error';
+}
 
-export const logSecurityEvent = <const Event extends BetterAuthSecurityEvent>(
-  event: ExactSecurityEvent<Event>,
-) => {
+interface TaskQuerySecurityEvent {
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
+  code: 'task_query_failure';
+  operation:
+    | 'complete'
+    | 'create'
+    | 'delete'
+    | 'find_duplicate'
+    | 'list'
+    | 'reorder'
+    | 'restore'
+    | 'update';
+  recordId?: string;
+  severity: 'error';
+}
+
+interface DataConversionFailureEvent {
+  code: 'data_conversion_failure';
+  phase: 'convert' | 'intent' | 'preflight' | 'verify';
+  severity: 'error';
+}
+
+interface DataConversionProgressEvent {
+  code: 'data_conversion_progress';
+  count: number;
+  phase: 'convert' | 'preflight' | 'verify';
+  severity: 'info';
+}
+
+type SecurityEvent =
+  | BetterAuthAdapterSecurityEvent
+  | BetterAuthSecurityEvent
+  | DataConversionFailureEvent
+  | DataConversionProgressEvent
+  | TaskQuerySecurityEvent;
+
+export const logSecurityEvent = (event: SecurityEvent) => {
   stderr.write(`${JSON.stringify(event)}\n`);
 };
 
