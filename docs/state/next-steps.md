@@ -4,23 +4,24 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Implement and verify the root maintenance write barrier on the feature branch:
+Implement the restartable one-time conversion command against the guarded test
+database:
 
-1. Add one root Next.js `proxy.ts` gate controlled by `MAINTENANCE_MODE=1`.
-2. Return plain `503 Service Unavailable` responses for application pages,
-   Better Auth requests, and Server Action requests. Set `Cache-Control` to
-   `no-store`, include `Retry-After`, and exclude framework assets and public
-   files.
-3. Verify enabled and disabled behavior through Next.js Proxy test utilities,
-   including representative page, auth, and Server Action requests.
-4. Add no database-backed bypass or conversion behavior, and leave maintenance
-   disabled in Preview and production.
+1. Require an explicit target environment and confirmation before writes; keep
+   production inaccessible during development tests.
+2. Preflight normalized collisions, unexpected plaintext nulls, dormant OAuth
+   token values, and source/shadow consistency before conversion.
+3. Convert missing shadows in stable atomic batches, including Better Auth
+   backup-code sets, and read back each batch before continuing.
+4. Make interruption restartable and finish with complete decryptability,
+   blind-index, uniqueness, row-count, and source-stability verification.
+5. Log only phases, counts, stable IDs, and fixed error categories; include no
+   DDL and touch neither Preview nor production data.
 
 ## Immediate Goal
 
-Establish the tested application write barrier required before implementing or
-rehearsing the restartable conversion command; leave deployed environments
-unchanged.
+Prove the conversion and restart path against synthetic `atemoya_test` data
+without changing the development application database or deployed environments.
 
 ## Open Questions
 

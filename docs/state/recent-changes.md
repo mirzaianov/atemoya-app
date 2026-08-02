@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-02: Added and verified a root Next.js maintenance Proxy controlled only by `MAINTENANCE_MODE=1`, with plain no-store `503` responses for pages, Better Auth, and Server Actions plus static-asset exclusions and a default-off environment contract. [Reason why added: establishes the application write barrier required before conversion while leaving Preview, production, and Neon untouched.]
+
 - 2026-08-02: Enabled Better Auth-native encrypted backup-code storage and verified ciphertext persistence, regeneration, rejection of superseded codes, one-time recovery consumption, and captured-log secrecy against the guarded integration database. [Reason why added: completes encrypted storage for newly issued backup codes without double encryption, deployment, or conversion of existing plaintext sets.]
 
 - 2026-07-31: Implemented and verified a thin encryption decorator around Better Auth 1.6.23's Drizzle adapter, including protected writes and lookups, selected/joined decryption, verification metadata, fail-closed unsupported operations, native atomic delegation, transaction decoration, and indexed trusted-device cleanup. [Reason why added: completes encrypted identity, session, and verification persistence in isolation while keeping the runtime off Preview until conversion readiness.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Added and verified the ADR-009 database-free cryptography boundary with versioned AES-256-GCM envelopes, record-bound authenticated data, independent HMAC-SHA-256 blind indexes, approved normalizers, strict key validation, and sanitized failures. [Reason why added: completes the cryptographic foundation before any environment, schema, or persistence integration.]
 
 - 2026-07-31: Added and verified the ADR-009 test-only Neon/Drizzle harness, explicit `TEST_DATABASE_URL` contract, exact `atemoya_test`/`atemoya_test_owner` write guards, known-table cleanup, and separate unit and integration commands; the live migration/insert/reset test passes. [Reason why added: starts encryption implementation with a proven fail-closed real-driver boundary while leaving every encryption change pending explicit follow-up.]
-
-- 2026-07-31: Approved the revised ADR-009 architecture and consolidated its implementation sequence, manual checkpoints, development rehearsal, rollback boundaries, and separate production approval gate in the existing architecture plan. [Reason why added: keeps the encryption decision and execution guidance in the repository's canonical ADR and architecture documents without adding a redundant documentation hierarchy.]

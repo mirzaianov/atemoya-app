@@ -38,7 +38,8 @@ Implementation is in progress on the feature branch. The guarded Neon test
 harness, cryptography and key-configuration boundaries, strict logger, additive
 shadow schema, encrypted task persistence, and encrypted Better Auth
 identity/session/verification adapter boundary plus Better Auth-native encrypted
-backup-code storage are implemented and verified.
+backup-code storage and the default-off maintenance Proxy are implemented and
+verified.
 Existing development application rows remain plaintext, Preview still runs the
 plaintext-authoritative release, and production is unchanged. The 2026-07-30
 architecture-review findings were resolved and the revised architecture was
