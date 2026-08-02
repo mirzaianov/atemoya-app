@@ -6,7 +6,7 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
-- 2026-08-02: Drafted contract migration `0009_contract_encrypted_columns.sql`, moved the runtime schema and adapters to ciphertext-only logical fields, retained a production-only pre-contract conversion schema, added post-contract integration coverage, and passed database-free migration, lint, and unit checks without applying `0009` to Neon. [Reason why added: establishes the reviewed irreversible artifact and its explicit no-application boundary.]
+- 2026-08-02: Drafted contract migration `0009_contract_encrypted_columns.sql`, moved the runtime schema and adapters to ciphertext-only logical fields, retained a production-only pre-contract conversion schema, and passed database-free checks plus all four guarded post-contract integration tests. Only `atemoya_test` received `0009`, with migration count `10` and latest migration `1785693662810`; application databases remain unchanged. [Reason why added: establishes the reviewed irreversible artifact and its guarded test-database proof.]
 
 - 2026-08-02: Completed the maintenance-gated Neon development rehearsal: Preview page/auth/POST checks returned `503`, the 70-second drain completed, eight rows converted, ten scope rows verified, the rerun wrote zero rows, all aggregate shadows were complete, the encrypted task lifecycle passed, and production isolation/smoke checks remained clean. [Reason why added: establishes development acceptance before drafting the contract migration.]
 
