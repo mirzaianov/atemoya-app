@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-02: Added and verified restartable atomic conversion batches with stable cursors, source/shadow guards, rollback assertions, encrypted Better Auth backup-code conversion, per-batch readback, final global verification, and idempotent reruns. [Reason why added: completes the write engine only against guarded `atemoya_test` without exposing an operator command or modifying deployed databases.]
+
 - 2026-08-02: Added and verified the read-only conversion preflight with exact target confirmations, stable scans, normalized-collision and OAuth-token checks, pending/complete shadow validation, Better Auth-owned value decoding, late-write mismatch detection, and sanitized events. [Reason why added: establishes the fail-closed gate for conversion writes without converting or modifying any application row.]
 
 - 2026-08-02: Added and verified a root Next.js maintenance Proxy controlled only by `MAINTENANCE_MODE=1`, with plain no-store `503` responses for pages, Better Auth, and Server Actions plus static-asset exclusions and a default-off environment contract. [Reason why added: establishes the application write barrier required before conversion while leaving Preview, production, and Neon untouched.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Generated and verified additive Drizzle migration `0008_productive_paibok.sql` with nullable encryption shadows, verification metadata, retained plaintext constraints, and partial lookup indexes; guarded Neon catalog, plaintext-write, shadow-write, and reset checks pass. [Reason why added: establishes the schema needed for encrypted persistence without deploying encrypted writes or converting application data.]
 
 - 2026-07-31: Added a strict structured security logger, configured Better Auth 1.6.23 for warning-level fixed-event output, and verified that upstream messages, arguments, and raw errors cannot leak representative sensitive markers to stdout or stderr. [Reason why added: establishes the no-plaintext logging boundary before encrypted persistence and conversion code begins.]
-
-- 2026-07-31: Added and verified the ADR-009 database-free cryptography boundary with versioned AES-256-GCM envelopes, record-bound authenticated data, independent HMAC-SHA-256 blind indexes, approved normalizers, strict key validation, and sanitized failures. [Reason why added: completes the cryptographic foundation before any environment, schema, or persistence integration.]

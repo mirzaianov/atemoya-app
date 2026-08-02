@@ -1,12 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { symmetricEncrypt } from 'better-auth/crypto';
+import { symmetricDecrypt, symmetricEncrypt } from 'better-auth/crypto';
 import { sql } from 'drizzle-orm';
 
-import { getVerificationMetadata } from '../lib/better-auth-data-protection.ts';
 import { createDataProtection } from '../lib/data-protection.ts';
-import { DataConversionError, runConversionPreflight } from './data-conversion.ts';
+import {
+  DataConversionError,
+  runConversionPreflight,
+  runDataConversion,
+} from './data-conversion.ts';
 import { createTestDatabase } from './test-database.ts';
 
 interface PersistedState extends Record<string, unknown> {
@@ -23,7 +26,7 @@ interface PersistedState extends Record<string, unknown> {
 
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
 
-test('preflights pending and complete conversion state without writes', async (context) => {
+test('preflights and converts pending state through atomic batches', async (context) => {
   const testDatabase = await createTestDatabase();
 
   await testDatabase.migrate();
@@ -176,98 +179,38 @@ test('preflights pending and complete conversion state without writes', async (c
       valueCiphertext: null,
     });
 
-    const metadata = getVerificationMetadata(identifier, value);
-    const encryptedBackupCodes = await symmetricEncrypt({
-      data: serializedBackupCodes,
-      key: betterAuthSecret,
-    });
+    assert.deepEqual(await runDataConversion(options), { converted: 5, counts });
 
-    await testDatabase.db.execute(sql`
-      UPDATE "user"
-      SET
-        "email_ciphertext" = ${dataProtection.encryptValue(email, {
-          field: 'email',
-          model: 'user',
-          recordId: userId,
-        })},
-        "email_lookup" = ${dataProtection.emailLookup(email)},
-        "name_ciphertext" = ${dataProtection.encryptValue(nickname, {
-          field: 'name',
-          model: 'user',
-          recordId: userId,
-        })},
-        "name_lookup" = ${dataProtection.nicknameLookup(nickname)},
-        "image_ciphertext" = ${dataProtection.encryptValue(image, {
-          field: 'image',
-          model: 'user',
-          recordId: userId,
-        })}
-      WHERE "id" = ${userId}
-    `);
-    await testDatabase.db.execute(sql`
-      UPDATE "session"
-      SET
-        "token_ciphertext" = ${dataProtection.encryptValue(token, {
-          field: 'token',
-          model: 'session',
-          recordId: sessionId,
-        })},
-        "token_lookup" = ${dataProtection.sessionTokenLookup(token)},
-        "ip_address_ciphertext" = ${dataProtection.encryptValue(ipAddress, {
-          field: 'ipAddress',
-          model: 'session',
-          recordId: sessionId,
-        })},
-        "user_agent_ciphertext" = ${dataProtection.encryptValue(userAgent, {
-          field: 'userAgent',
-          model: 'session',
-          recordId: sessionId,
-        })}
-      WHERE "id" = ${sessionId}
-    `);
-    await testDatabase.db.execute(sql`
-      UPDATE "tasks"
-      SET
-        "title_ciphertext" = ${dataProtection.encryptValue(title, {
-          field: 'title',
-          model: 'tasks',
-          recordId: taskId,
-        })},
-        "title_lookup" = ${dataProtection.taskTitleLookup(userId, title)}
-      WHERE "id" = ${taskId}
-    `);
-    await testDatabase.db.execute(sql`
-      UPDATE "verification"
-      SET
-        "identifier_ciphertext" = ${dataProtection.encryptValue(identifier, {
-          field: 'identifier',
-          model: 'verification',
-          recordId: verificationId,
-        })},
-        "identifier_lookup" = ${dataProtection.verificationIdentifierLookup(identifier)},
-        "value_ciphertext" = ${dataProtection.encryptValue(value, {
-          field: 'value',
-          model: 'verification',
-          recordId: verificationId,
-        })},
-        "purpose" = ${metadata.purpose},
-        "subject_user_id" = ${metadata.subjectUserId}
-      WHERE "id" = ${verificationId}
-    `);
-    await testDatabase.db.execute(sql`
-      UPDATE "two_factor"
-      SET "backup_codes" = ${encryptedBackupCodes}
-      WHERE "id" = ${twoFactorId}
-    `);
+    const completeState = await readState();
 
-    assert.deepEqual(await runConversionPreflight(options), counts);
+    for (const ciphertext of [
+      completeState.emailCiphertext,
+      completeState.nameCiphertext,
+      completeState.ipAddressCiphertext,
+      completeState.tokenCiphertext,
+      completeState.titleCiphertext,
+      completeState.identifierCiphertext,
+      completeState.valueCiphertext,
+    ]) {
+      assert.match(ciphertext ?? '', /^enc:v1:1:/u);
+    }
+
+    assert.notEqual(completeState.backupCodes, serializedBackupCodes);
+    assert.deepEqual(
+      JSON.parse(
+        await symmetricDecrypt({ data: completeState.backupCodes, key: betterAuthSecret }),
+      ),
+      backupCodes,
+    );
+    assert.deepEqual(await runDataConversion(options), { converted: 0, counts });
+    assert.deepEqual(await readState(), completeState);
 
     await testDatabase.db.execute(sql`
       UPDATE "tasks"
       SET "title" = 'late-write-marker'
       WHERE "id" = ${taskId}
     `);
-    await assert.rejects(runConversionPreflight(options), DataConversionError);
+    await assert.rejects(runDataConversion(options), DataConversionError);
 
     const capturedOutput = stderr.join('');
 

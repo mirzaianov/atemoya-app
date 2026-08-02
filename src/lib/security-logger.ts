@@ -45,14 +45,14 @@ interface TaskQuerySecurityEvent {
 
 interface DataConversionFailureEvent {
   code: 'data_conversion_failure';
-  phase: 'intent' | 'preflight';
+  phase: 'convert' | 'intent' | 'preflight' | 'verify';
   severity: 'error';
 }
 
 interface DataConversionProgressEvent {
   code: 'data_conversion_progress';
   count: number;
-  phase: 'preflight';
+  phase: 'convert' | 'preflight' | 'verify';
   severity: 'info';
 }
 

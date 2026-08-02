@@ -39,8 +39,9 @@ harness, cryptography and key-configuration boundaries, strict logger, additive
 shadow schema, encrypted task persistence, and encrypted Better Auth
 identity/session/verification adapter boundary plus Better Auth-native encrypted
 backup-code storage and the default-off maintenance Proxy are implemented and
-verified. The read-only conversion preflight is also verified; conversion writes
-do not exist yet.
+verified. The read-only preflight and restartable atomic conversion engine are
+also verified against the guarded integration database; a local operator
+command and failure-injection coverage remain pending.
 Existing development application rows remain plaintext, Preview still runs the
 plaintext-authoritative release, and production is unchanged. The 2026-07-30
 architecture-review findings were resolved and the revised architecture was

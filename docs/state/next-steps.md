@@ -4,25 +4,26 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Extend the verified preflight into restartable conversion batches against the
-guarded test database:
+Expose the verified conversion engine through a guarded local operator command
+and finish failure-injection coverage:
 
-1. Run the accepted read-only preflight before the first write.
-2. Convert only wholly pending rows in stable atomic batches, with source-value
-   guards and missing-shadow guards on every update.
-3. Encrypt plaintext Better Auth backup-code JSON in place while accepting and
-   verifying already-encrypted sets.
-4. Read back and verify each committed batch, then rerun the global preflight to
-   prove complete decryptability, lookups, metadata, counts, and source
-   stability.
-5. Inject an interruption and prove a restart skips verified rows; keep the
-   command free of DDL and inaccessible to Preview and production data.
+1. Add a local-only `pnpm` command that requires an explicit `test`,
+   `development`, or `production` target and exact confirmation. Bind `test` to
+   guarded `TEST_DATABASE_URL`; bind non-test targets to the selected
+   environment's `DATABASE_URL`.
+2. Load key configuration and `BETTER_AUTH_SECRET` only through the existing
+   Varlock environment; never accept keys in arguments or logs.
+3. Inject a deterministic interruption after a committed batch and prove a
+   rerun skips complete shadows.
+4. Inject a source change between preflight and a batch update and prove the
+   atomic assertion rolls back the batch.
+5. Capture stdout and stderr and prove no sensitive markers are emitted. The
+   command must perform no DDL and must not trigger deployment.
 
 ## Immediate Goal
 
-Convert and verify synthetic `atemoya_test` rows through restartable atomic
-batches without changing the development application database or deployed
-environments.
+Complete the operator and failure boundary against `atemoya_test` without
+running conversion against development, Preview, or production.
 
 ## Open Questions
 
