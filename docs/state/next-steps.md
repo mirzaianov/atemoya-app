@@ -4,23 +4,22 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Enable and verify Better Auth's native encrypted backup-code storage on the
-feature branch:
+Implement and verify the root maintenance write barrier on the feature branch:
 
-1. Set `backupCodeOptions.storeBackupCodes` to `encrypted` without adding
-   application-layer encryption around Better Auth-owned TOTP or backup-code
-   values.
-2. Verify newly generated and regenerated backup-code sets are stored as Better
-   Auth ciphertext and still support recovery through focused tests.
-3. Keep existing plaintext backup-code rows unchanged for the restartable
-   conversion command; do not deploy the encrypted runtime to Preview yet.
-4. Preserve the independent `BETTER_AUTH_SECRET` boundary and strict captured-log
-   assertions.
+1. Add one root Next.js `proxy.ts` gate controlled by `MAINTENANCE_MODE=1`.
+2. Return plain `503 Service Unavailable` responses for application pages,
+   Better Auth requests, and Server Action requests. Set `Cache-Control` to
+   `no-store`, include `Retry-After`, and exclude framework assets and public
+   files.
+3. Verify enabled and disabled behavior through Next.js Proxy test utilities,
+   including representative page, auth, and Server Action requests.
+4. Add no database-backed bypass or conversion behavior, and leave maintenance
+   disabled in Preview and production.
 
 ## Immediate Goal
 
-Implement and verify encrypted Better Auth backup-code persistence in isolation;
-keep Preview on the plaintext-authoritative release and leave production
+Establish the tested application write barrier required before implementing or
+rehearsing the restartable conversion command; leave deployed environments
 unchanged.
 
 ## Open Questions

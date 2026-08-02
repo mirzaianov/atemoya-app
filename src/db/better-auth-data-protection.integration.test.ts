@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import { drizzleAdapter } from '@better-auth/drizzle-adapter';
+import { betterAuth } from 'better-auth';
 import type { BetterAuthOptions } from 'better-auth';
+import { symmetricDecrypt } from 'better-auth/crypto';
 import { twoFactor } from 'better-auth/plugins';
 import { sql } from 'drizzle-orm';
 
@@ -11,7 +13,9 @@ import {
   betterAuthDataProtectionFields,
   protectBetterAuthAdapter,
 } from '../lib/better-auth-data-protection.ts';
+import { authBackupCodePolicy } from '../lib/auth-policy.ts';
 import { createDataProtection } from '../lib/data-protection.ts';
+import { betterAuthLogger } from '../lib/security-logger.ts';
 import * as schema from './schema.ts';
 import { createTestDatabase } from './test-database.ts';
 
@@ -76,7 +80,17 @@ interface TwoFactorRecord extends Record<string, unknown> {
   id: string;
 }
 
+interface StoredBackupCodes extends Record<string, unknown> {
+  backupCodes: string;
+}
+
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
+const getCookieHeader = (headers: Headers) =>
+  headers
+    .getSetCookie()
+    .map((cookie) => cookie.split(';', 1)[0])
+    .filter((cookie): cookie is string => Boolean(cookie))
+    .join('; ');
 
 test('protects Better Auth records through the guarded adapter', async (context) => {
   const testDatabase = await createTestDatabase();
@@ -409,6 +423,150 @@ test('protects Better Auth records through the guarded adapter', async (context)
       resetIdentifier,
       'must-not-be-logged@example.test',
     ]) {
+      assert.equal(capturedOutput.includes(marker), false);
+    }
+  } finally {
+    await testDatabase.reset();
+  }
+});
+
+test('stores and consumes Better Auth backup codes as ciphertext', async (context) => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  const dataProtection = createDataProtection({
+    blindIndexActiveVersion: '1',
+    blindIndexKeys: JSON.stringify({ 1: key(6) }),
+    dataEncryptionActiveVersion: '1',
+    dataEncryptionKeys: JSON.stringify({ 1: key(5) }),
+  });
+  const baseAdapter = drizzleAdapter(testDatabase.db, {
+    provider: 'pg',
+    schema,
+  });
+  const database = protectBetterAuthAdapter(baseAdapter, dataProtection);
+  const secret = 'integration-only-backup-code-secret';
+  const password = 'Backup-Code-Test-Password-1';
+  const [initialCodes, regeneratedCodes] = [
+    ['first-code-one', 'first-code-two'],
+    ['second-code-one', 'second-code-two'],
+  ];
+  const codeSets = [initialCodes, regeneratedCodes];
+  let generationIndex = 0;
+  const auth = betterAuth({
+    baseURL: 'http://localhost:3000',
+    database,
+    emailAndPassword: { enabled: true },
+    logger: betterAuthLogger,
+    plugins: [
+      twoFactor({
+        backupCodeOptions: {
+          ...authBackupCodePolicy,
+          customBackupCodesGenerate: () => {
+            const codes = codeSets[generationIndex];
+
+            assert.ok(codes);
+            generationIndex += 1;
+
+            return [...codes];
+          },
+        },
+        skipVerificationOnEnable: true,
+      }),
+    ],
+    secret,
+    session: betterAuthDataProtectionFields.session,
+    user: betterAuthDataProtectionFields.user,
+    verification: betterAuthDataProtectionFields.verification,
+  });
+  const stderr: string[] = [];
+
+  context.mock.method(process.stderr, 'write', (chunk: string | Uint8Array) => {
+    stderr.push(String(chunk));
+
+    return true;
+  });
+
+  try {
+    const signUp = await auth.api.signUpEmail({
+      body: {
+        email: 'backup-codes@example.test',
+        name: 'backup_codes_user',
+        password,
+      },
+      returnHeaders: true,
+    });
+    const signUpCookie = getCookieHeader(signUp.headers);
+
+    assert.ok(signUpCookie);
+
+    const enabled = await auth.api.enableTwoFactor({
+      body: { password },
+      headers: new Headers({ cookie: signUpCookie }),
+      returnHeaders: true,
+    });
+    const authenticatedCookie = getCookieHeader(enabled.headers);
+    const [initialCode] = initialCodes;
+
+    assert.ok(authenticatedCookie);
+    assert.deepEqual(enabled.response.backupCodes, initialCodes);
+
+    const readStoredBackupCodes = async () => {
+      const result = await testDatabase.db.execute<StoredBackupCodes>(sql`
+        SELECT "backup_codes" AS "backupCodes"
+        FROM "two_factor"
+        WHERE "user_id" = ${signUp.response.user.id}
+      `);
+      const [stored] = result.rows;
+
+      assert.ok(stored);
+
+      return stored.backupCodes;
+    };
+    const initialStored = await readStoredBackupCodes();
+
+    assert.notEqual(initialStored, JSON.stringify(initialCodes));
+    assert.deepEqual(
+      JSON.parse(await symmetricDecrypt({ data: initialStored, key: secret })),
+      initialCodes,
+    );
+
+    const regenerated = await auth.api.generateBackupCodes({
+      body: { password },
+      headers: new Headers({ cookie: authenticatedCookie }),
+    });
+    const [regeneratedCode, remainingRegeneratedCode] = regeneratedCodes;
+    const regeneratedStored = await readStoredBackupCodes();
+
+    assert.deepEqual(regenerated.backupCodes, regeneratedCodes);
+    assert.notEqual(regeneratedStored, initialStored);
+    assert.deepEqual(
+      JSON.parse(await symmetricDecrypt({ data: regeneratedStored, key: secret })),
+      regeneratedCodes,
+    );
+    await assert.rejects(
+      auth.api.verifyBackupCode({
+        body: { code: initialCode ?? '', disableSession: true },
+        headers: new Headers({ cookie: authenticatedCookie }),
+      }),
+    );
+    await auth.api.verifyBackupCode({
+      body: { code: regeneratedCode ?? '', disableSession: true },
+      headers: new Headers({ cookie: authenticatedCookie }),
+    });
+
+    const consumedStored = await readStoredBackupCodes();
+
+    assert.notEqual(consumedStored, regeneratedStored);
+    assert.deepEqual(JSON.parse(await symmetricDecrypt({ data: consumedStored, key: secret })), [
+      remainingRegeneratedCode,
+    ]);
+
+    const capturedOutput = stderr.join('');
+
+    for (const marker of [secret, password, ...codeSets.flat()]) {
       assert.equal(capturedOutput.includes(marker), false);
     }
   } finally {

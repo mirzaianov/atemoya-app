@@ -12,7 +12,7 @@ import {
   protectBetterAuthAdapter,
 } from './better-auth-data-protection';
 import { nicknameSchema } from './auth-nickname';
-import { authPasswordPolicy, authRateLimitPolicy } from './auth-policy';
+import { authBackupCodePolicy, authPasswordPolicy, authRateLimitPolicy } from './auth-policy';
 import { getDataProtection } from './data-protection-config';
 import { betterAuthLogger } from './security-logger';
 
@@ -149,9 +149,7 @@ export const auth = betterAuth({
         enabled: true,
         maxFailedAttempts: 10,
       },
-      backupCodeOptions: {
-        amount: 10,
-      },
+      backupCodeOptions: authBackupCodePolicy,
       issuer: 'Atemoya',
       trustDeviceMaxAge: 2_592_000,
       twoFactorCookieMaxAge: 600,

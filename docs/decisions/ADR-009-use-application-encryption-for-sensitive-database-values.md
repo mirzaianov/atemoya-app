@@ -13,7 +13,12 @@ Accepted
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. All findings from the 2026-07-30 architecture
 review received approved design resolutions on 2026-07-31, and the revised
-architecture and rollout plan are approved; implementation has not started.
+architecture and rollout plan are approved. Feature-branch implementation now
+includes the guarded integration harness, cryptography and key boundaries,
+strict logging, additive shadow schema, encrypted task and Better Auth adapter
+persistence, and Better Auth-native encrypted backup-code storage. Maintenance
+gating, conversion tooling, the contract migration, rehearsal, and production
+rollout remain pending.
 
 Do not schedule production conversion until the linked architecture plan's
 development implementation and rehearsal steps have passed. The
