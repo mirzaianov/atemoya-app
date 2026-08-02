@@ -4,24 +4,23 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Draft and verify the contract migration without applying it to Neon:
+Validate the contract migration only against guarded `atemoya_test` after
+explicit approval:
 
-1. Define the final Drizzle schema for protected columns and constraints.
-2. Generate one contract migration that removes plaintext protected columns,
-   promotes verified ciphertext and blind-index columns, removes obsolete
-   plaintext uniqueness indexes, and makes required final columns non-null.
-3. Preserve Better Auth-owned password hashes, TOTP secrets, and encrypted
-   backup-code storage unchanged.
-4. Add guarded integration coverage for converted legacy rows and new
-   ciphertext-only rows, including uniqueness, foreign keys, and readable
-   application behavior after migration.
-5. Review the generated SQL and rollback assumptions before applying it to any
-   Neon database.
+1. Confirm `atemoya_test` contains no data that must be retained and that
+   `TEST_DATABASE_URL` still resolves to `atemoya_test_owner`.
+2. Run `pnpm test:integration`; this will apply migration `0009`, reset only the
+   guarded test database, and exercise final task and Better Auth persistence.
+3. Verify the guarded database reports migration count `10` and latest migration
+   `1785693662810`.
+4. Review uniqueness, foreign-key, converted-row, new-row, and readable-runtime
+   assertions from the integration result.
+5. Do not apply `0009` to development, Preview, or production in this step.
 
 ## Immediate Goal
 
-Produce a reviewed, test-covered contract migration. Do not apply it to
-`atemoya_test`, development, Preview, or production yet.
+Obtain explicit approval, then apply and verify the contract migration only on
+`atemoya_test`. Development, Preview, and production remain unchanged.
 
 ## Open Questions
 

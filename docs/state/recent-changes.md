@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-02: Drafted contract migration `0009_contract_encrypted_columns.sql`, moved the runtime schema and adapters to ciphertext-only logical fields, retained a production-only pre-contract conversion schema, added post-contract integration coverage, and passed database-free migration, lint, and unit checks without applying `0009` to Neon. [Reason why added: establishes the reviewed irreversible artifact and its explicit no-application boundary.]
+
 - 2026-08-02: Completed the maintenance-gated Neon development rehearsal: Preview page/auth/POST checks returned `503`, the 70-second drain completed, eight rows converted, ten scope rows verified, the rerun wrote zero rows, all aggregate shadows were complete, the encrypted task lifecycle passed, and production isolation/smoke checks remained clean. [Reason why added: establishes development acceptance before drafting the contract migration.]
 
 - 2026-08-02: Added and verified the local `pnpm data:convert` operator with exact target confirmations, Varlock-only secrets, guarded test-database identity, non-test `APP_ENV` checks, deterministic interruption and concurrent-source injection, and captured-output secrecy. [Reason why added: completes the conversion command and failure boundary without touching development, Preview, or production data.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Implemented and verified ciphertext-only task-title writes, record-bound decryption through a narrow DTO, per-user blind-index duplicate checks, sanitized task-query failures, and the complete guarded encrypted task lifecycle. [Reason why added: completes the first encrypted application persistence boundary while keeping it off Preview until development conversion is ready.]
 
 - 2026-07-31: Applied additive migration `0008_productive_paibok.sql` to the Neon development application database, verified journal timestamp `1785509374785`, all 22 nullable-column and 10 index definitions, and the plaintext-authoritative Preview create/read/delete path. [Reason why added: completes development schema promotion while confirming production and encrypted persistence remain untouched.]
-
-- 2026-07-31: Added and verified the ADR-009 four-variable development-key boundary, fail-closed database startup validation, KeePass-backed independent version-one keyrings, and matching Vercel Preview configuration; production keys remain absent. [Reason why added: completes development key provisioning before the additive migration reaches the application development database.]

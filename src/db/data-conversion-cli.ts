@@ -8,7 +8,7 @@ import {
   DataConversionError,
   runDataConversion,
 } from './data-conversion.ts';
-import * as schema from './schema.ts';
+import * as schema from './data-conversion-schema.ts';
 import { createTestDatabase } from './test-database.ts';
 
 const fail = (): never => {
@@ -38,7 +38,7 @@ const run = async () => {
     if (confirmedTarget === 'test') {
       const testDatabase = await createTestDatabase();
 
-      ({ db } = testDatabase);
+      db = testDatabase.conversionDb;
     } else {
       const expectedAppEnvironment = confirmedTarget === 'production' ? 'prod' : 'dev';
       const databaseUrl = process.env.DATABASE_URL;

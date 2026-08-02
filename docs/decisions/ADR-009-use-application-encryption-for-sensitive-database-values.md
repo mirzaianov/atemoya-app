@@ -21,7 +21,9 @@ default-off maintenance write barrier. The read-only preflight, restartable
 atomic conversion engine, guarded local operator command, and deterministic
 failure-injection coverage are verified against the guarded integration
 database. The maintenance-gated development conversion and encrypted Preview
-runtime rehearsal pass; the contract migration and production rollout remain
+runtime rehearsal pass. Contract migration `0009_contract_encrypted_columns.sql`
+is drafted and passes database-free review, but has not been applied to any
+Neon database; guarded integration execution and production rollout remain
 pending.
 
 Do not schedule production conversion until the linked architecture plan's
