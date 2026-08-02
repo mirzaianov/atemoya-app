@@ -199,7 +199,7 @@ const createRecordId = (
   return typeof recordId === 'string' && recordId ? recordId : fail();
 };
 
-const verificationMetadata = (identifier: string, value: string) => {
+export const getVerificationMetadata = (identifier: string, value: string) => {
   if (identifier.startsWith('trust-device-')) {
     return { purpose: 'trust-device', subjectUserId: value };
   }
@@ -240,7 +240,7 @@ const transformWrite = (
       return fail();
     }
 
-    Object.assign(transformed, verificationMetadata(data.identifier, data.value));
+    Object.assign(transformed, getVerificationMetadata(data.identifier, data.value));
   }
 
   for (const [field, configuration] of Object.entries(protectedFields[model])) {

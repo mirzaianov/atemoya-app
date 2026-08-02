@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-02: Added and verified the read-only conversion preflight with exact target confirmations, stable scans, normalized-collision and OAuth-token checks, pending/complete shadow validation, Better Auth-owned value decoding, late-write mismatch detection, and sanitized events. [Reason why added: establishes the fail-closed gate for conversion writes without converting or modifying any application row.]
+
 - 2026-08-02: Added and verified a root Next.js maintenance Proxy controlled only by `MAINTENANCE_MODE=1`, with plain no-store `503` responses for pages, Better Auth, and Server Actions plus static-asset exclusions and a default-off environment contract. [Reason why added: establishes the application write barrier required before conversion while leaving Preview, production, and Neon untouched.]
 
 - 2026-08-02: Enabled Better Auth-native encrypted backup-code storage and verified ciphertext persistence, regeneration, rejection of superseded codes, one-time recovery consumption, and captured-log secrecy against the guarded integration database. [Reason why added: completes encrypted storage for newly issued backup codes without double encryption, deployment, or conversion of existing plaintext sets.]
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-07-31: Added a strict structured security logger, configured Better Auth 1.6.23 for warning-level fixed-event output, and verified that upstream messages, arguments, and raw errors cannot leak representative sensitive markers to stdout or stderr. [Reason why added: establishes the no-plaintext logging boundary before encrypted persistence and conversion code begins.]
 
 - 2026-07-31: Added and verified the ADR-009 database-free cryptography boundary with versioned AES-256-GCM envelopes, record-bound authenticated data, independent HMAC-SHA-256 blind indexes, approved normalizers, strict key validation, and sanitized failures. [Reason why added: completes the cryptographic foundation before any environment, schema, or persistence integration.]
-
-- 2026-07-31: Added and verified the ADR-009 test-only Neon/Drizzle harness, explicit `TEST_DATABASE_URL` contract, exact `atemoya_test`/`atemoya_test_owner` write guards, known-table cleanup, and separate unit and integration commands; the live migration/insert/reset test passes. [Reason why added: starts encryption implementation with a proven fail-closed real-driver boundary while leaving every encryption change pending explicit follow-up.]

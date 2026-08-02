@@ -43,9 +43,24 @@ interface TaskQuerySecurityEvent {
   severity: 'error';
 }
 
+interface DataConversionFailureEvent {
+  code: 'data_conversion_failure';
+  phase: 'intent' | 'preflight';
+  severity: 'error';
+}
+
+interface DataConversionProgressEvent {
+  code: 'data_conversion_progress';
+  count: number;
+  phase: 'preflight';
+  severity: 'info';
+}
+
 type SecurityEvent =
   | BetterAuthAdapterSecurityEvent
   | BetterAuthSecurityEvent
+  | DataConversionFailureEvent
+  | DataConversionProgressEvent
   | TaskQuerySecurityEvent;
 
 export const logSecurityEvent = (event: SecurityEvent) => {
