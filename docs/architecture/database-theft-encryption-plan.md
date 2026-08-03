@@ -2,9 +2,10 @@
 
 ## Status
 
-Approved architecture and rollout plan; guarded conversion implementation,
-guarded integration, and the complete development application contract
-rehearsal are accepted. Production key provisioning and rollout remain pending.
+Approved architecture and rollout plan; guarded implementation, development
+rehearsal, and the maintenance-gated production conversion are accepted.
+Production application checks pass; final closure waits only for the six-hour
+Neon restore history containing plaintext to expire.
 
 ## Architecture Review Findings
 
@@ -597,9 +598,13 @@ It is applied to `atemoya_test` and the development application database, both
 with migration count `10` and latest migration `1785693662810`. The development
 application used restore checkpoint `2026-08-03 12:15:52.281915+00`, reverified
 ten rows with zero conversion writes, and passed sign-in plus the complete
-encrypted task lifecycle after maintenance was disabled. Production remains at
-migration count `8`, latest migration `1785409343955`, with no rehearsal row and
-a passing application smoke check.
+encrypted task lifecycle after maintenance was disabled. Production used
+restore checkpoint `2026-08-03 16:03:34.60475+00`, converted 25 rows, verified
+27 protected records, and reverified all 27 with zero writes before contract
+migration `0009`. Production now reports migration count `10`, latest migration
+`1785693662810`, and passes sign-in, existing reads, and the complete encrypted
+task lifecycle after maintenance was disabled. Final closure waits for the
+six-hour restore history containing the plaintext checkpoint to expire.
 
 ### Development preparation
 

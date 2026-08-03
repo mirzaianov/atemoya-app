@@ -4,22 +4,19 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare the pinned-ancestor migration guard without deploying or migrating
-production yet:
+Close ADR-009 after Neon's six-hour production restore history no longer contains
+the plaintext checkpoint:
 
-1. Commit and merge the migration guard correction from the feature branch into
-   `develop`.
-2. Confirm the updated workflow rejects a branch name for Production before
-   Drizzle runs.
-3. Do not merge `develop` into `main` yet; production still lacks additive
-   migration `0008` and remains plaintext-authoritative.
-4. Set Production maintenance to `1` only immediately before the approved
-   `develop` to `main` merge and gated deployment.
+1. Wait until after `2026-08-03 22:03:34.60475+00`.
+2. Confirm Neon's earliest available production restore time is later than
+   `2026-08-03 16:03:34.60475+00`.
+3. Record final ADR-009 rollout closure. Do not run the pre-contract conversion
+   command again; production is already on contract migration `0009`.
 
 ## Immediate Goal
 
-Merge and negative-test the pinned-ancestor migration guard before authorizing
-the gated Production deployment.
+Let the plaintext-bearing production restore history expire, then close ADR-009
+rollout monitoring.
 
 ## Open Questions
 
