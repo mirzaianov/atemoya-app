@@ -4,27 +4,24 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare and execute the maintenance-gated development application contract
-rehearsal without touching production:
+Prepare the reviewed changes for the controlled production rollout without
+deploying or migrating production yet:
 
-1. Commit and deploy the contract-compatible application through `develop`, then
-   confirm Preview still signs in and reads existing encrypted data before the
-   contract migration.
-2. Enable Preview maintenance, deploy it, verify page/auth/POST `503` responses,
-   and complete the recorded 70-second drain.
-3. Record a fresh Neon development restore checkpoint and rerun the development
-   conversion command; it must convert zero rows and pass global verification.
-4. Apply migration `0009` only to the Neon development application database and
-   verify migration count `10` with latest migration `1785693662810`.
-5. Disable Preview maintenance through a new deployment, then verify sign-in,
-   existing tasks, and create/edit/complete/restore/delete behavior.
-6. Confirm production remains at migration count `8` and passes its focused
-   smoke check.
+1. Commit the verified Varlock environment split and its documentation.
+2. Push the feature branch and merge it into `develop`, then confirm the Preview
+   deployment remains healthy.
+3. Do not merge `develop` into `main` yet; production still lacks additive
+   migration `0008` and remains plaintext-authoritative.
+4. Reconfirm Production `MAINTENANCE_MODE` remains disabled, the Neon production
+   restore window remains six hours, and Vercel Function Max Duration remains
+   ten seconds.
+5. Review the exact staged production deployment and migration sequence before
+   authorizing any production change.
 
 ## Immediate Goal
 
-Commit the guarded contract implementation, then begin the development-only
-contract rehearsal. Production remains unchanged.
+Commit and Preview-test the verified environment split before authorizing any
+production rollout action.
 
 ## Open Questions
 

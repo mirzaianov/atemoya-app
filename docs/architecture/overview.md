@@ -21,6 +21,11 @@ branch without runtime environment-switching logic. Drizzle migrations move
 development-first through the manually dispatched `migrate-database` GitHub
 Actions workflow and never run during the Vercel build.
 
+For local commands, Varlock selects tracked, secret-free KeePass references
+from `.env.dev` or `.env.prod` using `APP_ENV`; required database and encryption
+values have no schema fallback. Vercel continues to supply environment-scoped
+process values directly.
+
 Decision: `../decisions/ADR-013-use-neon-branches-for-environment-isolation.md`
 
 Execution details: `neon-environment-isolation-plan.md`

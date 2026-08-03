@@ -48,9 +48,11 @@ Then encrypt the local password:
   pnpm exec varlock encrypt --file .env.local
 ```
 
-Application secrets are resolved from the `atemoya-app/*` KeePass group defined in `.env.schema`.
+Varlock selects tracked KeePass references from `.env.dev` or `.env.prod`
+according to `APP_ENV`. The files contain references only; secret values remain
+in KeePass.
 
-Add:
+For development, add:
 
 ```text
 atemoya-app/DATABASE_URL
@@ -59,6 +61,15 @@ atemoya-app/BETTER_AUTH_SECRET
 atemoya-app/BETTER_AUTH_URL
 atemoya-app/DATA_ENCRYPTION_KEYS
 atemoya-app/BLIND_INDEX_KEYS
+```
+
+For guarded local production operations, add separate entries:
+
+```text
+atemoya-app/production/DATABASE_URL
+atemoya-app/production/BETTER_AUTH_SECRET
+atemoya-app/production/DATA_ENCRYPTION_KEYS
+atemoya-app/production/BLIND_INDEX_KEYS
 ```
 
 Each encryption keyring is one-line JSON in the form
@@ -73,7 +84,9 @@ Vercel or GitHub.
 
 Local `DATABASE_URL` and `BETTER_AUTH_SECRET` values belong to the Neon
 `development` branch. Keep production credentials out of `.env.local` and the
-active local KeePass entries.
+development KeePass entries. Production commands must set `APP_ENV=prod`
+explicitly so Varlock loads `.env.prod`; remove that process variable after the
+command finishes.
 
 Use `http://localhost:3000` for `BETTER_AUTH_URL` in local development.
 
