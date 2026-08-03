@@ -20,8 +20,12 @@ persistence, Better Auth-native encrypted backup-code storage, and the
 default-off maintenance write barrier. The read-only preflight, restartable
 atomic conversion engine, guarded local operator command, and deterministic
 failure-injection coverage are verified against the guarded integration
-database; the contract migration, development rehearsal, and production rollout
-remain pending.
+database. The maintenance-gated development conversion and encrypted Preview
+runtime rehearsal pass. Contract migration `0009_contract_encrypted_columns.sql`
+passes database-free review and guarded `atemoya_test` integration: migration
+count `10`, latest migration `1785693662810`, and all four post-contract tests
+pass. The development application database, Preview contract rehearsal, and
+production rollout remain pending.
 
 Do not schedule production conversion until the linked architecture plan's
 development implementation and rehearsal steps have passed. The

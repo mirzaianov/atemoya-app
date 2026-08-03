@@ -51,28 +51,20 @@ interface VerificationRecord extends Record<string, unknown> {
 }
 
 interface PersistedAuthState extends Record<string, unknown> {
-  email: string | null;
-  emailCiphertext: string | null;
-  emailLookup: string | null;
-  identifier: string | null;
-  identifierCiphertext: string | null;
-  identifierLookup: string | null;
-  image: string | null;
+  emailCiphertext: string;
+  emailLookup: string;
+  identifierCiphertext: string;
+  identifierLookup: string;
   imageCiphertext: string | null;
-  ipAddress: string | null;
   ipAddressCiphertext: string | null;
-  name: string | null;
-  nameCiphertext: string | null;
-  nameLookup: string | null;
-  purpose: string | null;
+  nameCiphertext: string;
+  nameLookup: string;
+  purpose: string;
   subjectUserId: string | null;
-  token: string | null;
-  tokenCiphertext: string | null;
-  tokenLookup: string | null;
-  userAgent: string | null;
+  tokenCiphertext: string;
+  tokenLookup: string;
   userAgentCiphertext: string | null;
-  value: string | null;
-  valueCiphertext: string | null;
+  valueCiphertext: string;
 }
 
 interface TwoFactorRecord extends Record<string, unknown> {
@@ -311,27 +303,19 @@ test('protects Better Auth records through the guarded adapter', async (context)
 
     const persisted = await testDatabase.db.execute<PersistedAuthState>(sql`
       SELECT
-        users."email",
         users."email_ciphertext" AS "emailCiphertext",
         users."email_lookup" AS "emailLookup",
-        users."image",
         users."image_ciphertext" AS "imageCiphertext",
-        users."name",
         users."name_ciphertext" AS "nameCiphertext",
         users."name_lookup" AS "nameLookup",
-        sessions."ip_address" AS "ipAddress",
         sessions."ip_address_ciphertext" AS "ipAddressCiphertext",
-        sessions."token",
         sessions."token_ciphertext" AS "tokenCiphertext",
         sessions."token_lookup" AS "tokenLookup",
-        sessions."user_agent" AS "userAgent",
         sessions."user_agent_ciphertext" AS "userAgentCiphertext",
-        verifications."identifier",
         verifications."identifier_ciphertext" AS "identifierCiphertext",
         verifications."identifier_lookup" AS "identifierLookup",
         verifications."purpose",
         verifications."subject_user_id" AS "subjectUserId",
-        verifications."value",
         verifications."value_ciphertext" AS "valueCiphertext"
       FROM "user" AS users
       INNER JOIN "session" AS sessions ON sessions."user_id" = users."id"
@@ -341,19 +325,6 @@ test('protects Better Auth records through the guarded adapter', async (context)
     const [authState] = persisted.rows;
 
     assert.ok(authState);
-
-    for (const plaintext of [
-      authState.email,
-      authState.image,
-      authState.name,
-      authState.ipAddress,
-      authState.token,
-      authState.userAgent,
-      authState.identifier,
-      authState.value,
-    ]) {
-      assert.equal(plaintext, null);
-    }
 
     for (const ciphertext of [
       authState.emailCiphertext,

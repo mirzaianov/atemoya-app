@@ -4,26 +4,27 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare and review the controlled Neon development rehearsal before changing
-any deployed environment:
+Prepare and execute the maintenance-gated development application contract
+rehearsal without touching production:
 
-1. Commit the guarded operator boundary, then prepare its merge into `develop`.
-2. Before that merge can deploy the encrypted runtime, enable
-   `MAINTENANCE_MODE=1` for Vercel Preview and verify the maintenance response on
-   a deployment containing the gate.
-3. Record the Neon development restore point, wait for the invocation drain,
-   and verify source stability before conversion.
-4. Run the reviewed development conversion from the trusted local environment,
-   verify ciphertext, lookups, counts, and idempotency, then smoke-test the
-   encrypted Preview runtime while production remains unchanged.
-5. Draft the contract migration only after the complete development rehearsal
-   passes.
+1. Commit and deploy the contract-compatible application through `develop`, then
+   confirm Preview still signs in and reads existing encrypted data before the
+   contract migration.
+2. Enable Preview maintenance, deploy it, verify page/auth/POST `503` responses,
+   and complete the recorded 70-second drain.
+3. Record a fresh Neon development restore checkpoint and rerun the development
+   conversion command; it must convert zero rows and pass global verification.
+4. Apply migration `0009` only to the Neon development application database and
+   verify migration count `10` with latest migration `1785693662810`.
+5. Disable Preview maintenance through a new deployment, then verify sign-in,
+   existing tasks, and create/edit/complete/restore/delete behavior.
+6. Confirm production remains at migration count `8` and passes its focused
+   smoke check.
 
 ## Immediate Goal
 
-Review the exact development rehearsal checklist. Do not merge, deploy, enable
-maintenance, or run `pnpm data:convert development` until that checklist is
-approved.
+Commit the guarded contract implementation, then begin the development-only
+contract rehearsal. Production remains unchanged.
 
 ## Open Questions
 

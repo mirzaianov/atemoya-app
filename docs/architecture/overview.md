@@ -41,10 +41,11 @@ identity/session/verification adapter boundary plus Better Auth-native encrypted
 backup-code storage and the default-off maintenance Proxy are implemented and
 verified. The read-only preflight, restartable atomic conversion engine, guarded
 local operator command, and deterministic failure-injection coverage are also
-verified against the guarded integration database. Development rehearsal and
-the contract migration remain pending.
-Existing development application rows remain plaintext, Preview still runs the
-plaintext-authoritative release, and production is unchanged. The 2026-07-30
+verified against the guarded integration database. The maintenance-gated
+development conversion and encrypted Preview runtime rehearsal also pass; the
+contract migration remains pending.
+Development application rows are converted, Preview runs the encrypted runtime,
+and production is unchanged on the plaintext-authoritative release. The 2026-07-30
 architecture-review findings were resolved and the revised architecture was
 approved on 2026-07-31. The threat model was narrowed to passive database
 exfiltration; active database writes and application-oracle attacks are out of

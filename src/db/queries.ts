@@ -98,7 +98,7 @@ export const listTasks = (userId: string): Promise<TaskRecord[]> =>
         completedAt: tasks.completedAt,
         id: tasks.id,
         position: tasks.position,
-        titleCiphertext: tasks.titleCiphertext,
+        titleCiphertext: tasks.title,
       })
       .from(tasks)
       .where(eq(tasks.userId, userId))
@@ -109,20 +109,14 @@ export const listTasks = (userId: string): Promise<TaskRecord[]> =>
         desc(tasks.changedOn),
       );
 
-    return records.map(({ titleCiphertext, ...record }) => {
-      if (titleCiphertext === null) {
-        throw new TaskQueryError('DATA_UNAVAILABLE');
-      }
-
-      return {
-        ...record,
-        title: dataProtection.decryptValue(titleCiphertext, {
-          field: 'title',
-          model: 'tasks',
-          recordId: record.id,
-        }),
-      };
-    });
+    return records.map(({ titleCiphertext, ...record }) => ({
+      ...record,
+      title: dataProtection.decryptValue(titleCiphertext, {
+        field: 'title',
+        model: 'tasks',
+        recordId: record.id,
+      }),
+    }));
   });
 
 export const taskTitleExists = (userId: string, title: string, excludedId?: string) =>
@@ -196,7 +190,7 @@ export const updateTask = (userId: string, id: string, title: string) =>
       const titleLookup = dataProtection.taskTitleLookup(userId, title);
       const [task] = await db
         .update(tasks)
-        .set({ changedOn: sql`now()`, title: null, titleCiphertext, titleLookup })
+        .set({ changedOn: sql`now()`, title: titleCiphertext, titleLookup })
         .where(and(eq(tasks.userId, userId), eq(tasks.id, id)))
         .returning({ id: tasks.id });
 

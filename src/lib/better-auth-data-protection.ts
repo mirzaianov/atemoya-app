@@ -30,7 +30,6 @@ type AdapterOperation =
   | 'consumeOne';
 
 interface ProtectedField {
-  ciphertextField: string;
   context: (recordId: string) => EncryptionContext;
   lookup?: (dataProtection: DataProtection, value: string) => string;
   lookupField?: string;
@@ -47,28 +46,20 @@ const hiddenStringField = {
 export const betterAuthDataProtectionFields = {
   session: {
     additionalFields: {
-      ipAddressCiphertext: hiddenStringField,
-      tokenCiphertext: hiddenStringField,
       tokenLookup: hiddenStringField,
-      userAgentCiphertext: hiddenStringField,
     },
   },
   user: {
     additionalFields: {
-      emailCiphertext: hiddenStringField,
       emailLookup: hiddenStringField,
-      imageCiphertext: hiddenStringField,
-      nameCiphertext: hiddenStringField,
       nameLookup: hiddenStringField,
     },
   },
   verification: {
     additionalFields: {
-      identifierCiphertext: hiddenStringField,
       identifierLookup: hiddenStringField,
       purpose: hiddenStringField,
       subjectUserId: hiddenStringField,
-      valueCiphertext: hiddenStringField,
     },
   },
 } as const;
@@ -76,34 +67,28 @@ export const betterAuthDataProtectionFields = {
 const protectedFields: Record<ProtectedModel, Record<string, ProtectedField>> = {
   session: {
     ipAddress: {
-      ciphertextField: 'ipAddressCiphertext',
       context: (recordId) => ({ field: 'ipAddress', model: 'session', recordId }),
     },
     token: {
-      ciphertextField: 'tokenCiphertext',
       context: (recordId) => ({ field: 'token', model: 'session', recordId }),
       lookup: (dataProtection, value) => dataProtection.sessionTokenLookup(value),
       lookupField: 'tokenLookup',
     },
     userAgent: {
-      ciphertextField: 'userAgentCiphertext',
       context: (recordId) => ({ field: 'userAgent', model: 'session', recordId }),
     },
   },
   user: {
     email: {
-      ciphertextField: 'emailCiphertext',
       context: (recordId) => ({ field: 'email', model: 'user', recordId }),
       lookup: (dataProtection, value) => dataProtection.emailLookup(value),
       lookupField: 'emailLookup',
       normalizedEquality: true,
     },
     image: {
-      ciphertextField: 'imageCiphertext',
       context: (recordId) => ({ field: 'image', model: 'user', recordId }),
     },
     name: {
-      ciphertextField: 'nameCiphertext',
       context: (recordId) => ({ field: 'name', model: 'user', recordId }),
       lookup: (dataProtection, value) => dataProtection.nicknameLookup(value),
       lookupField: 'nameLookup',
@@ -112,13 +97,11 @@ const protectedFields: Record<ProtectedModel, Record<string, ProtectedField>> = 
   },
   verification: {
     identifier: {
-      ciphertextField: 'identifierCiphertext',
       context: (recordId) => ({ field: 'identifier', model: 'verification', recordId }),
       lookup: (dataProtection, value) => dataProtection.verificationIdentifierLookup(value),
       lookupField: 'identifierLookup',
     },
     value: {
-      ciphertextField: 'valueCiphertext',
       context: (recordId) => ({ field: 'value', model: 'verification', recordId }),
     },
   },
@@ -250,10 +233,8 @@ const transformWrite = (
       continue;
     }
 
-    transformed[field] = null;
-
     if (value === null) {
-      transformed[configuration.ciphertextField] = null;
+      transformed[field] = null;
 
       if (configuration.lookupField) {
         transformed[configuration.lookupField] = null;
@@ -266,10 +247,7 @@ const transformWrite = (
       return fail();
     }
 
-    transformed[configuration.ciphertextField] = dataProtection.encryptValue(
-      value,
-      configuration.context(recordId),
-    );
+    transformed[field] = dataProtection.encryptValue(value, configuration.context(recordId));
 
     if (configuration.lookupField && configuration.lookup) {
       transformed[configuration.lookupField] = configuration.lookup(dataProtection, value);
@@ -337,18 +315,8 @@ const rewriteSelect = (model: string, select: string[] | undefined) => {
     return { addedId: false, select };
   }
 
-  let containsProtectedField = false;
-  const rewritten = select.map((field) => {
-    const configuration = protectedFields[model][field];
-
-    if (!configuration) {
-      return field;
-    }
-
-    containsProtectedField = true;
-
-    return configuration.ciphertextField;
-  });
+  const containsProtectedField = select.some((field) => protectedFields[model][field]);
+  const rewritten = [...select];
   const addedId = containsProtectedField && !select.includes('id');
 
   if (addedId) {
@@ -369,9 +337,7 @@ const decryptRecord = (
   const recordId = typeof record.id === 'string' ? record.id : '';
 
   for (const [field, configuration] of Object.entries(protectedFields[model])) {
-    const ciphertext = record[configuration.ciphertextField];
-
-    fieldsToRemove.add(configuration.ciphertextField);
+    const ciphertext = record[field];
 
     if (configuration.lookupField) {
       fieldsToRemove.add(configuration.lookupField);

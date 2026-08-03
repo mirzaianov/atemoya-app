@@ -4,6 +4,7 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import { migrate as runMigrations } from 'drizzle-orm/neon-http/migrator';
 
 import * as schema from './schema.ts';
+import * as conversionSchema from './data-conversion-schema.ts';
 
 const expectedDatabaseName = 'atemoya_test';
 const expectedRoleName = 'atemoya_test_owner';
@@ -33,6 +34,7 @@ export const createTestDatabase = async () => {
   const databaseUrl = requireTestDatabaseUrl(process.env.TEST_DATABASE_URL);
   const client = neon(databaseUrl);
   const db = drizzle({ client, schema });
+  const conversionDb = drizzle({ client, schema: conversionSchema });
 
   const assertIdentity = async () => {
     const result = await db.execute<DatabaseIdentity>(sql`
@@ -47,6 +49,7 @@ export const createTestDatabase = async () => {
   await assertIdentity();
 
   return {
+    conversionDb,
     db,
     migrate: async () => {
       await assertIdentity();

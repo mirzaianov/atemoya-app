@@ -2,9 +2,10 @@
 
 ## Status
 
-Approved architecture and rollout plan; guarded conversion implementation is
-complete, while development rehearsal, contract migration, and rollout remain
-pending.
+Approved architecture and rollout plan; guarded conversion implementation, the
+development conversion rehearsal, and guarded contract integration are
+complete. The development application contract rehearsal and production
+rollout remain pending.
 
 ## Architecture Review Findings
 
@@ -573,6 +574,29 @@ proves that conversion cannot proceed until source and shadow values agree.
 
 Use an immediate shadow-column conversion during a production maintenance
 window. There is no application dual-write or mixed-read production phase.
+
+### Contract migration draft
+
+Generated migration `0009_contract_encrypted_columns.sql` makes required
+ciphertext and blind-index columns non-null, replaces partial lookup indexes
+with complete indexes, removes plaintext uniqueness constraints and indexes,
+then drops the nine protected plaintext columns. The final Drizzle schema keeps
+Better Auth's and the task layer's logical field names while mapping them to
+the existing `*_ciphertext` PostgreSQL columns. Password hashes,
+`two_factor.secret`, and `two_factor.backup_codes` are unchanged.
+
+The one-time converter retains a narrow pre-contract schema so the production
+conversion can run from the gate-aware release before `0009` is applied. Do not
+run it after the contract migration.
+
+There is no down migration that can recreate dropped plaintext. Before `0009`,
+rollback means leaving the source columns intact and redeploying the previous
+release. After `0009`, rollback means restoring the recorded Neon checkpoint
+and redeploying the pre-contract release. The migration passes Drizzle history,
+lint, unit, static SQL, and all four guarded post-contract integration checks.
+It is applied only to `atemoya_test`, which reports migration count `10` and
+latest migration `1785693662810`; development, Preview, and production remain
+unchanged.
 
 ### Development preparation
 

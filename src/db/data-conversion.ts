@@ -6,7 +6,7 @@ import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { getVerificationMetadata } from '../lib/better-auth-data-protection.ts';
 import type { createDataProtection, EncryptionContext } from '../lib/data-protection.ts';
 import { logSecurityEvent } from '../lib/security-logger.ts';
-import * as schema from './schema.ts';
+import * as schema from './data-conversion-schema.ts';
 
 type ConversionDatabase = NeonHttpDatabase<typeof schema>;
 type DataProtection = ReturnType<typeof createDataProtection>;
