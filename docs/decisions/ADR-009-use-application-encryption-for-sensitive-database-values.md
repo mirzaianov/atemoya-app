@@ -24,8 +24,10 @@ database. The maintenance-gated development conversion and encrypted Preview
 runtime rehearsal pass. Contract migration `0009_contract_encrypted_columns.sql`
 passes database-free review and guarded `atemoya_test` integration: migration
 count `10`, latest migration `1785693662810`, and all four post-contract tests
-pass. The development application database, Preview contract rehearsal, and
-production rollout remain pending.
+pass. The maintenance-gated development application contract rehearsal also
+passes: zero rows converted, ten rows reverified, migration count `10`, complete
+encrypted task lifecycle, and unchanged production migration/data state. Only
+production key provisioning and rollout remain pending.
 
 Do not schedule production conversion until the linked architecture plan's
 development implementation and rehearsal steps have passed. The

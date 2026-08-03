@@ -4,27 +4,25 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare and execute the maintenance-gated development application contract
-rehearsal without touching production:
+Prepare production secrets and rollout controls without deploying or migrating
+production:
 
-1. Commit and deploy the contract-compatible application through `develop`, then
-   confirm Preview still signs in and reads existing encrypted data before the
-   contract migration.
-2. Enable Preview maintenance, deploy it, verify page/auth/POST `503` responses,
-   and complete the recorded 70-second drain.
-3. Record a fresh Neon development restore checkpoint and rerun the development
-   conversion command; it must convert zero rows and pass global verification.
-4. Apply migration `0009` only to the Neon development application database and
-   verify migration count `10` with latest migration `1785693662810`.
-5. Disable Preview maintenance through a new deployment, then verify sign-in,
-   existing tasks, and create/edit/complete/restore/delete behavior.
-6. Confirm production remains at migration count `8` and passes its focused
-   smoke check.
+1. Do not merge `develop` into `main` yet; production lacks additive migration
+   `0008` and the four application-protection secrets.
+2. Generate independent production encryption and blind-index keys and store
+   their two keyrings and active versions in KeePass.
+3. Add the four values to Vercel Production only as sensitive variables; never
+   reuse the development/Preview keys.
+4. Confirm Production `MAINTENANCE_MODE` remains disabled, the Neon production
+   restore window remains six hours, and Vercel Function Max Duration remains
+   ten seconds.
+5. Review the exact staged production deployment and migration sequence before
+   authorizing any production change.
 
 ## Immediate Goal
 
-Commit the guarded contract implementation, then begin the development-only
-contract rehearsal. Production remains unchanged.
+Provision and verify independent production key material without changing the
+production application or database.
 
 ## Open Questions
 

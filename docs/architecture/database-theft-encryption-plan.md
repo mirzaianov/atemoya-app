@@ -2,10 +2,9 @@
 
 ## Status
 
-Approved architecture and rollout plan; guarded conversion implementation, the
-development conversion rehearsal, and guarded contract integration are
-complete. The development application contract rehearsal and production
-rollout remain pending.
+Approved architecture and rollout plan; guarded conversion implementation,
+guarded integration, and the complete development application contract
+rehearsal are accepted. Production key provisioning and rollout remain pending.
 
 ## Architecture Review Findings
 
@@ -594,9 +593,13 @@ rollback means leaving the source columns intact and redeploying the previous
 release. After `0009`, rollback means restoring the recorded Neon checkpoint
 and redeploying the pre-contract release. The migration passes Drizzle history,
 lint, unit, static SQL, and all four guarded post-contract integration checks.
-It is applied only to `atemoya_test`, which reports migration count `10` and
-latest migration `1785693662810`; development, Preview, and production remain
-unchanged.
+It is applied to `atemoya_test` and the development application database, both
+with migration count `10` and latest migration `1785693662810`. The development
+application used restore checkpoint `2026-08-03 12:15:52.281915+00`, reverified
+ten rows with zero conversion writes, and passed sign-in plus the complete
+encrypted task lifecycle after maintenance was disabled. Production remains at
+migration count `8`, latest migration `1785409343955`, with no rehearsal row and
+a passing application smoke check.
 
 ### Development preparation
 
