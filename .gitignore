@@ -17,6 +17,8 @@ next-env.d.ts
 # environment
 .env.*
 !.env.schema
+!.env.dev
+!.env.prod
 
 # editor directories and files
 .vscode/

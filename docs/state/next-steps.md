@@ -4,16 +4,15 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare production secrets and rollout controls without deploying or migrating
-production:
+Prepare the reviewed changes for the controlled production rollout without
+deploying or migrating production yet:
 
-1. Do not merge `develop` into `main` yet; production lacks additive migration
-   `0008` and the four application-protection secrets.
-2. Generate independent production encryption and blind-index keys and store
-   their two keyrings and active versions in KeePass.
-3. Add the four values to Vercel Production only as sensitive variables; never
-   reuse the development/Preview keys.
-4. Confirm Production `MAINTENANCE_MODE` remains disabled, the Neon production
+1. Commit the verified Varlock environment split and its documentation.
+2. Push the feature branch and merge it into `develop`, then confirm the Preview
+   deployment remains healthy.
+3. Do not merge `develop` into `main` yet; production still lacks additive
+   migration `0008` and remains plaintext-authoritative.
+4. Reconfirm Production `MAINTENANCE_MODE` remains disabled, the Neon production
    restore window remains six hours, and Vercel Function Max Duration remains
    ten seconds.
 5. Review the exact staged production deployment and migration sequence before
@@ -21,8 +20,8 @@ production:
 
 ## Immediate Goal
 
-Provision and verify independent production key material without changing the
-production application or database.
+Commit and Preview-test the verified environment split before authorizing any
+production rollout action.
 
 ## Open Questions
 
