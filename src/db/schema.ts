@@ -9,19 +9,28 @@ import {
   uniqueIndex,
 } from 'drizzle-orm/pg-core';
 
-export const user = pgTable('user', {
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  email: text('email').notNull().unique(),
-  emailVerified: boolean('email_verified').default(false).notNull(),
-  id: text('id').primaryKey(),
-  image: text('image'),
-  name: text('name').notNull().unique(),
-  twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
-  updatedAt: timestamp('updated_at')
-    .defaultNow()
-    .$onUpdate(() => new Date())
-    .notNull(),
-});
+export const user = pgTable(
+  'user',
+  {
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    email: text('email_ciphertext').notNull(),
+    emailLookup: text('email_lookup').notNull(),
+    emailVerified: boolean('email_verified').default(false).notNull(),
+    id: text('id').primaryKey(),
+    image: text('image_ciphertext'),
+    name: text('name_ciphertext').notNull(),
+    nameLookup: text('name_lookup').notNull(),
+    twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_email_lookup_unique_idx').on(table.emailLookup),
+    uniqueIndex('user_name_lookup_unique_idx').on(table.nameLookup),
+  ],
+);
 
 export const session = pgTable(
   'session',
@@ -29,17 +38,21 @@ export const session = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     expiresAt: timestamp('expires_at').notNull(),
     id: text('id').primaryKey(),
-    ipAddress: text('ip_address'),
-    token: text('token').notNull().unique(),
+    ipAddress: text('ip_address_ciphertext'),
+    token: text('token_ciphertext').notNull(),
+    tokenLookup: text('token_lookup').notNull(),
     updatedAt: timestamp('updated_at')
       .$onUpdate(() => new Date())
       .notNull(),
-    userAgent: text('user_agent'),
+    userAgent: text('user_agent_ciphertext'),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
   },
-  (table) => [index('session_user_id_idx').on(table.userId)],
+  (table) => [
+    uniqueIndex('session_token_lookup_unique_idx').on(table.tokenLookup),
+    index('session_user_id_idx').on(table.userId),
+  ],
 );
 
 export const account = pgTable(
@@ -72,14 +85,22 @@ export const verification = pgTable(
     createdAt: timestamp('created_at').defaultNow().notNull(),
     expiresAt: timestamp('expires_at').notNull(),
     id: text('id').primaryKey(),
-    identifier: text('identifier').notNull(),
+    identifier: text('identifier_ciphertext').notNull(),
+    identifierLookup: text('identifier_lookup').notNull(),
+    purpose: text('purpose').notNull(),
+    subjectUserId: text('subject_user_id'),
     updatedAt: timestamp('updated_at')
       .defaultNow()
       .$onUpdate(() => new Date())
       .notNull(),
-    value: text('value').notNull(),
+    value: text('value_ciphertext').notNull(),
   },
-  (table) => [index('verification_identifier_idx').on(table.identifier)],
+  (table) => [
+    index('verification_identifier_lookup_idx').on(table.identifierLookup),
+    index('verification_purpose_subject_user_id_idx')
+      .on(table.purpose, table.subjectUserId)
+      .where(sql`${table.subjectUserId} IS NOT NULL`),
+  ],
 );
 
 export const twoFactor = pgTable(
@@ -108,13 +129,14 @@ export const tasks = pgTable(
     completedAt: timestamp('completed_at'),
     id: text('id').primaryKey(),
     position: integer('position').notNull(),
-    title: text('title').notNull(),
+    title: text('title_ciphertext').notNull(),
+    titleLookup: text('title_lookup').notNull(),
     userId: text('user_id')
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' }),
   },
   (table) => [
-    uniqueIndex('tasks_user_id_title_unique_idx').on(table.userId, sql`lower(${table.title})`),
+    uniqueIndex('tasks_user_id_title_lookup_unique_idx').on(table.userId, table.titleLookup),
     index('tasks_user_id_position_idx').on(table.userId, table.position),
     index('tasks_user_id_changed_on_idx').on(table.userId, table.changedOn),
   ],

@@ -356,9 +356,8 @@ on:
           - Preview
           - Production
       ref:
-        description: Exact branch, tag, or commit to migrate
+        description: Exact ref; Production requires a full develop-ancestor SHA
         required: true
-        default: develop
         type: string
 
 permissions:
@@ -384,9 +383,23 @@ jobs:
       - name: Verify production source
         if: inputs.target == 'Production'
         shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
         run: |
-          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]]; then
-            echo "Production migrations must use the current develop commit."
+          if [[ ! "$REQUESTED_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Production migrations require a full lowercase commit SHA."
+            exit 1
+          fi
+
+          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
+          if [[ "$CHECKED_OUT_SHA" != "$REQUESTED_REF" ]]; then
+            echo "The checked-out commit does not match the requested SHA."
+            exit 1
+          fi
+
+          git fetch origin develop --no-tags
+          if ! git merge-base --is-ancestor "$CHECKED_OUT_SHA" origin/develop; then
+            echo "Production migrations require a commit from current develop history."
             exit 1
           fi
 
@@ -456,13 +469,19 @@ Expected: the second execution succeeds without applying the migration again.
 
 - [ ] **Step 6: Exercise the production guard without migrating**
 
-Select target `Production` with a ref that is not the current `develop` commit.
+Select target `Production` with a branch name or abbreviated SHA instead of a
+full commit SHA.
 
 Expected:
 
 - GitHub requests Production environment approval;
 - after approval, **Verify production source** fails;
 - the Drizzle step never runs.
+
+Production accepts only a full lowercase commit SHA that is an ancestor of the
+current `develop` branch. The current commit is the normal choice. A reviewed
+earlier ancestor is allowed only when an expand/contract rollout must apply its
+additive and contract migrations in separate maintenance phases.
 
 Do not run a production migration merely to test the successful path.
 

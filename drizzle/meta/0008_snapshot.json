@@ -1,6 +1,6 @@
 {
-  "id": "c3cc00cc-a124-4406-9d9e-e33ce8dc59b8",
-  "prevId": "f7d35de7-08bf-4cc6-98f9-e4213cbaafe3",
+  "id": "d62b9217-053c-4138-bddf-ffd3c65c2f2e",
+  "prevId": "c3cc00cc-a124-4406-9d9e-e33ce8dc59b8",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -151,11 +151,29 @@
           "primaryKey": false,
           "notNull": false
         },
+        "ip_address_ciphertext": {
+          "name": "ip_address_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "token": {
           "name": "token",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "token_ciphertext": {
+          "name": "token_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "token_lookup": {
+          "name": "token_lookup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -169,6 +187,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "user_agent_ciphertext": {
+          "name": "user_agent_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "user_id": {
           "name": "user_id",
           "type": "text",
@@ -177,6 +201,22 @@
         }
       },
       "indexes": {
+        "session_token_lookup_unique_idx": {
+          "name": "session_token_lookup_unique_idx",
+          "columns": [
+            {
+              "expression": "token_lookup",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"session\".\"token_lookup\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "session_user_id_idx": {
           "name": "session_user_id_idx",
           "columns": [
@@ -248,7 +288,19 @@
           "name": "title",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "title_ciphertext": {
+          "name": "title_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title_lookup": {
+          "name": "title_lookup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "user_id": {
           "name": "user_id",
@@ -275,6 +327,28 @@
             }
           ],
           "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "tasks_user_id_title_lookup_unique_idx": {
+          "name": "tasks_user_id_title_lookup_unique_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "title_lookup",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"tasks\".\"title_lookup\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -452,7 +526,19 @@
           "name": "email",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "email_ciphertext": {
+          "name": "email_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email_lookup": {
+          "name": "email_lookup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "email_verified": {
           "name": "email_verified",
@@ -473,11 +559,29 @@
           "primaryKey": false,
           "notNull": false
         },
+        "image_ciphertext": {
+          "name": "image_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "name_ciphertext": {
+          "name": "name_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name_lookup": {
+          "name": "name_lookup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "two_factor_enabled": {
           "name": "two_factor_enabled",
@@ -494,7 +598,40 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "user_email_lookup_unique_idx": {
+          "name": "user_email_lookup_unique_idx",
+          "columns": [
+            {
+              "expression": "email_lookup",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"user\".\"email_lookup\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "user_name_lookup_unique_idx": {
+          "name": "user_name_lookup_unique_idx",
+          "columns": [
+            {
+              "expression": "name_lookup",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"user\".\"name_lookup\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -540,7 +677,31 @@
           "name": "identifier",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "identifier_ciphertext": {
+          "name": "identifier_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "identifier_lookup": {
+          "name": "identifier_lookup",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "subject_user_id": {
+          "name": "subject_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "updated_at": {
           "name": "updated_at",
@@ -553,7 +714,13 @@
           "name": "value",
           "type": "text",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
+        },
+        "value_ciphertext": {
+          "name": "value_ciphertext",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -568,6 +735,44 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "verification_identifier_lookup_idx": {
+          "name": "verification_identifier_lookup_idx",
+          "columns": [
+            {
+              "expression": "identifier_lookup",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"verification\".\"identifier_lookup\" IS NOT NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "verification_purpose_subject_user_id_idx": {
+          "name": "verification_purpose_subject_user_id_idx",
+          "columns": [
+            {
+              "expression": "purpose",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "subject_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"verification\".\"subject_user_id\" IS NOT NULL",
           "concurrently": false,
           "method": "btree",
           "with": {}

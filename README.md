@@ -48,21 +48,53 @@ Then encrypt the local password:
   pnpm exec varlock encrypt --file .env.local
 ```
 
-Application secrets are resolved from the `atemoya-app/*` KeePass group defined in `.env.schema`.
+Varlock selects tracked KeePass references from `.env.dev` or `.env.prod`
+according to `APP_ENV`. The files contain references only; secret values remain
+in KeePass.
 
-Add:
+For development, add:
 
 ```text
 atemoya-app/DATABASE_URL
+atemoya-app/TEST_DATABASE_URL
 atemoya-app/BETTER_AUTH_SECRET
 atemoya-app/BETTER_AUTH_URL
+atemoya-app/DATA_ENCRYPTION_KEYS
+atemoya-app/BLIND_INDEX_KEYS
 ```
+
+For guarded local production operations, add separate entries:
+
+```text
+atemoya-app/production/DATABASE_URL
+atemoya-app/production/BETTER_AUTH_SECRET
+atemoya-app/production/DATA_ENCRYPTION_KEYS
+atemoya-app/production/BLIND_INDEX_KEYS
+```
+
+Each encryption keyring is one-line JSON in the form
+`{"1":"<base64url-encoded 32-byte key>"}`. Generate the two values
+independently; never reuse either key or `BETTER_AUTH_SECRET`. `.env.schema`
+sets both local active versions to `1`.
+
+`TEST_DATABASE_URL` is used only by `pnpm test:integration`. It must be the
+direct connection string for database `atemoya_test` and role
+`atemoya_test_owner` on the Neon `development` branch. Do not configure it in
+Vercel or GitHub.
 
 Local `DATABASE_URL` and `BETTER_AUTH_SECRET` values belong to the Neon
 `development` branch. Keep production credentials out of `.env.local` and the
-active local KeePass entries.
+development KeePass entries. Production commands must set `APP_ENV=prod`
+explicitly so Varlock loads `.env.prod`; remove that process variable after the
+command finishes.
 
 Use `http://localhost:3000` for `BETTER_AUTH_URL` in local development.
+
+Run the guarded database integration tests with:
+
+```bash
+  pnpm test:integration
+```
 
 For Vercel, set `DATABASE_URL` and `BETTER_AUTH_SECRET` directly in Project
 Settings -> Environment Variables:
@@ -79,12 +111,20 @@ Do not add `BETTER_AUTH_URL` on Vercel for normal deployments. The app trusts th
 
 In Vercel Project Settings -> Environment Variables, enable System Environment Variables. Vercel then provides `VERCEL_PROJECT_PRODUCTION_URL` for the current production domain, `VERCEL_URL` for the current deployment URL, and `VERCEL_BRANCH_URL` for branch previews.
 
+Before deploying encryption work, add `DATA_ENCRYPTION_KEYS` and
+`BLIND_INDEX_KEYS` as Sensitive Preview variables, and add
+`DATA_ENCRYPTION_ACTIVE_VERSION=1` and `BLIND_INDEX_ACTIVE_VERSION=1` to Preview.
+Use the same development keyrings stored in KeePass. Do not add production
+keyrings until the production-conversion checkpoint.
+
 Do not configure KeePass variables on Vercel. The default `pnpm build` script uses Vercel environment variables directly; use `pnpm build:local` when you want a local production build through Varlock.
 
 Database migrations run separately from application builds. Promote migrations
 through the repository's `migrate-database` GitHub Actions workflow: test the
-reviewed ref against the `Preview` environment first, then approve the same
-current `develop` commit for `Production`. See
+reviewed ref against the `Preview` environment first. Production requires a
+full commit SHA from current `develop` history; use the current commit normally,
+or a reviewed earlier ancestor when an expand/contract rollout must promote
+migrations separately. See
 [`ADR-013`](./docs/decisions/ADR-013-use-neon-branches-for-environment-isolation.md)
 and the
 [environment-isolation plan](./docs/architecture/neon-environment-isolation-plan.md).

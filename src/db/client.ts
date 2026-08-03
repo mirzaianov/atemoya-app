@@ -1,7 +1,10 @@
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
 
-import * as schema from './schema';
+import { getDataProtection } from '../lib/data-protection-config.ts';
+import * as schema from './schema.ts';
+
+getDataProtection();
 
 const databaseUrl = process.env.DATABASE_URL;
 
