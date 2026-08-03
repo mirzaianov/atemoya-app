@@ -6,7 +6,7 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
-- 2026-08-03: Split local Varlock references into explicit `.env.dev` and `.env.prod` files, removed required database and encryption defaults from `.env.schema`, completed independent production key provisioning in KeePass and Vercel Production, verified both database identities, and proved missing production configuration fails closed. [Reason why added: prevents a production operator command from silently inheriting development credentials when its environment file is absent.]
+- 2026-08-03: Split local Varlock references into explicit `.env.dev` and `.env.prod` files, removed required database and encryption defaults from `.env.schema`, completed independent production key provisioning in KeePass and Vercel Production, verified both database identities, proved missing production configuration fails closed, and accepted the merged Preview through sign-in plus an isolated encrypted task write and deletion. [Reason why added: prevents a production operator command from silently inheriting development credentials when its environment file is absent.]
 
 - 2026-08-03: Completed the development application contract rehearsal under Preview maintenance: all endpoints returned `503`, the 70-second drain completed, restore checkpoint `2026-08-03 12:15:52.281915+00` was recorded, conversion reverified ten rows with zero writes, migration `0009` applied, sign-in and the full encrypted task lifecycle passed, and production remained at migration count `8` with no rehearsal row. [Reason why added: accepts development contract behavior while preserving the production boundary.]
 
