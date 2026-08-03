@@ -4,22 +4,22 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-Prepare the controlled production rollout without deploying or migrating
+Prepare the pinned-ancestor migration guard without deploying or migrating
 production yet:
 
-1. Commit the accepted Preview environment-isolation record.
-2. Do not merge `develop` into `main` yet; production still lacks additive
+1. Commit and merge the migration guard correction from the feature branch into
+   `develop`.
+2. Confirm the updated workflow rejects a branch name for Production before
+   Drizzle runs.
+3. Do not merge `develop` into `main` yet; production still lacks additive
    migration `0008` and remains plaintext-authoritative.
-3. Reconfirm Production `MAINTENANCE_MODE` remains disabled, the Neon production
-   restore window remains six hours, and Vercel Function Max Duration remains
-   ten seconds.
-4. Review the exact staged production deployment and migration sequence before
-   authorizing any production change.
+4. Set Production maintenance to `1` only immediately before the approved
+   `develop` to `main` merge and gated deployment.
 
 ## Immediate Goal
 
-Commit the accepted Preview record and review production controls before
-authorizing any rollout action.
+Merge and negative-test the pinned-ancestor migration guard before authorizing
+the gated Production deployment.
 
 ## Open Questions
 
