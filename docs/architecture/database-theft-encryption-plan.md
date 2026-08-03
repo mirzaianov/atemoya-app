@@ -624,40 +624,49 @@ a passing application smoke check.
 
 ### Production conversion
 
-1. Confirm Neon still provides the accepted 6-hour restore window and record
-   the production restore timestamp. Do not create a second full-data database
-   branch.
+1. Confirm Neon still provides the accepted 6-hour restore window, Vercel's
+   maximum function duration remains ten seconds, and Production maintenance is
+   explicitly configured but disabled. Do not create a second full-data branch.
 2. Confirm the production encryption and lookup keys exist in KeePass and as
    Vercel Production secrets. Configure the encrypted Better Auth backup-code
    behavior.
-3. Predeploy the gate-aware release, apply the reviewed additive Drizzle
-   migration, activate the Production maintenance deployment, verify page,
-   auth, and Server Action `503` responses, and complete the recorded drain
-   window.
-4. From the trusted local machine, run the one-time conversion command with an
+3. Merge the pinned-ancestor migration guard from a feature branch into
+   `develop`. Before merging `develop` into `main`, set Production
+   `MAINTENANCE_MODE=1`. The encrypted release then reaches the production alias
+   already gated. Verify page, auth, and Server Action `503` responses and wait
+   the full recorded drain interval.
+4. Record the Neon production restore timestamp, then run the Production
+   migration workflow with exact pre-contract commit
+   `618efb72ccc25e8f8bc0106ca18d22650fab59f9`. This commit is an ancestor of
+   `develop` and contains additive migration `0008` but not contract migration
+   `0009`. Confirm production reports migration count `9` before conversion.
+5. From the trusted local machine, run the one-time conversion command with an
    explicitly confirmed production connection and keys loaded from KeePass.
    Do not copy application encryption keys into GitHub Actions.
-5. Read rows in stable batches. For each row whose shadow values are missing,
+6. Read rows in stable batches. For each row whose shadow values are missing,
    encrypt from the unchanged plaintext source and atomically write its
    ciphertext, blind indexes, and verification metadata. Read back and verify
    each batch before continuing. Existing non-null verified shadows make the
    command restartable after interruption.
-6. Convert plaintext backup-code sets to Better Auth ciphertext in their
+7. Convert plaintext backup-code sets to Better Auth ciphertext in their
    shadows and verify that Better Auth decodes every converted set.
-7. Run a global read-only verification: every protected value decrypts with
+8. Run a global read-only verification: every protected value decrypts with
    the expected AAD, every blind index recomputes exactly, uniqueness holds,
    row counts are unchanged, and every source row has a verified shadow.
-8. Apply the reviewed contract Drizzle migration only after global verification
-   passes. It replaces plaintext columns with verified ciphertext, installs
-   blind-index constraints, and makes required columns non-null.
-9. Deploy the encrypted application while maintenance remains enabled, then
-   disable maintenance and run focused production smoke checks.
-10. If verification fails before the contract migration, leave maintenance
+9. Run the Production migration workflow again with the full current `develop`
+   commit SHA only after global verification passes. Confirm only contract
+   migration `0009` remains pending; it replaces plaintext columns with verified
+   ciphertext, installs blind-index constraints, and makes required columns
+   non-null.
+10. Keep the already deployed encrypted application under maintenance through
+    contract migration, then set Production `MAINTENANCE_MODE=0`, redeploy, and
+    run focused production smoke checks.
+11. If verification fails before the contract migration, leave maintenance
     enabled, correct the issue, and resume from the verified shadows; plaintext
     remains unchanged. If verification fails after the contract migration,
     restore the recorded Neon point and redeploy the previous application
     version.
-11. Treat database-theft encryption as complete only after the production
+12. Treat database-theft encryption as complete only after the production
     smoke checks pass and Neon's 6-hour restore history containing plaintext
     has expired.
 

@@ -121,8 +121,10 @@ Do not configure KeePass variables on Vercel. The default `pnpm build` script us
 
 Database migrations run separately from application builds. Promote migrations
 through the repository's `migrate-database` GitHub Actions workflow: test the
-reviewed ref against the `Preview` environment first, then approve the same
-current `develop` commit for `Production`. See
+reviewed ref against the `Preview` environment first. Production requires a
+full commit SHA from current `develop` history; use the current commit normally,
+or a reviewed earlier ancestor when an expand/contract rollout must promote
+migrations separately. See
 [`ADR-013`](./docs/decisions/ADR-013-use-neon-branches-for-environment-isolation.md)
 and the
 [environment-isolation plan](./docs/architecture/neon-environment-isolation-plan.md).

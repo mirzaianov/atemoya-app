@@ -11,9 +11,8 @@ on:
           - Preview
           - Production
       ref:
-        description: Exact branch, tag, or commit to migrate
+        description: Exact ref; Production requires a full develop-ancestor SHA
         required: true
-        default: develop
         type: string
 
 permissions:
@@ -39,9 +38,23 @@ jobs:
       - name: Verify production source
         if: inputs.target == 'Production'
         shell: bash
+        env:
+          REQUESTED_REF: ${{ inputs.ref }}
         run: |
-          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/develop)" ]]; then
-            echo "Production migrations must use the current develop commit."
+          if [[ ! "$REQUESTED_REF" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Production migrations require a full lowercase commit SHA."
+            exit 1
+          fi
+
+          CHECKED_OUT_SHA="$(git rev-parse HEAD)"
+          if [[ "$CHECKED_OUT_SHA" != "$REQUESTED_REF" ]]; then
+            echo "The checked-out commit does not match the requested SHA."
+            exit 1
+          fi
+
+          git fetch origin develop --no-tags
+          if ! git merge-base --is-ancestor "$CHECKED_OUT_SHA" origin/develop; then
+            echo "Production migrations require a commit from current develop history."
             exit 1
           fi
 
