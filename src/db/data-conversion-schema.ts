@@ -24,7 +24,7 @@ export const tasks = pgTable('tasks', {
   title: text('title'),
   titleCiphertext: text('title_ciphertext'),
   titleLookup: text('title_lookup'),
-  userId: text('user_id'),
+  userId: text('user_id').notNull(),
 });
 
 export const twoFactor = pgTable('two_factor', {
