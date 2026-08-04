@@ -4,7 +4,7 @@ import { Field } from '@base-ui/react/field';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { ArrowLeft, Eye, EyeOff, KeyRound, Mail } from 'lucide-react';
+import { ArrowLeft, Eye, EyeClosed, KeyRound, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -156,7 +156,7 @@ export default function ResetPassword({ state }: Props) {
                       }}
                       type="button"
                     >
-                      {isPasswordVisible ? <Eye size={iconSize} /> : <EyeOff size={iconSize} />}
+                      {isPasswordVisible ? <EyeClosed size={iconSize} /> : <Eye size={iconSize} />}
                     </button>
                   </IconTooltip>
                 </div>
@@ -229,7 +229,11 @@ export default function ResetPassword({ state }: Props) {
                       }}
                       type="button"
                     >
-                      {isConfirmationVisible ? <Eye size={iconSize} /> : <EyeOff size={iconSize} />}
+                      {isConfirmationVisible ? (
+                        <EyeClosed size={iconSize} />
+                      ) : (
+                        <Eye size={iconSize} />
+                      )}
                     </button>
                   </IconTooltip>
                 </div>
