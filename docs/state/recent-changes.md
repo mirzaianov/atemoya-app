@@ -6,7 +6,9 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
-- 2026-08-03: Completed the maintenance-gated Production encryption rollout: all application endpoints returned `503`, the 70-second drain completed, restore checkpoint `2026-08-03 16:03:34.60475+00` was recorded, additive migration `0008` applied, 25 rows converted, 27 protected records verified and reverified with zero writes, contract migration `0009` applied, and sign-in plus the encrypted task lifecycle passed after maintenance was disabled. [Reason why added: records operational acceptance while final theft-protection closure waits for the six-hour plaintext-bearing restore history to expire.]
+- 2026-08-04: Closed ADR-009 after Neon rejected the recorded production plaintext checkpoint as outside the available history window. [Reason why added: confirms the final six-hour restore-history condition passed and the database-theft encryption rollout is complete.]
+
+- 2026-08-03: Completed the maintenance-gated Production encryption rollout: all application endpoints returned `503`, the 70-second drain completed, restore checkpoint `2026-08-03 16:03:34.60475+00` was recorded, additive migration `0008` applied, 25 rows converted, 27 protected records verified and reverified with zero writes, contract migration `0009` applied, and sign-in plus the encrypted task lifecycle passed after maintenance was disabled. [Reason why added: records operational acceptance before restore-history expiry.]
 
 - 2026-08-03: Revised the protected production migration guard to require a full commit SHA from current `develop` history, allowing additive migration `0008` and contract migration `0009` to be promoted separately without permitting feature branches or unrelated refs. [Reason why added: resolves the production rollout conflict between strict branch flow and the approved expand/contract conversion sequence.]
 
@@ -23,5 +25,3 @@ Keep only the 10 most recent entries.
 - 2026-08-02: Added and verified restartable atomic conversion batches with stable cursors, source/shadow guards, rollback assertions, encrypted Better Auth backup-code conversion, per-batch readback, final global verification, and idempotent reruns. [Reason why added: completes the write engine only against guarded `atemoya_test` without exposing an operator command or modifying deployed databases.]
 
 - 2026-08-02: Added and verified the read-only conversion preflight with exact target confirmations, stable scans, normalized-collision and OAuth-token checks, pending/complete shadow validation, Better Auth-owned value decoding, late-write mismatch detection, and sanitized events. [Reason why added: establishes the fail-closed gate for conversion writes without converting or modifying any application row.]
-
-- 2026-08-02: Added and verified a root Next.js maintenance Proxy controlled only by `MAINTENANCE_MODE=1`, with plain no-store `503` responses for pages, Better Auth, and Server Actions plus static-asset exclusions and a default-off environment contract. [Reason why added: establishes the application write barrier required before conversion while leaving Preview, production, and Neon untouched.]
