@@ -1,6 +1,6 @@
 import { Field } from '@base-ui/react/field';
 import clsx from 'clsx';
-import { Eye, EyeOff, KeyRound, LogIn, UserPlus } from 'lucide-react';
+import { Eye, EyeClosed, KeyRound, LogIn, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEventHandler } from 'react';
 import { Controller } from 'react-hook-form';
@@ -142,7 +142,11 @@ const LoginForm = ({
                     }}
                     type="button"
                   >
-                    {isPasswordVisible ? <Eye size={buttonSmall} /> : <EyeOff size={buttonSmall} />}
+                    {isPasswordVisible ? (
+                      <EyeClosed size={buttonSmall} />
+                    ) : (
+                      <Eye size={buttonSmall} />
+                    )}
                   </button>
                 </IconTooltip>
               </div>

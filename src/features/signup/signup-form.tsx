@@ -1,6 +1,6 @@
 import { Field } from '@base-ui/react/field';
 import clsx from 'clsx';
-import { ArrowLeft, Eye, EyeOff, UserPlus } from 'lucide-react';
+import { ArrowLeft, Eye, EyeClosed, UserPlus } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEventHandler } from 'react';
 import { Controller } from 'react-hook-form';
@@ -210,7 +210,11 @@ const SignupForm = ({
                     }}
                     type="button"
                   >
-                    {isPasswordVisible ? <Eye size={buttonSmall} /> : <EyeOff size={buttonSmall} />}
+                    {isPasswordVisible ? (
+                      <EyeClosed size={buttonSmall} />
+                    ) : (
+                      <Eye size={buttonSmall} />
+                    )}
                   </button>
                 </IconTooltip>
               </div>
@@ -284,9 +288,9 @@ const SignupForm = ({
                     type="button"
                   >
                     {isConfirmationVisible ? (
-                      <Eye size={buttonSmall} />
+                      <EyeClosed size={buttonSmall} />
                     ) : (
-                      <EyeOff size={buttonSmall} />
+                      <Eye size={buttonSmall} />
                     )}
                   </button>
                 </IconTooltip>

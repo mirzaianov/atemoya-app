@@ -112,7 +112,7 @@
 
 .dragHandle {
   cursor: grab;
-  touch-action: none;
+  touch-action: manipulation;
 }
 
 .dragHandle:active {
