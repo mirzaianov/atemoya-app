@@ -4,8 +4,8 @@
 
 Approved architecture and rollout plan; guarded implementation, development
 rehearsal, and the maintenance-gated production conversion are accepted.
-Production application checks pass; final closure waits only for the six-hour
-Neon restore history containing plaintext to expire.
+Production application checks pass, and Neon rejected the recorded plaintext
+checkpoint after its six-hour history window expired. The rollout is complete.
 
 ## Architecture Review Findings
 
@@ -603,8 +603,9 @@ restore checkpoint `2026-08-03 16:03:34.60475+00`, converted 25 rows, verified
 27 protected records, and reverified all 27 with zero writes before contract
 migration `0009`. Production now reports migration count `10`, latest migration
 `1785693662810`, and passes sign-in, existing reads, and the complete encrypted
-task lifecycle after maintenance was disabled. Final closure waits for the
-six-hour restore history containing the plaintext checkpoint to expire.
+task lifecycle after maintenance was disabled. On 2026-08-04, Neon rejected the
+recorded checkpoint as outside the available history window, confirming the
+plaintext-bearing restore history had expired and closing the rollout.
 
 ### Development preparation
 

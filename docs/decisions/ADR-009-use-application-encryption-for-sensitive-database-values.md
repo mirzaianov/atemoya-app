@@ -33,9 +33,10 @@ used restore checkpoint `2026-08-03 16:03:34.60475+00`, converted 25 rows,
 verified 27 protected records, reverified all 27 with zero writes, and applied
 contract migration `0009`. Production now reports migration count `10` and
 latest migration `1785693662810`; sign-in, existing task reads, and the complete
-encrypted task lifecycle pass after maintenance was disabled. Final
-database-theft protection acceptance remains pending only until the six-hour
-Neon restore history containing the plaintext checkpoint expires.
+encrypted task lifecycle pass after maintenance was disabled. On 2026-08-04,
+Neon rejected the recorded checkpoint as outside the available history window,
+confirming the plaintext-bearing restore history had expired and completing
+ADR-009 acceptance.
 
 The threat-model boundary protects against passive database exfiltration and
 read-only database exposure. Active database writes,
@@ -158,4 +159,4 @@ The detailed field classification and rollout are in
   decryption utility is included in the first release.
 - The architecture-review findings were resolved and the revised plan was
   approved on 2026-07-31. Production conversion and application acceptance
-  passed on 2026-08-03; restore-history expiry remains the final rollout check.
+  passed on 2026-08-03, and restore-history expiry was confirmed on 2026-08-04.

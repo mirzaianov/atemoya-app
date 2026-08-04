@@ -68,8 +68,8 @@ raw database or cryptography errors before they reach Next.js or Vercel. The
 real-PostgreSQL suite uses a dedicated `atemoya_test` database and test-only
 role inside the Neon development branch, leaving Preview tables isolated. All
 architecture-review findings now have approved design resolutions. The staged
-production rollout is operationally accepted; final closure waits only for the
-recorded six-hour Neon restore history containing plaintext to expire.
+production rollout is accepted; Neon rejected the recorded plaintext checkpoint
+after its six-hour history window expired on 2026-08-04.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`
