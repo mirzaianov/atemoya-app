@@ -39,7 +39,7 @@ pairs, and retains current uniqueness behavior through HMAC blind indexes.
 Better Auth continues to own password hashing and native TOTP and backup-code
 encryption.
 
-Implementation is in progress on the feature branch. The guarded Neon test
+Implementation and production rollout are complete. The guarded Neon test
 harness, cryptography and key-configuration boundaries, strict logger, additive
 shadow schema, encrypted task persistence, and encrypted Better Auth
 identity/session/verification adapter boundary plus Better Auth-native encrypted
@@ -47,10 +47,10 @@ backup-code storage and the default-off maintenance Proxy are implemented and
 verified. The read-only preflight, restartable atomic conversion engine, guarded
 local operator command, and deterministic failure-injection coverage are also
 verified against the guarded integration database. The maintenance-gated
-development conversion and encrypted Preview runtime rehearsal also pass; the
-contract migration remains pending.
-Development application rows are converted, Preview runs the encrypted runtime,
-and production is unchanged on the plaintext-authoritative release. The 2026-07-30
+development conversion and encrypted Preview runtime rehearsal also pass.
+Development and production now run the ciphertext-only contract at migration
+`10`; production converted 25 rows, verified 27 protected records, and passed
+sign-in plus the complete encrypted task lifecycle. The 2026-07-30
 architecture-review findings were resolved and the revised architecture was
 approved on 2026-07-31. The threat model was narrowed to passive database
 exfiltration; active database writes and application-oracle attacks are out of
@@ -67,9 +67,9 @@ after conversion. A strict allowlist logger discards Better Auth messages and
 raw database or cryptography errors before they reach Next.js or Vercel. The
 real-PostgreSQL suite uses a dedicated `atemoya_test` database and test-only
 role inside the Neon development branch, leaving Preview tables isolated. All
-architecture-review findings now have approved design resolutions. Development
-implementation follows the staged migration and verification sequence in the
-existing architecture plan; production scheduling remains a separate approval.
+architecture-review findings now have approved design resolutions. The staged
+production rollout is accepted; Neon rejected the recorded plaintext checkpoint
+after its six-hour history window expired on 2026-08-04.
 
 Decision:
 `../decisions/ADR-009-use-application-encryption-for-sensitive-database-values.md`

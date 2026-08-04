@@ -8,13 +8,13 @@ Accepted
 
 2026-07-30
 
-## Implementation Readiness
+## Implementation Status
 
 The high-level decision to protect sensitive database values with application
 encryption remains accepted. All findings from the 2026-07-30 architecture
 review received approved design resolutions on 2026-07-31, and the revised
-architecture and rollout plan are approved. Feature-branch implementation now
-includes the guarded integration harness, cryptography and key boundaries,
+architecture and rollout plan are approved. The implementation includes the
+guarded integration harness, cryptography and key boundaries,
 strict logging, additive shadow schema, encrypted task and Better Auth adapter
 persistence, Better Auth-native encrypted backup-code storage, and the
 default-off maintenance write barrier. The read-only preflight, restartable
@@ -26,13 +26,20 @@ passes database-free review and guarded `atemoya_test` integration: migration
 count `10`, latest migration `1785693662810`, and all four post-contract tests
 pass. The maintenance-gated development application contract rehearsal also
 passes: zero rows converted, ten rows reverified, migration count `10`, complete
-encrypted task lifecycle, and unchanged production migration/data state. Only
-production key provisioning and rollout remain pending.
+encrypted task lifecycle, and unchanged production migration/data state.
 
-Do not schedule production conversion until the linked architecture plan's
-development implementation and rehearsal steps have passed. The
-threat-model boundary protects against passive database
-exfiltration and read-only database exposure. Active database writes,
+The maintenance-gated production rollout completed on 2026-08-03. Production
+used restore checkpoint `2026-08-03 16:03:34.60475+00`, converted 25 rows,
+verified 27 protected records, reverified all 27 with zero writes, and applied
+contract migration `0009`. Production now reports migration count `10` and
+latest migration `1785693662810`; sign-in, existing task reads, and the complete
+encrypted task lifecycle pass after maintenance was disabled. On 2026-08-04,
+Neon rejected the recorded checkpoint as outside the available history window,
+confirming the plaintext-bearing restore history had expired and completing
+ADR-009 acceptance.
+
+The threat-model boundary protects against passive database exfiltration and
+read-only database exposure. Active database writes,
 relationship manipulation, deletion, rollback, and use of the application as
 a decryption or authentication oracle are explicitly out of scope. The
 conversion uses maintenance-only shadow columns, restartable data conversion,
@@ -151,5 +158,5 @@ The detailed field classification and rollout are in
 - Production support through Neon SQL sees ciphertext; no privileged
   decryption utility is included in the first release.
 - The architecture-review findings were resolved and the revised plan was
-  approved on 2026-07-31. Feature-branch implementation is in progress;
-  production conversion remains a separate explicitly approved operation.
+  approved on 2026-07-31. Production conversion and application acceptance
+  passed on 2026-08-03, and restore-history expiry was confirmed on 2026-08-04.
