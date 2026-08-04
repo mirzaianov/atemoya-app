@@ -39,7 +39,7 @@ pairs, and retains current uniqueness behavior through HMAC blind indexes.
 Better Auth continues to own password hashing and native TOTP and backup-code
 encryption.
 
-Implementation is in progress on the feature branch. The guarded Neon test
+Implementation and production rollout are complete. The guarded Neon test
 harness, cryptography and key-configuration boundaries, strict logger, additive
 shadow schema, encrypted task persistence, and encrypted Better Auth
 identity/session/verification adapter boundary plus Better Auth-native encrypted
