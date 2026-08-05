@@ -5,7 +5,14 @@ import type { Task } from '../../types';
 import { moveTaskBetweenGroups } from './task-state.ts';
 
 const tasks: Task[] = [
-  { changedOn: 1, completedAt: null, id: 'active-1', position: 0, tags: [], title: 'First' },
+  {
+    changedOn: 1,
+    completedAt: null,
+    id: 'active-1',
+    position: 0,
+    tags: [{ color: '#111111', id: 'work', name: 'work' }],
+    title: 'First',
+  },
   { changedOn: 2, completedAt: null, id: 'active-2', position: 1, tags: [], title: 'Second' },
   { changedOn: 3, completedAt: 3, id: 'completed-1', position: 0, tags: [], title: 'Done' },
 ];
@@ -20,6 +27,10 @@ test('moves tasks between active and completed groups', () => {
       { completedAt: 10, id: 'active-1', position: 0 },
       { completedAt: 3, id: 'completed-1', position: 0 },
     ],
+  );
+  assert.deepEqual(
+    completed.find(({ id }) => id === 'active-1')?.tags.map(({ id }) => id),
+    ['work'],
   );
 
   const restored = moveTaskBetweenGroups(completed, 'completed-1', false, 11);
