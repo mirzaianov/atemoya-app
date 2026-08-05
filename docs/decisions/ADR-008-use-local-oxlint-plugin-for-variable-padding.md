@@ -13,6 +13,8 @@ Accepted
 The project uses Oxlint and Oxfmt without ESLint or Prettier. Oxlint 1.71 does
 not have a native equivalent of `padding-line-between-statements`, but it can
 load ESLint-compatible JavaScript plugins through its alpha `jsPlugins` API.
+Oxlint 1.73 and Oxfmt 0.58 still provide no native rule or formatter option for
+padding complete `try` statements.
 
 ## Decision
 
@@ -21,7 +23,9 @@ contiguous group of `const`, `let`, or `var` declarations and adjacent
 non-declaration statements. A declaration group at the beginning or end of a
 statement list does not require padding beyond that boundary. Also require a
 blank line before each `return` statement unless it is the first statement in
-its statement list.
+its statement list, and blank lines around each complete `try`/`catch`/`finally`
+statement when it has adjacent statements. Keep `catch` and `finally` clauses
+attached to their `try` statement.
 
 Register it through Oxlint's `jsPlugins` configuration and test its focused
 behavior with Node's built-in test runner. Keep `pnpm lint` as the project-wide
@@ -45,5 +49,7 @@ entry point.
 ## Consequences
 
 - Declaration groups are padded on both sides without another package.
+- Complete `try` statements are padded externally without separating their
+  `catch` or `finally` clauses.
 - Return statements are visually separated from preceding statements.
 - Oxlint's alpha JavaScript plugin API may require adjustment after upgrades.

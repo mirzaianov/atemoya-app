@@ -5,6 +5,8 @@ const blockCommentPattern = /\/\*[\s\S]*?\*\//gu;
 const isVariableDeclaration = (statement) =>
   statement.type === 'VariableDeclaration' && declarationKinds.has(statement.kind);
 
+const isTryStatement = (statement) => statement.type === 'TryStatement';
+
 const hasBlankLine = (source) =>
   blankLinePattern.test(
     source.replace(blockCommentPattern, (comment) => comment.replaceAll(/\r?\n/gu, '$&x')),
@@ -16,9 +18,11 @@ const checkStatements = (context, statements) => {
     const next = statements[index + 1];
     const previousIsVariable = isVariableDeclaration(previous);
     const nextIsVariable = isVariableDeclaration(next);
+    const previousIsTry = isTryStatement(previous);
+    const nextIsTry = isTryStatement(next);
     const nextIsReturn = next.type === 'ReturnStatement';
 
-    if (previousIsVariable === nextIsVariable && !nextIsReturn) {
+    if (previousIsVariable === nextIsVariable && !previousIsTry && !nextIsTry && !nextIsReturn) {
       continue;
     }
 
@@ -29,6 +33,10 @@ const checkStatements = (context, statements) => {
 
       if (nextIsReturn) {
         messageId = 'expectedBlankLineBeforeReturn';
+      } else if (previousIsTry) {
+        messageId = 'expectedBlankLineAfterTry';
+      } else if (nextIsTry) {
+        messageId = 'expectedBlankLineBeforeTry';
       }
 
       context.report({
@@ -52,12 +60,15 @@ export const paddingLineBetweenStatementsRule = {
   },
   meta: {
     docs: {
-      description: 'Require blank lines around variable declaration groups and before returns',
+      description:
+        'Require blank lines around variable declaration groups and try statements, and before returns',
     },
     messages: {
       expectedBlankLineAfter: 'Expected blank line after variable declarations.',
+      expectedBlankLineAfterTry: 'Expected blank line after try statement.',
       expectedBlankLineBefore: 'Expected blank line before variable declarations.',
       expectedBlankLineBeforeReturn: 'Expected blank line before return statement.',
+      expectedBlankLineBeforeTry: 'Expected blank line before try statement.',
     },
     schema: [],
     type: 'layout',

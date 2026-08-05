@@ -62,6 +62,7 @@ export const createTaskAction = async (title: string): Promise<ActionResult> => 
 
     throw error;
   }
+
   revalidatePath('/');
 
   return {};
@@ -93,6 +94,7 @@ export const updateTaskAction = async (id: string, title: string): Promise<Actio
 
     throw error;
   }
+
   revalidatePath('/');
 
   return {};
