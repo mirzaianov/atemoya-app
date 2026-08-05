@@ -2,6 +2,7 @@
 
 import { Checkbox } from '@base-ui/react/checkbox';
 import { Menu } from '@base-ui/react/menu';
+import { Popover } from '@base-ui/react/popover';
 import clsx from 'clsx';
 import { Check, EllipsisVertical, FilePen, Trash2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
@@ -9,13 +10,58 @@ import type { ComponentPropsWithoutRef, CSSProperties } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
 import type { Task } from '../../types';
+import TagChip from './tag-chip';
 import TaskDeleteDialog from './task-delete-dialog';
 
 import buttonStyles from '../../components/button.module.css';
+import tagStyles from './tag.module.css';
 import styles from './task.module.css';
 
 const actionIconSize = 20;
 const checkIconSize = 14;
+
+const TaskTags = ({ task }: { task: Task }) => {
+  // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
+  const tags = [...task.tags].sort((left, right) => left.name.localeCompare(right.name));
+  const visibleTags = tags.slice(0, 2);
+  const remainingTags = tags.slice(2);
+
+  if (tags.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className={tagStyles.taskTags}>
+      {visibleTags.map((tag) => (
+        <TagChip key={tag.id} tag={tag} />
+      ))}
+      {remainingTags.length > 0 ? (
+        <Popover.Root>
+          <Popover.Trigger
+            aria-label={`Show ${remainingTags.length} more tags for "${task.title}"`}
+            className={tagStyles.tagOverflowTrigger}
+            onKeyDown={(event) => event.stopPropagation()}
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            +{remainingTags.length}
+          </Popover.Trigger>
+          <Popover.Portal>
+            <Popover.Positioner className={tagStyles.tagOverflowPositioner} sideOffset={4}>
+              <Popover.Popup
+                aria-label={`More tags for "${task.title}"`}
+                className={tagStyles.tagOverflowPopup}
+              >
+                {remainingTags.map((tag) => (
+                  <TagChip key={tag.id} tag={tag} />
+                ))}
+              </Popover.Popup>
+            </Popover.Positioner>
+          </Popover.Portal>
+        </Popover.Root>
+      ) : null}
+    </div>
+  );
+};
 
 interface TaskRowProps {
   completionDisabled: boolean;
@@ -91,6 +137,7 @@ export default function TaskRow({
         {...dragHandleProps}
       >
         <span className={styles.taskTitle}>{task.title}</span>
+        <TaskTags task={task} />
       </div>
       <Menu.Root actionsRef={menuActionsRef}>
         <IconTooltip label="Task options">
