@@ -7,6 +7,8 @@ import { createDataProtection } from '../lib/data-protection.ts';
 import { createTestDatabase } from './test-database.ts';
 
 interface TableCounts extends Record<string, unknown> {
+  tagCount: number;
+  taskTagCount: number;
   taskCount: number;
   userCount: number;
 }
@@ -20,6 +22,16 @@ interface ContractIndexState extends Record<string, unknown> {
   definitionCount: number;
   foundCount: number;
   obsoleteCount: number;
+}
+
+interface ContractConstraintState extends Record<string, unknown> {
+  definitionCount: number;
+  foundCount: number;
+}
+
+interface MigrationState extends Record<string, unknown> {
+  latestMigration: string;
+  migrationCount: number;
 }
 
 interface PersistedTask extends Record<string, unknown> {
@@ -36,6 +48,18 @@ test('migrates and resets only the dedicated integration database', async () => 
   await testDatabase.migrate();
   await testDatabase.reset();
 
+  const migrationState = await testDatabase.db.execute<MigrationState>(sql`
+    SELECT
+      count(*)::int AS "migrationCount",
+      max(created_at)::text AS "latestMigration"
+    FROM drizzle.__drizzle_migrations
+  `);
+
+  assert.deepEqual(migrationState.rows[0], {
+    latestMigration: '1785930212109',
+    migrationCount: 11,
+  });
+
   const columnState = await testDatabase.db.execute<ContractColumnState>(sql`
     WITH expected("tableName", "columnName", "isNullable") AS (
       VALUES
@@ -43,6 +67,14 @@ test('migrates and resets only the dedicated integration database', async () => 
         ('session', 'token_ciphertext', false),
         ('session', 'token_lookup', false),
         ('session', 'user_agent_ciphertext', true),
+        ('tags', 'color', false),
+        ('tags', 'id', false),
+        ('tags', 'name_ciphertext', false),
+        ('tags', 'name_lookup', false),
+        ('tags', 'user_id', false),
+        ('task_tags', 'tag_id', false),
+        ('task_tags', 'task_id', false),
+        ('task_tags', 'user_id', false),
         ('tasks', 'title_ciphertext', false),
         ('tasks', 'title_lookup', false),
         ('user', 'email_ciphertext', false),
@@ -68,7 +100,7 @@ test('migrates and resets only the dedicated integration database', async () => 
       AND columns.column_name = expected."columnName"
   `);
 
-  assert.deepEqual(columnState.rows[0], { correctCount: 16, foundCount: 16 });
+  assert.deepEqual(columnState.rows[0], { correctCount: 24, foundCount: 24 });
 
   const obsoleteColumns = await testDatabase.db.execute<{ count: number }>(sql`
     SELECT count(*)::int AS "count"
@@ -93,6 +125,9 @@ test('migrates and resets only the dedicated integration database', async () => 
     WITH expected("indexName", "isUnique", "isPartial") AS (
       VALUES
         ('session_token_lookup_unique_idx', true, false),
+        ('tags_user_id_id_unique_idx', true, false),
+        ('tags_user_id_name_lookup_unique_idx', true, false),
+        ('tasks_user_id_id_unique_idx', true, false),
         ('tasks_user_id_title_lookup_unique_idx', true, false),
         ('user_email_lookup_unique_idx', true, false),
         ('user_name_lookup_unique_idx', true, false),
@@ -124,7 +159,36 @@ test('migrates and resets only the dedicated integration database', async () => 
       AND indexes.indexname = expected."indexName"
   `);
 
-  assert.deepEqual(indexState.rows[0], { definitionCount: 6, foundCount: 6, obsoleteCount: 0 });
+  assert.deepEqual(indexState.rows[0], { definitionCount: 9, foundCount: 9, obsoleteCount: 0 });
+
+  const constraintState = await testDatabase.db.execute<ContractConstraintState>(sql`
+    WITH expected("constraintName", "definition") AS (
+      VALUES
+        (
+          'task_tags_user_id_task_id_tag_id_pk',
+          'PRIMARY KEY (user_id, task_id, tag_id)'
+        ),
+        (
+          'task_tags_user_task_fk',
+          'FOREIGN KEY (user_id, task_id) REFERENCES tasks(user_id, id) ON DELETE CASCADE'
+        ),
+        (
+          'task_tags_user_tag_fk',
+          'FOREIGN KEY (user_id, tag_id) REFERENCES tags(user_id, id) ON DELETE CASCADE'
+        )
+    )
+    SELECT
+      count(constraints.oid) FILTER (
+        WHERE position(expected."definition" IN pg_get_constraintdef(constraints.oid)) > 0
+      )::int AS "definitionCount",
+      count(constraints.oid)::int AS "foundCount"
+    FROM expected
+    LEFT JOIN pg_constraint AS constraints
+      ON constraints.conname = expected."constraintName"
+      AND constraints.conrelid = 'public.task_tags'::regclass
+  `);
+
+  assert.deepEqual(constraintState.rows[0], { definitionCount: 3, foundCount: 3 });
 
   const userId = crypto.randomUUID();
 
@@ -167,11 +231,13 @@ test('migrates and resets only the dedicated integration database', async () => 
 
   const result = await testDatabase.db.execute<TableCounts>(sql`
     SELECT
+      (SELECT count(*)::int FROM "tags") AS "tagCount",
+      (SELECT count(*)::int FROM "task_tags") AS "taskTagCount",
       (SELECT count(*)::int FROM "tasks") AS "taskCount",
       (SELECT count(*)::int FROM "user") AS "userCount"
   `);
 
-  assert.deepEqual(result.rows[0], { taskCount: 0, userCount: 0 });
+  assert.deepEqual(result.rows[0], { tagCount: 0, taskCount: 0, taskTagCount: 0, userCount: 0 });
 });
 
 test('persists and reads encrypted task titles through the guarded database', async (context) => {

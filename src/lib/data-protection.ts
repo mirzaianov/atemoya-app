@@ -17,6 +17,7 @@ const versionPattern = /^[1-9]\d*$/u;
 
 const protectedFields = {
   session: new Set(['ipAddress', 'token', 'userAgent']),
+  tags: new Set(['name']),
   tasks: new Set(['title']),
   user: new Set(['email', 'image', 'name']),
   verification: new Set(['identifier', 'value']),
@@ -24,6 +25,7 @@ const protectedFields = {
 
 export type EncryptionContext =
   | { field: 'ipAddress' | 'token' | 'userAgent'; model: 'session'; recordId: string }
+  | { field: 'name'; model: 'tags'; recordId: string }
   | { field: 'title'; model: 'tasks'; recordId: string }
   | { field: 'email' | 'image' | 'name'; model: 'user'; recordId: string }
   | { field: 'identifier' | 'value'; model: 'verification'; recordId: string };
@@ -255,6 +257,13 @@ export const createDataProtection = (configuration: DataProtectionConfiguration)
       return createLookup('user', 'name', 'nickname:v1', parsed.data);
     },
     sessionTokenLookup: (token: string) => createLookup('session', 'token', 'exact:v1', token),
+    tagNameLookup: (userId: string, name: string) => {
+      if (!userId || userId.includes('\0')) {
+        return fail('INVALID_LOOKUP_VALUE');
+      }
+
+      return createLookup('tags', 'name', 'tag-name:v1', name.trim().toLowerCase(), userId);
+    },
     taskTitleLookup: (userId: string, title: string) => {
       if (!userId || userId.includes('\0')) {
         return fail('INVALID_LOOKUP_VALUE');
