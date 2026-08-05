@@ -303,7 +303,7 @@ test('persists and reads encrypted task titles through the guarded database', as
     )
   `);
 
-  await assert.rejects(createTask(crypto.randomUUID(), orphanTitle), (error: unknown) => {
+  await assert.rejects(createTask(crypto.randomUUID(), orphanTitle, []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'OPERATION_FAILED');
 
@@ -330,7 +330,7 @@ test('persists and reads encrypted task titles through the guarded database', as
     )
   `);
 
-  const betaId = await createTask(userId, betaTitle);
+  const betaId = await createTask(userId, betaTitle, []);
   const createdTasks = await listTasks(userId);
 
   assert.deepEqual(
@@ -341,17 +341,17 @@ test('persists and reads encrypted task titles through the guarded database', as
     ],
   );
   assert.equal(await taskTitleExists(userId, ` ${alphaTitle.toUpperCase()} `), true);
-  await assert.rejects(createTask(userId, alphaTitle.toLowerCase()), (error: unknown) => {
+  await assert.rejects(createTask(userId, alphaTitle.toLowerCase(), []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'DUPLICATE_TITLE');
 
     return true;
   });
 
-  assert.equal(await updateTask(userId, betaId, gammaTitle), true);
+  assert.equal(await updateTask(userId, betaId, gammaTitle, []), true);
   assert.equal(await taskTitleExists(userId, gammaTitle, betaId), false);
   assert.equal(await taskTitleExists(userId, gammaTitle), true);
-  await assert.rejects(updateTask(userId, betaId, alphaTitle), (error: unknown) => {
+  await assert.rejects(updateTask(userId, betaId, alphaTitle, []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'DUPLICATE_TITLE');
 
@@ -572,6 +572,135 @@ test('persists and manages encrypted tags through the guarded database', async (
   for (const value of ['alpha', 'office', 'orphan', 'work', 'zeta']) {
     assert.equal(capturedOutput.includes(value), false);
   }
+
+  await testDatabase.reset();
+});
+
+test('assigns tags to tasks atomically', async () => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  process.env.DATA_ENCRYPTION_KEYS = JSON.stringify({ 1: key(1) });
+  process.env.DATA_ENCRYPTION_ACTIVE_VERSION = '1';
+  process.env.BLIND_INDEX_KEYS = JSON.stringify({ 1: key(2) });
+  process.env.BLIND_INDEX_ACTIVE_VERSION = '1';
+
+  const { createTask, deleteTask, listTasks, TaskQueryError, updateTask } =
+    await import('./queries.ts');
+  const { createTag } = await import('./tag-queries.ts');
+  const userId = crypto.randomUUID();
+  const otherUserId = crypto.randomUUID();
+
+  await Promise.all(
+    [userId, otherUserId].map((id) =>
+      testDatabase.db.execute(sql`
+        INSERT INTO "user" (
+          "id", "email_ciphertext", "email_lookup", "name_ciphertext", "name_lookup"
+        )
+        VALUES (
+          ${id},
+          'enc:v1:1:email',
+          ${`email-${id}`},
+          'enc:v1:1:name',
+          ${`name-${id}`}
+        )
+      `),
+    ),
+  );
+
+  const alpha = await createTag(userId, { color: '#00ff00', name: 'alpha' });
+  const zeta = await createTag(userId, { color: '#0000ff', name: 'zeta' });
+  const foreign = await createTag(otherUserId, { color: '#ff0000', name: 'foreign' });
+  const taskId = await createTask(userId, 'Tagged task', [zeta.id, alpha.id]);
+  const untaggedTaskId = await createTask(userId, 'Untagged task', []);
+  const initialTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    initialTasks.map(({ id, position, tags, title }) => ({
+      id,
+      position,
+      tags: tags.map(({ name }) => name),
+      title,
+    })),
+    [
+      { id: untaggedTaskId, position: 0, tags: [], title: 'Untagged task' },
+      { id: taskId, position: 1, tags: ['alpha', 'zeta'], title: 'Tagged task' },
+    ],
+  );
+
+  const assertInvalidTags = (error: unknown) => {
+    assert.ok(error instanceof TaskQueryError);
+    assert.equal(error.code, 'INVALID_TAGS');
+
+    return true;
+  };
+  const invalidCreates = [
+    { ids: [alpha.id, alpha.id], title: 'Duplicate tags' },
+    { ids: [crypto.randomUUID()], title: 'Missing tag' },
+    { ids: [foreign.id], title: 'Foreign tag' },
+    {
+      ids: Array.from({ length: 11 }, () => crypto.randomUUID()),
+      title: 'Too many tags',
+    },
+  ];
+
+  await Promise.all(
+    invalidCreates.map(({ ids, title }) =>
+      assert.rejects(createTask(userId, title, ids), assertInvalidTags),
+    ),
+  );
+
+  const tasksAfterRejectedCreates = await listTasks(userId);
+
+  assert.deepEqual(
+    tasksAfterRejectedCreates.map(({ id, position, title }) => ({ id, position, title })),
+    [
+      { id: untaggedTaskId, position: 0, title: 'Untagged task' },
+      { id: taskId, position: 1, title: 'Tagged task' },
+    ],
+  );
+
+  await assert.rejects(
+    updateTask(userId, taskId, 'Rejected foreign update', [foreign.id]),
+    assertInvalidTags,
+  );
+  await assert.rejects(
+    updateTask(userId, taskId, 'Rejected duplicate update', [alpha.id, alpha.id]),
+    assertInvalidTags,
+  );
+  assert.equal(await updateTask(otherUserId, taskId, 'Foreign owner update', []), false);
+
+  const tasksAfterRejectedUpdates = await listTasks(userId);
+  const taskAfterRejectedUpdates = tasksAfterRejectedUpdates.find(({ id }) => id === taskId);
+
+  assert.equal(taskAfterRejectedUpdates?.title, 'Tagged task');
+  assert.deepEqual(
+    taskAfterRejectedUpdates?.tags.map(({ name }) => name),
+    ['alpha', 'zeta'],
+  );
+
+  assert.equal(await updateTask(userId, taskId, 'Updated task', [zeta.id]), true);
+
+  const tasksAfterUpdate = await listTasks(userId);
+  const updatedTask = tasksAfterUpdate.find(({ id }) => id === taskId);
+
+  assert.equal(updatedTask?.title, 'Updated task');
+  assert.deepEqual(
+    updatedTask?.tags.map(({ name }) => name),
+    ['zeta'],
+  );
+  assert.equal(await deleteTask(userId, taskId), true);
+
+  const remainingAssignments = await testDatabase.db.execute<{ count: number }>(sql`
+    SELECT count(*)::int AS "count"
+    FROM "task_tags"
+    WHERE "task_id" = ${taskId}
+  `);
+
+  assert.equal(remainingAssignments.rows[0]?.count, 0);
 
   await testDatabase.reset();
 });

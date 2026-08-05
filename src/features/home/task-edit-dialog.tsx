@@ -15,7 +15,7 @@ import { toast } from '../../components/toast-provider';
 import type { Task } from '../../types';
 import { updateTaskAction } from './task-actions';
 import { taskSchema } from './task-schemas';
-import type { TaskFormValues } from './task-schemas';
+import type { TaskFormInput, TaskFormValues } from './task-schemas';
 
 import formStyles from '../../components/modal-form-layout.module.css';
 import validationStyles from '../../styles/form.module.css';
@@ -34,27 +34,31 @@ export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogP
     handleSubmit,
     reset,
     setFocus,
-  } = useForm<TaskFormValues>({
-    defaultValues: { title: '' },
+  } = useForm<TaskFormInput, undefined, TaskFormValues>({
+    defaultValues: { tagIds: [], title: '' },
     mode: 'onChange',
     resolver: zodResolver(taskSchema),
   });
   const updateTaskMutation = useMutation({
-    mutationFn: ({ id, title }: { id: string; title: string }) => updateTaskAction(id, title),
+    mutationFn: ({ id, values }: { id: string; values: TaskFormValues }) =>
+      updateTaskAction(id, values),
   });
 
   useEffect(() => {
     if (!editingTask) {
-      reset({ title: '' });
+      reset({ tagIds: [], title: '' });
 
       return;
     }
 
-    reset({ title: editingTask.title });
+    reset({
+      tagIds: editingTask.tags.map(({ id }) => id),
+      title: editingTask.title,
+    });
     setFocus('title');
   }, [editingTask, reset, setFocus]);
 
-  const onSubmit = handleSubmit(async ({ title }) => {
+  const onSubmit = handleSubmit(async (values) => {
     if (!editingTask) {
       return;
     }
@@ -62,7 +66,7 @@ export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogP
     try {
       const result = await updateTaskMutation.mutateAsync({
         id: editingTask.id,
-        title,
+        values,
       });
 
       if (result.error) {
@@ -73,7 +77,7 @@ export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogP
 
       toast.info('Task updated');
       onClose();
-      reset({ title: '' });
+      reset({ tagIds: [], title: '' });
       router.refresh();
     } catch {
       toast.error('Task could not be updated. Please try again.');

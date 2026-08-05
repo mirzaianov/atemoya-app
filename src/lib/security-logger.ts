@@ -28,7 +28,7 @@ interface BetterAuthAdapterSecurityEvent {
 }
 
 interface TaskQuerySecurityEvent {
-  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'INVALID_TAGS' | 'OPERATION_FAILED';
   code: 'task_query_failure';
   operation:
     | 'complete'

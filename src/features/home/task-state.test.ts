@@ -5,9 +5,9 @@ import type { Task } from '../../types';
 import { moveTaskBetweenGroups } from './task-state.ts';
 
 const tasks: Task[] = [
-  { changedOn: 1, completedAt: null, id: 'active-1', position: 0, title: 'First' },
-  { changedOn: 2, completedAt: null, id: 'active-2', position: 1, title: 'Second' },
-  { changedOn: 3, completedAt: 3, id: 'completed-1', position: 0, title: 'Done' },
+  { changedOn: 1, completedAt: null, id: 'active-1', position: 0, tags: [], title: 'First' },
+  { changedOn: 2, completedAt: null, id: 'active-2', position: 1, tags: [], title: 'Second' },
+  { changedOn: 3, completedAt: 3, id: 'completed-1', position: 0, tags: [], title: 'Done' },
 ];
 
 test('moves tasks between active and completed groups', () => {

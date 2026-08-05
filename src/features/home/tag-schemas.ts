@@ -18,7 +18,7 @@ export const tagSchema = z.object({
 });
 
 export const tagIdSchema = z.object({
-  id: z.string().min(1, 'Missing tag id'),
+  id: z.string().uuid('Invalid tag'),
 });
 
 export const tagWithIdSchema = tagSchema.extend(tagIdSchema.shape);

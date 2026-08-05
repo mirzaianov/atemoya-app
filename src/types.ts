@@ -9,5 +9,6 @@ export interface Task {
   completedAt: number | null;
   id: string;
   position: number;
+  tags: Tag[];
   title: string;
 }

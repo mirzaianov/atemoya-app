@@ -13,7 +13,7 @@ import Button from '../../components/button';
 import { toast } from '../../components/toast-provider';
 import { createTaskAction } from './task-actions';
 import { taskSchema } from './task-schemas';
-import type { TaskFormValues } from './task-schemas';
+import type { TaskFormInput, TaskFormValues } from './task-schemas';
 
 import buttonStyles from '../../components/button.module.css';
 import styles from './home.module.css';
@@ -23,8 +23,12 @@ const iconSize = 20;
 
 export default function TaskForm() {
   const router = useRouter();
-  const { control, handleSubmit, reset, setFocus } = useForm<TaskFormValues>({
-    defaultValues: { title: '' },
+  const { control, handleSubmit, reset, setFocus } = useForm<
+    TaskFormInput,
+    undefined,
+    TaskFormValues
+  >({
+    defaultValues: { tagIds: [], title: '' },
     resolver: zodResolver(taskSchema),
   });
   const taskTitle = useWatch({ control, name: 'title' });
@@ -37,9 +41,9 @@ export default function TaskForm() {
     setFocus('title');
   }, [setFocus]);
 
-  const onSubmit = handleSubmit(async ({ title }) => {
+  const onSubmit = handleSubmit(async (values) => {
     try {
-      const result = await createTaskMutation.mutateAsync(title);
+      const result = await createTaskMutation.mutateAsync(values);
 
       if (result.error) {
         toast.error(result.error);
@@ -48,7 +52,7 @@ export default function TaskForm() {
       }
 
       toast.success('Task added');
-      reset({ title: '' });
+      reset({ tagIds: [], title: '' });
       router.refresh();
     } catch {
       toast.error('Task could not be added. Please try again.');

@@ -20,6 +20,7 @@ export default async function Page() {
     completedAt: task.completedAt?.getTime() ?? null,
     id: task.id,
     position: task.position,
+    tags: task.tags,
     title: task.title,
   }));
 
