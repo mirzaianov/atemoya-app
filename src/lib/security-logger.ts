@@ -43,6 +43,14 @@ interface TaskQuerySecurityEvent {
   severity: 'error';
 }
 
+interface TagQuerySecurityEvent {
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TAG' | 'OPERATION_FAILED';
+  code: 'tag_query_failure';
+  operation: 'create' | 'delete' | 'list' | 'update';
+  recordId?: string;
+  severity: 'error';
+}
+
 interface DataConversionFailureEvent {
   code: 'data_conversion_failure';
   phase: 'convert' | 'intent' | 'preflight' | 'verify';
@@ -61,6 +69,7 @@ type SecurityEvent =
   | BetterAuthSecurityEvent
   | DataConversionFailureEvent
   | DataConversionProgressEvent
+  | TagQuerySecurityEvent
   | TaskQuerySecurityEvent;
 
 export const logSecurityEvent = (event: SecurityEvent) => {

@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { sql } from 'drizzle-orm';
 
+import { tagSchema } from '../features/home/tag-schemas.ts';
 import { createDataProtection } from '../lib/data-protection.ts';
 import { createTestDatabase } from './test-database.ts';
 
@@ -38,6 +39,13 @@ interface PersistedTask extends Record<string, unknown> {
   id: string;
   titleCiphertext: string;
   titleLookup: string;
+}
+
+interface PersistedTag extends Record<string, unknown> {
+  color: string;
+  id: string;
+  nameCiphertext: string;
+  nameLookup: string;
 }
 
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
@@ -404,6 +412,165 @@ test('persists and reads encrypted task titles through the guarded database', as
 
   for (const title of [alphaTitle, betaTitle, gammaTitle, orphanTitle]) {
     assert.equal(capturedOutput.includes(title), false);
+  }
+
+  await testDatabase.reset();
+});
+
+test('persists and manages encrypted tags through the guarded database', async (context) => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  process.env.DATA_ENCRYPTION_KEYS = JSON.stringify({ 1: key(1) });
+  process.env.DATA_ENCRYPTION_ACTIVE_VERSION = '1';
+  process.env.BLIND_INDEX_KEYS = JSON.stringify({ 1: key(2) });
+  process.env.BLIND_INDEX_ACTIVE_VERSION = '1';
+
+  const { createTag, deleteTag, listTags, TagQueryError, updateTag } =
+    await import('./tag-queries.ts');
+  const dataProtection = createDataProtection({
+    blindIndexActiveVersion: '1',
+    blindIndexKeys: process.env.BLIND_INDEX_KEYS,
+    dataEncryptionActiveVersion: '1',
+    dataEncryptionKeys: process.env.DATA_ENCRYPTION_KEYS,
+  });
+  const userId = crypto.randomUUID();
+  const otherUserId = crypto.randomUUID();
+  const stderr: string[] = [];
+
+  context.mock.method(process.stderr, 'write', (chunk: string | Uint8Array) => {
+    stderr.push(String(chunk));
+
+    return true;
+  });
+
+  await Promise.all(
+    [userId, otherUserId].map((id) =>
+      testDatabase.db.execute(sql`
+        INSERT INTO "user" (
+          "id", "email_ciphertext", "email_lookup", "name_ciphertext", "name_lookup"
+        )
+        VALUES (
+          ${id},
+          'enc:v1:1:email',
+          ${`email-${id}`},
+          'enc:v1:1:name',
+          ${`name-${id}`}
+        )
+      `),
+    ),
+  );
+
+  await assert.rejects(
+    createTag(crypto.randomUUID(), { color: '#000000', name: 'orphan' }),
+    (error: unknown) => {
+      assert.ok(error instanceof TagQueryError);
+      assert.equal(error.code, 'OPERATION_FAILED');
+
+      return true;
+    },
+  );
+
+  const workInput = tagSchema.parse({ color: '#AA0000', name: ' Work ' });
+  const work = await createTag(userId, workInput);
+  const duplicate = await createTag(userId, tagSchema.parse({ color: '#00FF00', name: 'WORK' }));
+
+  assert.deepEqual(duplicate, work);
+  assert.deepEqual(work, { color: '#aa0000', id: work.id, name: 'work' });
+
+  const zeta = await createTag(userId, { color: '#0000ff', name: 'zeta' });
+  const alpha = await createTag(userId, { color: '#00ff00', name: 'alpha' });
+
+  const createdTags = await listTags(userId);
+
+  assert.deepEqual(
+    createdTags.map(({ name }) => name),
+    ['alpha', 'work', 'zeta'],
+  );
+
+  const persisted = await testDatabase.db.execute<PersistedTag>(sql`
+    SELECT
+      "color",
+      "id",
+      "name_ciphertext" AS "nameCiphertext",
+      "name_lookup" AS "nameLookup"
+    FROM "tags"
+    WHERE "id" = ${work.id}
+  `);
+
+  assert.equal(persisted.rows[0]?.color, '#aa0000');
+  assert.equal(persisted.rows[0]?.id, work.id);
+  assert.match(persisted.rows[0]?.nameCiphertext ?? '', /^enc:v1:1:/u);
+  assert.notEqual(persisted.rows[0]?.nameCiphertext, 'work');
+  assert.equal(persisted.rows[0]?.nameLookup, dataProtection.tagNameLookup(userId, 'work'));
+
+  await assert.rejects(
+    updateTag(userId, work.id, { color: '#ffffff', name: alpha.name }),
+    (error: unknown) => {
+      assert.ok(error instanceof TagQueryError);
+      assert.equal(error.code, 'DUPLICATE_TAG');
+
+      return true;
+    },
+  );
+  assert.equal(await updateTag(otherUserId, work.id, { color: '#ffffff', name: 'office' }), false);
+  assert.equal(await deleteTag(otherUserId, work.id), false);
+  assert.equal(await updateTag(userId, work.id, { color: '#ffffff', name: 'office' }), true);
+
+  const taskId = crypto.randomUUID();
+  const taskTitle = 'Tagged task';
+
+  await testDatabase.db.execute(sql`
+    INSERT INTO "tasks" (
+      "id", "user_id", "title_ciphertext", "title_lookup", "changed_on", "position"
+    )
+    VALUES (
+      ${taskId},
+      ${userId},
+      ${dataProtection.encryptValue(taskTitle, {
+        field: 'title',
+        model: 'tasks',
+        recordId: taskId,
+      })},
+      ${dataProtection.taskTitleLookup(userId, taskTitle)},
+      now(),
+      0
+    )
+  `);
+  await testDatabase.db.execute(sql`
+    INSERT INTO "task_tags" ("user_id", "task_id", "tag_id")
+    VALUES (${userId}, ${taskId}, ${work.id})
+  `);
+
+  assert.equal(await deleteTag(userId, work.id), true);
+
+  const retainedTask = await testDatabase.db.execute<{
+    assignmentCount: number;
+    taskCount: number;
+  }>(sql`
+    SELECT
+      (SELECT count(*)::int FROM "task_tags" WHERE "task_id" = ${taskId}) AS "assignmentCount",
+      (SELECT count(*)::int FROM "tasks" WHERE "id" = ${taskId}) AS "taskCount"
+  `);
+
+  assert.deepEqual(retainedTask.rows[0], { assignmentCount: 0, taskCount: 1 });
+
+  const remainingTags = await listTags(userId);
+
+  assert.deepEqual(
+    remainingTags.map(({ id }) => id),
+    [alpha.id, zeta.id],
+  );
+
+  const capturedOutput = stderr.join('');
+
+  assert.match(capturedOutput, /"category":"DUPLICATE_TAG"/u);
+
+  for (const value of ['alpha', 'office', 'orphan', 'work', 'zeta']) {
+    assert.equal(capturedOutput.includes(value), false);
   }
 
   await testDatabase.reset();
