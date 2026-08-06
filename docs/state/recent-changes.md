@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-06: Implemented ADR-014 reusable task tags with encrypted lower-case names, atomic same-owner assignments, Base UI assignment and filter Comboboxes, `nuqs` URL-backed AND filtering, visible-slot drag reordering, compact chips, custom colors, and tag management. Additive migration `0010` and all local checks pass against the guarded test database; Preview and production rollout remain pending. [Reason why added: records the completed feature implementation and its remaining deployment boundary.]
+
 - 2026-08-05: Extended the repository-local Oxlint statement-padding rule to require blank lines around complete `try`/`catch`/`finally` statements after confirming Oxlint and Oxfmt have no native equivalent. [Reason why added: records the enforced error-handling readability convention and why the local rule remains necessary.]
 
 - 2026-08-04: Closed ADR-009 after Neon rejected the recorded production plaintext checkpoint as outside the available history window. [Reason why added: confirms the final six-hour restore-history condition passed and the database-theft encryption rollout is complete.]

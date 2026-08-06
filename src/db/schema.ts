@@ -1,9 +1,11 @@
 import { relations, sql } from 'drizzle-orm';
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -136,15 +138,60 @@ export const tasks = pgTable(
       .references(() => user.id, { onDelete: 'cascade' }),
   },
   (table) => [
+    uniqueIndex('tasks_user_id_id_unique_idx').on(table.userId, table.id),
     uniqueIndex('tasks_user_id_title_lookup_unique_idx').on(table.userId, table.titleLookup),
     index('tasks_user_id_position_idx').on(table.userId, table.position),
     index('tasks_user_id_changed_on_idx').on(table.userId, table.changedOn),
   ],
 );
 
+export const tags = pgTable(
+  'tags',
+  {
+    color: text('color').notNull(),
+    id: text('id').primaryKey(),
+    name: text('name_ciphertext').notNull(),
+    nameLookup: text('name_lookup').notNull(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    uniqueIndex('tags_user_id_id_unique_idx').on(table.userId, table.id),
+    uniqueIndex('tags_user_id_name_lookup_unique_idx').on(table.userId, table.nameLookup),
+  ],
+);
+
+export const taskTags = pgTable(
+  'task_tags',
+  {
+    tagId: text('tag_id').notNull(),
+    taskId: text('task_id').notNull(),
+    userId: text('user_id').notNull(),
+  },
+  (table) => [
+    primaryKey({
+      columns: [table.userId, table.taskId, table.tagId],
+      name: 'task_tags_user_id_task_id_tag_id_pk',
+    }),
+    foreignKey({
+      columns: [table.userId, table.taskId],
+      foreignColumns: [tasks.userId, tasks.id],
+      name: 'task_tags_user_task_fk',
+    }).onDelete('cascade'),
+    foreignKey({
+      columns: [table.userId, table.tagId],
+      foreignColumns: [tags.userId, tags.id],
+      name: 'task_tags_user_tag_fk',
+    }).onDelete('cascade'),
+  ],
+);
+
 export const userRelations = relations(user, ({ many }) => ({
   accounts: many(account),
   sessions: many(session),
+  tagAssignments: many(taskTags),
+  tags: many(tags),
   tasks: many(tasks),
   twoFactors: many(twoFactor),
 }));
@@ -170,9 +217,33 @@ export const twoFactorRelations = relations(twoFactor, ({ one }) => ({
   }),
 }));
 
-export const tasksRelations = relations(tasks, ({ one }) => ({
+export const tasksRelations = relations(tasks, ({ many, one }) => ({
+  tagAssignments: many(taskTags),
   user: one(user, {
     fields: [tasks.userId],
+    references: [user.id],
+  }),
+}));
+
+export const tagsRelations = relations(tags, ({ many, one }) => ({
+  taskAssignments: many(taskTags),
+  user: one(user, {
+    fields: [tags.userId],
+    references: [user.id],
+  }),
+}));
+
+export const taskTagsRelations = relations(taskTags, ({ one }) => ({
+  tag: one(tags, {
+    fields: [taskTags.tagId],
+    references: [tags.id],
+  }),
+  task: one(tasks, {
+    fields: [taskTags.taskId],
+    references: [tasks.id],
+  }),
+  user: one(user, {
+    fields: [taskTags.userId],
     references: [user.id],
   }),
 }));

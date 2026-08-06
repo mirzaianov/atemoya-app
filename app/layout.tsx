@@ -1,5 +1,6 @@
 import { Analytics } from '@vercel/analytics/next';
 import type { Metadata } from 'next';
+import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import type { ReactNode } from 'react';
 
 import QueryProvider from '../src/components/query-provider';
@@ -23,9 +24,11 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body>
-        <QueryProvider>
-          <div className={styles.page}>{children}</div>
-        </QueryProvider>
+        <NuqsAdapter>
+          <QueryProvider>
+            <div className={styles.page}>{children}</div>
+          </QueryProvider>
+        </NuqsAdapter>
         <ToastProvider />
         {isProduction ? <Analytics /> : null}
       </body>

@@ -20,6 +20,7 @@ import {
   taskSchema,
   taskWithIdSchema,
 } from './task-schemas';
+import type { TaskFormInput } from './task-schemas';
 
 interface ActionResult {
   error?: string;
@@ -36,8 +37,11 @@ const getUserId = async () => {
 const isDuplicateTitle = (error: unknown) =>
   error instanceof TaskQueryError && error.code === 'DUPLICATE_TITLE';
 
-export const createTaskAction = async (title: string): Promise<ActionResult> => {
-  const parsed = taskSchema.safeParse({ title });
+const isInvalidTags = (error: unknown) =>
+  error instanceof TaskQueryError && error.code === 'INVALID_TAGS';
+
+export const createTaskAction = async (values: TaskFormInput): Promise<ActionResult> => {
+  const parsed = taskSchema.safeParse(values);
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid task' };
@@ -54,10 +58,14 @@ export const createTaskAction = async (title: string): Promise<ActionResult> => 
   }
 
   try {
-    await createTask(userId, parsed.data.title);
+    await createTask(userId, parsed.data.title, parsed.data.tagIds);
   } catch (error) {
     if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
+    }
+
+    if (isInvalidTags(error)) {
+      return { error: 'Choose valid tags and try again.' };
     }
 
     throw error;
@@ -68,8 +76,11 @@ export const createTaskAction = async (title: string): Promise<ActionResult> => 
   return {};
 };
 
-export const updateTaskAction = async (id: string, title: string): Promise<ActionResult> => {
-  const parsed = taskWithIdSchema.safeParse({ id, title });
+export const updateTaskAction = async (
+  id: string,
+  values: TaskFormInput,
+): Promise<ActionResult> => {
+  const parsed = taskWithIdSchema.safeParse({ ...values, id });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? 'Invalid task' };
@@ -86,10 +97,14 @@ export const updateTaskAction = async (id: string, title: string): Promise<Actio
   }
 
   try {
-    await updateTask(userId, parsed.data.id, parsed.data.title);
+    await updateTask(userId, parsed.data.id, parsed.data.title, parsed.data.tagIds);
   } catch (error) {
     if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
+    }
+
+    if (isInvalidTags(error)) {
+      return { error: 'Choose valid tags and try again.' };
     }
 
     throw error;

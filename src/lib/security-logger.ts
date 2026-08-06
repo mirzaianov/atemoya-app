@@ -28,7 +28,7 @@ interface BetterAuthAdapterSecurityEvent {
 }
 
 interface TaskQuerySecurityEvent {
-  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'INVALID_TAGS' | 'OPERATION_FAILED';
   code: 'task_query_failure';
   operation:
     | 'complete'
@@ -39,6 +39,14 @@ interface TaskQuerySecurityEvent {
     | 'reorder'
     | 'restore'
     | 'update';
+  recordId?: string;
+  severity: 'error';
+}
+
+interface TagQuerySecurityEvent {
+  category: 'DATA_UNAVAILABLE' | 'DUPLICATE_TAG' | 'OPERATION_FAILED';
+  code: 'tag_query_failure';
+  operation: 'create' | 'delete' | 'list' | 'update';
   recordId?: string;
   severity: 'error';
 }
@@ -61,6 +69,7 @@ type SecurityEvent =
   | BetterAuthSecurityEvent
   | DataConversionFailureEvent
   | DataConversionProgressEvent
+  | TagQuerySecurityEvent
   | TaskQuerySecurityEvent;
 
 export const logSecurityEvent = (event: SecurityEvent) => {

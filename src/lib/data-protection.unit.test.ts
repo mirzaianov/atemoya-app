@@ -21,6 +21,12 @@ const taskContext: EncryptionContext = {
   recordId: 'task-1',
 };
 
+const tagContext: EncryptionContext = {
+  field: 'name',
+  model: 'tags',
+  recordId: 'tag-1',
+};
+
 const expectCode = (code: DataProtectionError['code'], action: () => unknown) => {
   assert.throws(action, (error) => {
     assert.ok(error instanceof DataProtectionError);
@@ -122,6 +128,18 @@ test('decrypts retained key versions while new writes use only the active versio
 
 test('creates stable domain-separated blind indexes with approved normalization', () => {
   const protection = createDataProtection(configuration);
+
+  const encryptedTagName = protection.encryptValue('work', tagContext);
+
+  assert.equal(protection.decryptValue(encryptedTagName, tagContext), 'work');
+  assert.equal(
+    protection.tagNameLookup('user-1', ' Work '),
+    protection.tagNameLookup('user-1', 'work'),
+  );
+  assert.notEqual(
+    protection.tagNameLookup('user-1', 'work'),
+    protection.taskTitleLookup('user-1', 'work'),
+  );
 
   assert.equal(
     protection.emailLookup('  USER@Example.COM '),
