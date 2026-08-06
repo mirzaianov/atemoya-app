@@ -55,7 +55,14 @@ export default function TagEditor({
   });
 
   return (
-    <form className={styles.editor} noValidate onSubmit={handleSubmit(onSave)}>
+    <form
+      className={styles.editor}
+      noValidate
+      onSubmit={(event) => {
+        event.stopPropagation();
+        void handleSubmit(onSave)(event);
+      }}
+    >
       <Controller
         control={control}
         name="name"
