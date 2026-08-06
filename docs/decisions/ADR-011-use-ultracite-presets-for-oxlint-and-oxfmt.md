@@ -25,7 +25,7 @@ Use Ultracite as the maintained preset layer for the existing Oxlint and Oxfmt
 toolchain:
 
 - Extend the Ultracite core, React, and Next.js Oxlint presets.
-- Retain the local declaration-padding plugin accepted in ADR-008.
+- Retain the local statement-padding plugin accepted in ADR-008.
 - Treat Ultracite's inherited lint rules as the repository lint conventions
   without compatibility overrides.
 - Extend the Ultracite Oxfmt preset while preserving the existing print width,

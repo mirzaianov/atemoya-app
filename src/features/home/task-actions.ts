@@ -70,6 +70,7 @@ export const createTaskAction = async (values: TaskFormInput): Promise<ActionRes
 
     throw error;
   }
+
   revalidatePath('/');
 
   return {};
@@ -108,6 +109,7 @@ export const updateTaskAction = async (
 
     throw error;
   }
+
   revalidatePath('/');
 
   return {};

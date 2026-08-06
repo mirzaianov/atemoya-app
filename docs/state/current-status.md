@@ -23,7 +23,8 @@ Project support docs include Things 3 reference material and UI reference images
 - Modal styling: two Base UI Dialog edit flows and two Alert Dialog delete confirmations share `ModalLayout` for the backdrop, viewport, card, title, top-right Close control, and motion. Delete dialogs compose `DeleteModalLayout`, edit dialogs compose `EditModalLayout`, and both use shared form, label, error, and action-grid styles. [Reason why added: records the semantic modal split and nested composition contract while preventing visual drift.]
 - Code quality tooling: Oxlint for linting, including a repository-local
   JavaScript rule that requires blank lines around variable-declaration groups
-  and before non-leading return statements, and Oxfmt for formatting. Oxlint
+  and complete try statements, and before non-leading return statements, and
+  Oxfmt for formatting. Oxlint
   inherits Ultracite's maintained core, React, accessibility, and Next.js
   conventions without compatibility overrides; the local padding rule is the
   sole extension. Oxfmt retains the project's print width, quotes, trailing
