@@ -70,15 +70,15 @@ only conveyed information. A task can have at most ten tags.
 
 Use the following interaction model:
 
-- assign tags in both the Add Task form and Edit Task dialog
-- reuse one searchable multi-select picker in both flows
+- create tasks without tags and assign tags only in the Edit Task dialog
+- use one searchable multi-select picker in Edit Task
 - keep assignment selections in form state and replace the task's complete tag
   set only when the task saves successfully; cancelling leaves assignments
   unchanged
 - list available tags alphabetically after decryption
-- allow tag creation from the picker as an immediate independent mutation; a
-  created tag remains available if the surrounding task form is cancelled or
-  fails to save
+- allow tag creation only from the Edit Task picker as an immediate independent
+  mutation; a created tag remains available if the edit is cancelled or fails
+  to save
 - show all owned tags in task pickers and Manage tags, but show only tags
   assigned to at least one active or completed task in the filter Combobox
 - provide a Manage tags dialog for rename, recolor, and confirmed deletion
@@ -96,7 +96,7 @@ removable selected chips. Show two selected filter chips and collapse additional
 selections into `+N more`; opening the Combobox exposes every selection. This
 keeps the filter compact when a user owns many tags. Use Base UI form and dialog
 primitives around task assignment and tag management, including a multiple
-`Combobox` for the shared task tag picker. Base UI 1.6 has no color picker, so
+`Combobox` for the Edit Task tag picker. Base UI 1.6 has no color picker, so
 use `react-colorful`'s controlled `HexColorPicker` for custom colors rather than
 implementing color-area, pointer, keyboard, or touch behavior.
 
@@ -209,8 +209,8 @@ maintenance mode, data-conversion command, or backfill.
   ownership, cascades, atomic assignments, AND filtering, URL parsing, and
   filtered reorder merging. Color tests must cover hexadecimal normalization
   and readable foreground selection.
-- Preview acceptance must cover tag CRUD, preset and custom colors, Add/Edit
-  assignment, compact chips, URL persistence, active and completed filtering,
+- Preview acceptance must cover tag CRUD, preset and custom colors, untagged
+  task creation, Edit Task assignment, compact chips, URL persistence, filtering,
   filtered drag reorder, empty results, deletion, and mobile layout. It must
   also verify the third-party color picker and hidden-tag Popover with keyboard,
   touch, focus visibility, and accessible labeling.

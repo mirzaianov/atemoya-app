@@ -17,7 +17,7 @@ export default function Home({ availableTags, initialTasks, userEmail, userNickn
   return (
     <div className={styles.container}>
       <BrandHeader action={<AccountMenu email={userEmail} nickname={userNickname} />} />
-      <TaskForm tags={availableTags} />
+      <TaskForm />
       <TaskList tags={availableTags} tasks={initialTasks} />
     </div>
   );

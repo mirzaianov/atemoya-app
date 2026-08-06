@@ -322,9 +322,9 @@ createTaskAction(values: TaskFormValues)
 updateTaskAction(id: string, values: TaskFormValues)
 ```
 
-In `app/page.tsx`, load `[tasks, tags]` with `Promise.all([listTasks(userId), listTags(userId)])`, map dates to numbers, retain task tag arrays, and pass `availableTags` through `Home`, `TaskForm`, and `TaskList` to the sortable client island.
+In `app/page.tsx`, load `[tasks, tags]` with `Promise.all([listTasks(userId), listTags(userId)])`, map dates to numbers, retain task tag arrays, and pass `availableTags` through `Home` and `TaskList` to the sortable client island.
 
-Update the existing form callers in the same commit so the new action contract is buildable before the picker UI exists: Add Task submits `tagIds: []`; Edit Task submits `editingTask.tags.map(({ id }) => id)` to preserve existing assignments. Task 6 replaces these hidden defaults with user-controlled form state.
+Update the existing form callers in the same commit so the new action contract is buildable before the picker UI exists: Add Task submits `tagIds: []`; Edit Task submits `editingTask.tags.map(({ id }) => id)` to preserve existing assignments. Task 6 replaces only the Edit Task default with user-controlled form state.
 
 - [ ] **Step 6: Run atomicity verification**
 
@@ -482,7 +482,7 @@ git commit -m "feat(ATE-4): Add URL-backed tag filter"
 
 ---
 
-### Task 6: Add Tag Assignment To Task Forms
+### Task 6: Add Tag Assignment To Edit Task
 
 **Files:**
 
@@ -496,7 +496,7 @@ git commit -m "feat(ATE-4): Add URL-backed tag filter"
 **Interfaces:**
 
 - Consumes: `Tag[]`, `TaskFormValues`, Base UI multiple Combobox, and complete-set task actions from Task 3.
-- Produces: one reusable assignment picker used by Add Task and Edit Task, with staged form-state selections.
+- Produces: one assignment picker used by Edit Task with staged form-state selections.
 
 - [ ] **Step 1: Build the shared assignment picker**
 
@@ -513,9 +513,9 @@ interface TagPickerProps {
 
 Use Base UI multiple Combobox, alphabetical options, tag colors plus names, removable selected chips, and the same ten-selection limit. Do not persist assignment changes from this component.
 
-- [ ] **Step 2: Add tag IDs to Add Task form state**
+- [ ] **Step 2: Keep Add Task untagged**
 
-Initialize `defaultValues: { tagIds: [], title: '' }`, render `TagPicker` through a React Hook Form `Controller`, and submit the complete parsed values to `createTaskAction`. Reset both title and tag IDs only after success.
+Keep `defaultValues: { tagIds: [], title: '' }`, render no tag picker, and submit the parsed values to `createTaskAction`. Reset both title and the hidden empty tag-ID array only after success.
 
 - [ ] **Step 3: Add tag IDs to Edit Task form state**
 
@@ -592,9 +592,9 @@ Export the fixed palette, `normalizeTagColor`, and `getTagForeground`. Parse six
 
 Use Base UI Field for lower-case name and exact hex input, Base UI single-selection controls for palette colors, and `react-colorful`'s controlled `HexColorPicker` only when Custom is selected. Provide a visible label and pass an explicit `aria-label` to the third-party picker.
 
-- [ ] **Step 5: Add immediate inline creation**
+- [ ] **Step 5: Add immediate Edit Task creation**
 
-From `TagPicker`, open the tag editor, call `createTagAction`, append the returned new-or-existing tag to local options, and select its ID. The tag remains persisted if the surrounding task form is cancelled. If the returned tag already existed, preserve its stored color.
+From the Edit Task `TagPicker`, open the tag editor, call `createTagAction`, append the returned new-or-existing tag to local options, and select its ID. Do not expose creation from the Add Task picker. The tag remains persisted if the edit is cancelled. If the returned tag already existed, preserve its stored color.
 
 - [ ] **Step 6: Add Manage tags**
 
@@ -680,7 +680,7 @@ FROM drizzle.__drizzle_migrations;
 Expected: `migration_count = 11`; `latest_migration` matches migration `0010` in `drizzle/meta/_journal.json`.
 
 4. Merge `feature/ATE-4-tags` into `develop` through a pull request and wait for the Vercel Preview deployment.
-5. In Preview, create `work`, `urgent`, and one custom-color tag; assign combinations through Add and Edit.
+5. In Preview, create `work`, `urgent`, and one custom-color tag through Edit Task; create tasks untagged, then assign combinations through Edit Task.
 6. Confirm task rows show two alphabetical chips and a keyboard/touch-accessible `+N` Popover.
 7. Select `work` and `urgent`; confirm only tasks containing both remain, including tasks with additional tags.
 8. Refresh, navigate away and back, and confirm the final filters remain while browser Back does not replay each filter click.
