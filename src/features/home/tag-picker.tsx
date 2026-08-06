@@ -1,12 +1,20 @@
 'use client';
 
 import { Combobox } from '@base-ui/react/combobox';
-import { Check, ChevronDown, X } from 'lucide-react';
-import { useId } from 'react';
+import { Dialog } from '@base-ui/react/dialog';
+import { useMutation } from '@tanstack/react-query';
+import { Check, ChevronDown, CirclePlus, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useId, useMemo, useState } from 'react';
 import type { CSSProperties } from 'react';
 
+import ModalLayout from '../../components/modal-layout';
+import { toast } from '../../components/toast-provider';
 import type { Tag } from '../../types';
+import { createTagAction } from './tag-actions';
 import TagChip from './tag-chip';
+import TagEditor from './tag-editor';
+import type { TagFormValues } from './tag-schemas';
 
 import styles from './tag.module.css';
 
@@ -24,12 +32,59 @@ interface TagPickerProps {
 }
 
 export default function TagPicker({ disabled = false, onChange, tags, value }: TagPickerProps) {
+  const router = useRouter();
   const inputId = useId();
+  const [createdTags, setCreatedTags] = useState<Tag[]>([]);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [previousTags, setPreviousTags] = useState(tags);
+
+  if (tags !== previousTags) {
+    const serverTagIds = new Set(tags.map(({ id }) => id));
+
+    setPreviousTags(tags);
+    setCreatedTags((current) => current.filter(({ id }) => !serverTagIds.has(id)));
+  }
+
+  const availableTags = useMemo(() => {
+    const tagsById = new Map([...createdTags, ...tags].map((tag) => [tag.id, tag]));
+
+    // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022.
+    return [...tagsById.values()].sort((left, right) => left.name.localeCompare(right.name));
+  }, [createdTags, tags]);
   const selectedIds = new Set(value);
   const selectedTags = value
-    .map((id) => tags.find((tag) => tag.id === id))
+    .map((id) => availableTags.find((tag) => tag.id === id))
     .filter((tag): tag is Tag => tag !== undefined);
   const atLimit = selectedTags.length >= maxSelectedTags;
+  const createMutation = useMutation({ mutationFn: createTagAction });
+
+  const handleCreate = async (values: TagFormValues) => {
+    try {
+      const result = await createMutation.mutateAsync(values);
+      const { error, tag } = result;
+
+      if (error || !tag) {
+        toast.error(error ?? 'Tag could not be created. Please try again.');
+
+        return;
+      }
+
+      const existing = availableTags.some(({ id }) => id === tag.id);
+
+      if (!existing) {
+        setCreatedTags((current) => [...current, tag]);
+      }
+      if (!value.includes(tag.id)) {
+        onChange([...value, tag.id]);
+      }
+
+      toast.success(existing ? 'Existing tag selected' : 'Tag created');
+      setEditorOpen(false);
+      router.refresh();
+    } catch {
+      toast.error('Tag could not be created. Please try again.');
+    }
+  };
 
   return (
     <div className={styles.picker}>
@@ -40,7 +95,7 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
         disabled={disabled}
         isItemEqualToValue={(item, selected) => item.id === selected.id}
         itemToStringLabel={(tag) => tag.name}
-        items={tags}
+        items={availableTags}
         multiple
         onValueChange={(selected) =>
           onChange(selected.slice(0, maxSelectedTags).map(({ id }) => id))
@@ -113,6 +168,25 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
       <span aria-live="polite" className={styles.visuallyHidden}>
         {atLimit ? 'Maximum of 10 tags selected' : ''}
       </span>
+      <button
+        className={styles.createTagButton}
+        disabled={disabled || atLimit}
+        onClick={() => setEditorOpen(true)}
+        type="button"
+      >
+        <CirclePlus aria-hidden="true" size={16} />
+        Create tag
+      </button>
+      <Dialog.Root open={editorOpen} onOpenChange={setEditorOpen}>
+        <ModalLayout closeDisabled={createMutation.isPending} title="Create Tag">
+          <TagEditor
+            onCancel={() => setEditorOpen(false)}
+            onSave={handleCreate}
+            pending={createMutation.isPending}
+            saveLabel="Create"
+          />
+        </ModalLayout>
+      </Dialog.Root>
     </div>
   );
 }

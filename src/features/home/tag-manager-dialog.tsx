@@ -1,0 +1,142 @@
+'use client';
+
+import { Dialog } from '@base-ui/react/dialog';
+import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
+import { FilePen, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+
+import ModalLayout from '../../components/modal-layout';
+import { toast } from '../../components/toast-provider';
+import type { Tag } from '../../types';
+import { updateTagAction } from './tag-actions';
+import TagChip from './tag-chip';
+import TagDeleteDialog from './tag-delete-dialog';
+import TagEditor from './tag-editor';
+import type { TagFormValues } from './tag-schemas';
+
+import buttonStyles from '../../components/button.module.css';
+import styles from './tag.module.css';
+
+interface TagManagerDialogProps {
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  tags: Tag[];
+}
+
+export default function TagManagerDialog({ onOpenChange, open, tags }: TagManagerDialogProps) {
+  const router = useRouter();
+  const [editingTag, setEditingTag] = useState<Tag | null>(null);
+  const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
+  const updateMutation = useMutation({
+    mutationFn: ({ id, values }: { id: string; values: TagFormValues }) =>
+      updateTagAction(id, values),
+  });
+
+  const closeManager = () => {
+    setEditingTag(null);
+    onOpenChange(false);
+  };
+
+  const handleSave = async (values: TagFormValues) => {
+    if (!editingTag) {
+      return;
+    }
+
+    try {
+      const result = await updateMutation.mutateAsync({ id: editingTag.id, values });
+
+      if (result.error) {
+        toast.error(result.error);
+
+        return;
+      }
+
+      toast.info('Tag updated');
+      closeManager();
+      router.refresh();
+    } catch {
+      toast.error('Tag could not be updated. Please try again.');
+    }
+  };
+
+  return (
+    <>
+      <Dialog.Root
+        open={open}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setEditingTag(null);
+          }
+          onOpenChange(nextOpen);
+        }}
+      >
+        <ModalLayout
+          closeDisabled={updateMutation.isPending}
+          title={editingTag ? 'Edit Tag' : 'Manage Tags'}
+        >
+          {editingTag ? (
+            <TagEditor
+              initialValue={{ color: editingTag.color, name: editingTag.name }}
+              key={editingTag.id}
+              onCancel={() => setEditingTag(null)}
+              onSave={handleSave}
+              pending={updateMutation.isPending}
+              saveLabel="Save"
+            />
+          ) : (
+            <div className={styles.manager}>
+              {tags.length === 0 ? (
+                <p className={styles.managerEmpty}>No tags yet.</p>
+              ) : (
+                <ul className={styles.managerList}>
+                  {tags.map((tag) => (
+                    <li className={styles.managerItem} key={tag.id}>
+                      <TagChip tag={tag} />
+                      <div className={styles.managerActions}>
+                        <button
+                          aria-label={`Edit ${tag.name}`}
+                          className={clsx(buttonStyles.button, styles.managerAction)}
+                          onClick={() => setEditingTag(tag)}
+                          type="button"
+                        >
+                          <FilePen aria-hidden="true" size={18} />
+                          Edit
+                        </button>
+                        <button
+                          aria-label={`Delete ${tag.name}`}
+                          className={clsx(buttonStyles.button, styles.managerAction)}
+                          onClick={() => setDeletingTag(tag)}
+                          type="button"
+                        >
+                          <Trash2 aria-hidden="true" size={18} />
+                          Delete
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </ModalLayout>
+      </Dialog.Root>
+      {deletingTag ? (
+        <TagDeleteDialog
+          id={deletingTag.id}
+          onDeleted={() => {
+            setDeletingTag(null);
+            closeManager();
+          }}
+          onOpenChange={(nextOpen) => {
+            if (!nextOpen) {
+              setDeletingTag(null);
+            }
+          }}
+          open
+        />
+      ) : null}
+    </>
+  );
+}
