@@ -53,10 +53,13 @@ export default function TaskEditDialog({ editingTask, onClose, tags }: TaskEditD
       return;
     }
 
-    reset({
-      tagIds: editingTask.tags.map(({ id }) => id),
-      title: editingTask.title,
-    });
+    reset(
+      {
+        tagIds: editingTask.tags.map(({ id }) => id),
+        title: editingTask.title,
+      },
+      { keepDirtyValues: true },
+    );
     setFocus('title');
   }, [editingTask, reset, setFocus]);
 
