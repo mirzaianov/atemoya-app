@@ -8,6 +8,15 @@
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript 6, Neon PostgreSQL, Drizzle ORM, Base UI 1.6, TanStack Query, React Hook Form, Zod, dnd-kit, nuqs, react-colorful, Node test runner, Oxlint, and Oxfmt.
 
+## Implementation Status
+
+Tasks 1-8 are implemented and locally verified on `feature/ATE-4-tags`.
+Migration `0010_task_tags` passes against guarded `atemoya_test` at migration
+count `11` with journal timestamp `1785930212109`; `pnpm check`, all 30 unit
+tests, all six integration tests, and `git diff --check` pass. The checklists
+below retain the approved implementation recipe. Manual Migration And
+Acceptance remains pending.
+
 ## Global Constraints
 
 - Work only on `feature/ATE-4-tags`; merge feature branches into `develop`, then `develop` into `main`.

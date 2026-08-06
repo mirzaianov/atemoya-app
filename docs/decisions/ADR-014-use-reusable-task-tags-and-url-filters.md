@@ -8,6 +8,13 @@ Accepted
 
 2026-08-04
 
+## Implementation Status
+
+Implemented on `feature/ATE-4-tags`. Formatting, linting, type checking, 30 unit
+tests, and six guarded `atemoya_test` integration tests pass. Additive migration
+`0010_task_tags` is verified at migration count `11` with journal timestamp
+`1785930212109`. Preview acceptance and production promotion remain pending.
+
 ## Context
 
 The task list needs reusable organization beyond task titles and manual order.
