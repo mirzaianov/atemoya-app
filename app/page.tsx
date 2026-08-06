@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 import { listTasks } from '../src/db/queries';
+import { listTags } from '../src/db/tag-queries';
 import Home from '../src/features/home/home';
 import { auth } from '../src/lib/auth';
 
@@ -14,7 +15,7 @@ export default async function Page() {
     redirect('/login');
   }
 
-  const tasks = await listTasks(session.user.id);
+  const [tasks, tags] = await Promise.all([listTasks(session.user.id), listTags(session.user.id)]);
   const initialTasks = tasks.map((task) => ({
     changedOn: task.changedOn.getTime(),
     completedAt: task.completedAt?.getTime() ?? null,
@@ -26,6 +27,7 @@ export default async function Page() {
 
   return (
     <Home
+      availableTags={tags}
       initialTasks={initialTasks}
       userEmail={session.user.email}
       userNickname={session.user.name}

@@ -12,7 +12,8 @@ import { Controller, useForm } from 'react-hook-form';
 import EditModalLayout from '../../components/edit-modal-layout';
 import ModalLayout from '../../components/modal-layout';
 import { toast } from '../../components/toast-provider';
-import type { Task } from '../../types';
+import type { Tag, Task } from '../../types';
+import TagPicker from './tag-picker';
 import { updateTaskAction } from './task-actions';
 import { taskSchema } from './task-schemas';
 import type { TaskFormInput, TaskFormValues } from './task-schemas';
@@ -24,9 +25,10 @@ import inputStyles from './task-form.module.css';
 interface TaskEditDialogProps {
   editingTask: Task | null;
   onClose: () => void;
+  tags: Tag[];
 }
 
-export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogProps) {
+export default function TaskEditDialog({ editingTask, onClose, tags }: TaskEditDialogProps) {
   const router = useRouter();
   const {
     control,
@@ -128,6 +130,18 @@ export default function TaskEditDialog({ editingTask, onClose }: TaskEditDialogP
                   {error?.message ?? ''}
                 </Field.Error>
               </Field.Root>
+            )}
+          />
+          <Controller
+            control={control}
+            name="tagIds"
+            render={({ field: { onChange, value } }) => (
+              <TagPicker
+                disabled={updateTaskMutation.isPending}
+                onChange={onChange}
+                tags={tags}
+                value={value ?? []}
+              />
             )}
           />
         </EditModalLayout>

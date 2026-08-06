@@ -28,10 +28,15 @@ import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { toast } from '../../components/toast-provider';
-import type { Task } from '../../types';
+import type { Tag, Task } from '../../types';
 import SortableTask from './sortable-task';
 import TagFilter from './tag-filter';
-import { filterTasksByTagIds, mergeFilteredTaskOrder, normalizeSelectedTagIds } from './tag-state';
+import {
+  filterTasksByTagIds,
+  getEligibleFilterTags,
+  mergeFilteredTaskOrder,
+  normalizeSelectedTagIds,
+} from './tag-state';
 import { reorderTasksAction, setTaskCompletedAction } from './task-actions';
 import TaskEditDialog from './task-edit-dialog';
 import TaskRow, { TaskDragPreview } from './task-row';
@@ -40,6 +45,7 @@ import { moveTaskBetweenGroups } from './task-state';
 import listStyles from './task-list.module.css';
 
 interface SortableTaskListProps {
+  availableTags: Tag[];
   tasks: Task[];
 }
 
@@ -86,7 +92,7 @@ const useReducedMotion = () => {
   return reducedMotion;
 };
 
-export default function SortableTaskList({ tasks }: SortableTaskListProps) {
+export default function SortableTaskList({ availableTags, tasks }: SortableTaskListProps) {
   const router = useRouter();
   const [rawTagIds, setTagIds] = useQueryState('tag', tagParser);
   const [previousInputTasks, setPreviousInputTasks] = useState(tasks);
@@ -147,16 +153,10 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
 
   const activeTasks = orderedTasks.filter((task) => task.completedAt === null);
   const completedTasks = orderedTasks.filter((task) => task.completedAt !== null);
-  const eligibleTags = useMemo(() => {
-    const assignedTags = [
-      ...new Map(
-        orderedTasks.flatMap((task) => task.tags.map((tag) => [tag.id, tag] as const)),
-      ).values(),
-    ];
-
-    // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
-    return assignedTags.sort((left, right) => left.name.localeCompare(right.name));
-  }, [orderedTasks]);
+  const eligibleTags = useMemo(
+    () => getEligibleFilterTags(availableTags, orderedTasks),
+    [availableTags, orderedTasks],
+  );
   const selectedTagIds = useMemo(
     () => normalizeSelectedTagIds(rawTagIds, eligibleTags),
     [eligibleTags, rawTagIds],
@@ -303,7 +303,11 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
           </TaskGroup>
         </div>
       )}
-      <TaskEditDialog editingTask={editingTask} onClose={() => setEditingTask(null)} />
+      <TaskEditDialog
+        editingTask={editingTask}
+        onClose={() => setEditingTask(null)}
+        tags={availableTags}
+      />
     </>
   );
 }
