@@ -137,7 +137,7 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
           </Combobox.Trigger>
         </Combobox.InputGroup>
         <Combobox.Portal>
-          <Combobox.Positioner className={styles.filterPositioner} sideOffset={4}>
+          <Combobox.Positioner className={styles.pickerPositioner} sideOffset={4}>
             <Combobox.Popup className={styles.filterPopup}>
               <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>

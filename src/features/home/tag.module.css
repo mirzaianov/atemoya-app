@@ -149,6 +149,11 @@
   outline: 0;
 }
 
+.pickerPositioner {
+  z-index: 12;
+  outline: 0;
+}
+
 .filterPopup,
 .tagOverflowPopup {
   border: 1px solid var(--color-border);
