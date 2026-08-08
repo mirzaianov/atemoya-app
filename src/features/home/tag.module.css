@@ -185,18 +185,15 @@
   padding: 0.125rem;
   border-radius: calc(var(--radius-control) * 0.75);
   outline: 0;
-  cursor: default;
+  cursor: pointer;
 }
 
 .filterItem[data-highlighted] {
   background: transparent;
 }
 
-.filterItem[data-highlighted] .tagChip {
-  box-shadow: 0 3px 7px rgb(0 0 0 / 0.2);
-}
-
 .filterItem[data-disabled] {
+  cursor: not-allowed;
   opacity: 0.55;
 }
 
@@ -231,6 +228,14 @@
   color: var(--tag-foreground);
   text-overflow: ellipsis;
   white-space: nowrap;
+  transition:
+    border-color 150ms ease-out,
+    background-color 150ms ease-out,
+    filter 150ms ease-out;
+}
+
+.filterItem[data-highlighted]:not([data-disabled]) .tagChip {
+  filter: brightness(0.94) saturate(1.08);
 }
 
 .tagChipText {
@@ -241,12 +246,6 @@
 
 .filterItem[data-selected] .tagChip {
   box-shadow: 0 3px 0 var(--tag-color);
-}
-
-.filterItem[data-selected][data-highlighted] .tagChip {
-  box-shadow:
-    0 3px 0 var(--tag-color),
-    0 4px 8px rgb(0 0 0 / 0.22);
 }
 
 .selectedFilterTag {
@@ -277,6 +276,7 @@
   border-radius: calc(var(--radius-control) * 0.5);
   background: transparent;
   color: inherit;
+  cursor: pointer;
   opacity: 0;
   place-items: center;
 }
@@ -309,10 +309,16 @@
     box-shadow: 0 3px 0 oklch(from var(--tag-color) 0.58 calc(c * 0.75) h);
   }
 
-  .filterItem[data-selected][data-highlighted] .tagChip {
-    box-shadow:
-      0 3px 0 oklch(from var(--tag-color) 0.58 calc(c * 0.75) h),
-      0 4px 8px rgb(0 0 0 / 0.22);
+  .filterItem[data-highlighted]:not([data-disabled]) .tagChip {
+    border-color: oklch(from var(--tag-color) 0.7 calc(c * 0.65) h);
+    background: oklch(from var(--tag-color) 0.9 calc(c * 0.35) h);
+    filter: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagChip {
+    transition: none;
   }
 }
 
