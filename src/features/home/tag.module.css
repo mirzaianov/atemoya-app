@@ -43,21 +43,6 @@
   opacity: 0.55;
 }
 
-.filterControl {
-  display: flex;
-  align-items: center;
-  min-height: 2.5rem;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-control);
-}
-
-.filterControl:focus-within {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
-}
-
 .filterSearchControl {
   display: flex;
   align-items: center;
@@ -220,14 +205,6 @@
 .filterItem[data-disabled] {
   cursor: not-allowed;
   opacity: 0.55;
-}
-
-.itemIndicator {
-  display: grid;
-  flex: 0 0 1rem;
-  width: 1rem;
-  height: 1rem;
-  place-items: center;
 }
 
 .filterItemText {
