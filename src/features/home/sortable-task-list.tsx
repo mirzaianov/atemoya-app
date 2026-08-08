@@ -219,7 +219,6 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
   return (
     <>
       <TagFilter
-        allTags={availableTags}
         onChange={(tagIds) => void setTagIds(tagIds)}
         tags={eligibleTags}
         value={selectedTagIds}

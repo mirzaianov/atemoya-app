@@ -41,10 +41,11 @@ Production rollout remain pending.
 
 Server Components remain authoritative for task and tag reads. The existing
 sortable client island uses `nuqs` to own repeated opaque `tag` query
-parameters, Base UI multiple Comboboxes for filtering and assignment, and a
-pure merge helper that reorders matching active tasks only within their visible
-slots. `react-colorful` supplies the custom color picker because Base UI has no
-color-picker primitive.
+parameters, a Base UI multiple Select with normal tag-chip rendering for
+filtering, a searchable Base UI multiple Combobox for Edit Task assignment, and
+a pure merge helper that reorders matching active tasks only within their
+visible slots. Tag management lives in Settings. `react-colorful` supplies the
+custom color picker because Base UI has no color-picker primitive.
 
 Decision: `../decisions/ADR-014-use-reusable-task-tags-and-url-filters.md`
 

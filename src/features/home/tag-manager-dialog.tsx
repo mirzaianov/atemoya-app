@@ -3,7 +3,7 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { FilePen, Trash2 } from 'lucide-react';
+import { FilePen, Settings2, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -20,13 +20,12 @@ import buttonStyles from '../../components/button.module.css';
 import styles from './tag.module.css';
 
 interface TagManagerDialogProps {
-  onOpenChange: (open: boolean) => void;
-  open: boolean;
   tags: Tag[];
 }
 
-export default function TagManagerDialog({ onOpenChange, open, tags }: TagManagerDialogProps) {
+export default function TagManagerDialog({ tags }: TagManagerDialogProps) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
   const [deletingTag, setDeletingTag] = useState<Tag | null>(null);
   const updateMutation = useMutation({
@@ -36,7 +35,7 @@ export default function TagManagerDialog({ onOpenChange, open, tags }: TagManage
 
   const closeManager = () => {
     setEditingTag(null);
-    onOpenChange(false);
+    setOpen(false);
   };
 
   const handleSave = async (values: TagFormValues) => {
@@ -69,9 +68,23 @@ export default function TagManagerDialog({ onOpenChange, open, tags }: TagManage
           if (!nextOpen) {
             setEditingTag(null);
           }
-          onOpenChange(nextOpen);
+          setOpen(nextOpen);
         }}
       >
+        <Dialog.Trigger
+          className={clsx(
+            buttonStyles.button,
+            buttonStyles.standard,
+            buttonStyles.fullWidth,
+            buttonStyles.primary,
+          )}
+          type="button"
+        >
+          <span className={buttonStyles.buttonTop}>
+            <Settings2 size={20} />
+            Manage Tags
+          </span>
+        </Dialog.Trigger>
         <ModalLayout
           closeDisabled={updateMutation.isPending}
           title={editingTag ? 'Edit Tag' : 'Manage Tags'}

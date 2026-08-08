@@ -1,32 +1,24 @@
 'use client';
 
-import { Combobox } from '@base-ui/react/combobox';
-import { Check, ChevronDown, Settings2, X } from 'lucide-react';
-import { useId, useState } from 'react';
-import type { CSSProperties } from 'react';
+import { Select } from '@base-ui/react/select';
+import { Check, ChevronDown, X } from 'lucide-react';
+import { useId } from 'react';
 
 import type { Tag } from '../../types';
 import TagChip from './tag-chip';
-import TagManagerDialog from './tag-manager-dialog';
 
 import styles from './tag.module.css';
 
 const maxSelectedTags = 10;
 
-interface SwatchStyle extends CSSProperties {
-  '--tag-color': string;
-}
-
 interface TagFilterProps {
-  allTags: Tag[];
   onChange: (tagIds: string[]) => void;
   tags: Tag[];
   value: string[];
 }
 
-export default function TagFilter({ allTags, onChange, tags, value }: TagFilterProps) {
-  const inputId = useId();
-  const [managerOpen, setManagerOpen] = useState(false);
+export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
+  const triggerId = useId();
   const selectedIds = new Set(value);
   const selectedTags = value
     .map((id) => tags.find((tag) => tag.id === id))
@@ -34,106 +26,86 @@ export default function TagFilter({ allTags, onChange, tags, value }: TagFilterP
   const atLimit = selectedTags.length >= maxSelectedTags;
 
   return (
-    <>
-      <div className={styles.filter}>
-        <div className={styles.filterHeading}>
-          <label className={styles.filterLabel} htmlFor={inputId}>
-            Filter by tags
-          </label>
-          <button
-            className={styles.manageButton}
-            onClick={() => setManagerOpen(true)}
-            type="button"
-          >
-            <Settings2 aria-hidden="true" size={15} />
-            Manage tags
-          </button>
-        </div>
-        <Combobox.Root
+    <div className={styles.filter}>
+      <label className={styles.filterLabel} htmlFor={triggerId}>
+        Filter by tags
+      </label>
+      <div className={styles.filterControl}>
+        <Select.Root<Tag, true>
           isItemEqualToValue={(item, selected) => item.id === selected.id}
           itemToStringLabel={(tag) => tag.name}
-          items={tags}
           multiple
           onValueChange={(selected) =>
             onChange(selected.slice(0, maxSelectedTags).map(({ id }) => id))
           }
           value={selectedTags}
         >
-          <Combobox.InputGroup className={styles.filterControl}>
-            <Combobox.Chips className={styles.filterChips}>
-              <Combobox.Value>
-                {(selected: Tag[]) => (
+          <Select.Trigger
+            className={styles.filterTrigger}
+            disabled={tags.length === 0}
+            id={triggerId}
+          >
+            <Select.Value className={styles.filterValue}>
+              {(selected: Tag[]) =>
+                selected.length === 0 ? (
+                  <span className={styles.filterPlaceholder}>
+                    {tags.length === 0 ? 'No tags to filter' : 'Choose tags'}
+                  </span>
+                ) : (
                   <>
                     {selected.slice(0, 2).map((tag) => (
-                      <Combobox.Chip
-                        aria-label={tag.name}
-                        className={styles.filterChip}
-                        key={tag.id}
-                      >
-                        <TagChip tag={tag} />
-                        <Combobox.ChipRemove
-                          aria-label={`Remove ${tag.name} filter`}
-                          className={styles.chipRemove}
-                        >
-                          <X aria-hidden="true" size={13} />
-                        </Combobox.ChipRemove>
-                      </Combobox.Chip>
+                      <TagChip key={tag.id} tag={tag} />
                     ))}
                     {selected.length > 2 ? (
                       <span className={styles.moreSelected}>+{selected.length - 2} more</span>
                     ) : null}
-                    <Combobox.Input
-                      className={styles.filterInput}
-                      id={inputId}
-                      placeholder={selected.length === 0 ? 'Choose tags' : ''}
-                    />
                   </>
-                )}
-              </Combobox.Value>
-            </Combobox.Chips>
-            {selectedTags.length > 0 ? (
-              <Combobox.Clear aria-label="Clear tag filters" className={styles.filterIconButton}>
-                <X aria-hidden="true" size={16} />
-              </Combobox.Clear>
-            ) : null}
-            <Combobox.Trigger aria-label="Open tag filters" className={styles.filterIconButton}>
+                )
+              }
+            </Select.Value>
+            <Select.Icon className={styles.filterChevron}>
               <ChevronDown aria-hidden="true" size={17} />
-            </Combobox.Trigger>
-          </Combobox.InputGroup>
-          <Combobox.Portal>
-            <Combobox.Positioner className={styles.filterPositioner} sideOffset={4}>
-              <Combobox.Popup className={styles.filterPopup}>
-                <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
-                <Combobox.List className={styles.filterList}>
-                  {(tag: Tag) => {
-                    const selected = selectedIds.has(tag.id);
-                    const swatchStyle: SwatchStyle = { '--tag-color': tag.color };
-
-                    return (
-                      <Combobox.Item
-                        className={styles.filterItem}
-                        disabled={atLimit && !selected}
-                        key={tag.id}
-                        value={tag}
-                      >
-                        <Combobox.ItemIndicator className={styles.itemIndicator}>
-                          <Check aria-hidden="true" size={15} />
-                        </Combobox.ItemIndicator>
-                        <span aria-hidden="true" className={styles.tagSwatch} style={swatchStyle} />
-                        <span>{tag.name}</span>
-                      </Combobox.Item>
-                    );
-                  }}
-                </Combobox.List>
-              </Combobox.Popup>
-            </Combobox.Positioner>
-          </Combobox.Portal>
-        </Combobox.Root>
-        <span aria-live="polite" className={styles.visuallyHidden}>
-          {atLimit ? 'Maximum of 10 tag filters selected' : ''}
-        </span>
+            </Select.Icon>
+          </Select.Trigger>
+          <Select.Portal>
+            <Select.Positioner className={styles.filterPositioner} sideOffset={4}>
+              <Select.Popup className={styles.filterPopup}>
+                <Select.List className={styles.filterList}>
+                  {tags.map((tag) => (
+                    <Select.Item
+                      className={styles.filterItem}
+                      disabled={atLimit && !selectedIds.has(tag.id)}
+                      key={tag.id}
+                      label={tag.name}
+                      value={tag}
+                    >
+                      <Select.ItemIndicator className={styles.itemIndicator}>
+                        <Check aria-hidden="true" size={15} />
+                      </Select.ItemIndicator>
+                      <Select.ItemText className={styles.filterItemText}>
+                        <TagChip tag={tag} />
+                      </Select.ItemText>
+                    </Select.Item>
+                  ))}
+                </Select.List>
+              </Select.Popup>
+            </Select.Positioner>
+          </Select.Portal>
+        </Select.Root>
+        {selectedTags.length > 0 ? (
+          <button
+            aria-label="Clear tag filters"
+            className={styles.filterIconButton}
+            onClick={() => onChange([])}
+            type="button"
+          >
+            <X aria-hidden="true" size={16} />
+          </button>
+        ) : null}
       </div>
-      <TagManagerDialog onOpenChange={setManagerOpen} open={managerOpen} tags={allTags} />
-    </>
+      <span aria-live="polite" className={styles.visuallyHidden}>
+        {atLimit ? 'Maximum of 10 tag filters selected' : ''}
+      </span>
+    </div>
   );
 }

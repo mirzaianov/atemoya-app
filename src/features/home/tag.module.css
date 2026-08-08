@@ -14,14 +14,6 @@
   font-weight: 700;
 }
 
-.filterHeading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.manageButton,
 .createTagButton {
   display: inline-flex;
   align-items: center;
@@ -37,7 +29,6 @@
   font-weight: 600;
 }
 
-.manageButton:focus-visible,
 .createTagButton:focus-visible {
   outline: 2px solid var(--color-focus);
   outline-offset: 2px;
@@ -67,52 +58,36 @@
   outline-offset: 1px;
 }
 
-.filterControl:has(input:disabled) {
-  cursor: wait;
-  opacity: 0.55;
-}
-
-.filterChips {
+.filterTrigger,
+.filterValue {
   display: flex;
   flex: 1 1 auto;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.25rem;
   min-width: 0;
+}
+
+.filterTrigger {
+  min-height: 2.5rem;
   padding: 0.25rem 0.5rem;
-}
-
-.filterChip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.125rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  outline: 0;
-}
-
-.chipRemove,
-.filterIconButton {
-  display: inline-grid;
-  flex: 0 0 auto;
-  place-items: center;
-  padding: 0;
   border: 0;
   background: transparent;
   color: var(--color-text);
+  outline: 0;
+  text-align: left;
 }
 
-.chipRemove {
-  width: 1.25rem;
-  height: 1.25rem;
-  border-radius: 50%;
+.filterTrigger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
-.chipRemove:focus-visible,
-.filterIconButton:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 1px;
+.filterValue {
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.filterPlaceholder {
+  color: var(--color-placeholder);
 }
 
 .moreSelected {
@@ -122,25 +97,26 @@
   white-space: nowrap;
 }
 
-.filterInput {
-  flex: 1 1 5rem;
-  min-width: 5rem;
-  height: 1.75rem;
-  padding: 0;
-  border: 0;
-  background: transparent;
+.filterChevron,
+.filterIconButton {
+  display: inline-grid;
+  flex: 0 0 auto;
+  place-items: center;
   color: var(--color-text);
-  outline: 0;
-}
-
-.filterInput::placeholder {
-  color: var(--color-placeholder);
 }
 
 .filterIconButton {
   width: 2rem;
   height: 2rem;
+  padding: 0;
+  border: 0;
   border-radius: var(--radius-control);
+  background: transparent;
+}
+
+.filterIconButton:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 1px;
 }
 
 .filterPositioner,
@@ -179,7 +155,7 @@
 
 .filterItem {
   display: grid;
-  grid-template-columns: 1rem 0.75rem minmax(0, 1fr);
+  grid-template-columns: 1rem minmax(0, 1fr);
   align-items: center;
   gap: 0.5rem;
   min-height: 2.25rem;
@@ -194,26 +170,17 @@
 }
 
 .filterItem[data-disabled] {
-  color: var(--color-placeholder);
+  opacity: 0.55;
 }
 
 .itemIndicator {
   display: grid;
+  grid-column: 1;
   place-items: center;
 }
 
-.tagSwatch {
-  width: 0.75rem;
-  height: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--tag-color) 65%, black);
-  border-radius: 50%;
-  background: var(--tag-color);
-}
-
-.filterEmpty {
-  padding: 0.75rem;
-  color: var(--color-placeholder);
-  font-size: 0.875rem;
+.filterItemText {
+  grid-column: 2;
 }
 
 .tagChip {

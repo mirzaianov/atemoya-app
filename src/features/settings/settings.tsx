@@ -3,6 +3,8 @@ import { House } from 'lucide-react';
 import Link from 'next/link';
 
 import BrandHeader from '../../components/brand-header';
+import type { Tag } from '../../types';
+import TagManagerDialog from '../home/tag-manager-dialog';
 import DeleteAccountDialog from './delete-account-dialog';
 import NicknameEditDialog from './nickname-edit-dialog';
 import PasswordResetSettings from './password-reset-settings';
@@ -14,12 +16,18 @@ import styles from './settings.module.css';
 const buttonSmall = 20;
 
 interface SettingsProps {
+  tags: Tag[];
   twoFactorEnabled: boolean;
   userEmail: string;
   userNickname: string;
 }
 
-export default function Settings({ twoFactorEnabled, userEmail, userNickname }: SettingsProps) {
+export default function Settings({
+  tags,
+  twoFactorEnabled,
+  userEmail,
+  userNickname,
+}: SettingsProps) {
   return (
     <div className={styles.container}>
       <BrandHeader />
@@ -72,6 +80,14 @@ export default function Settings({ twoFactorEnabled, userEmail, userNickname }: 
             Security
           </h2>
           <TwoFactorSettings enabled={twoFactorEnabled} />
+        </div>
+      </section>
+      <section className={styles.options} aria-labelledby="tag-settings">
+        <div className={styles.optionRow}>
+          <h2 className={styles.optionTitle} id="tag-settings">
+            Tags
+          </h2>
+          <TagManagerDialog tags={tags} />
         </div>
       </section>
       <section className={styles.options} aria-labelledby="account-settings">
