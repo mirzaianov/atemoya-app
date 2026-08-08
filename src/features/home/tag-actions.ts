@@ -71,18 +71,18 @@ export const updateTagAction = async (
   }
 
   try {
-    const updated = await updateTag(userId, parsed.data.id, parsed.data);
+    const tag = await updateTag(userId, parsed.data.id, parsed.data);
 
-    if (!updated) {
+    if (!tag) {
       return { error: 'Tag could not be updated. Please refresh and try again.' };
     }
+
+    revalidatePath('/');
+
+    return { tag };
   } catch (error) {
     return { error: getQueryError(error, 'Tag could not be updated. Please try again.') };
   }
-
-  revalidatePath('/');
-
-  return {};
 };
 
 export const deleteTagAction = async (id: string): Promise<TagActionResult> => {

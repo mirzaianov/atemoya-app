@@ -155,6 +155,7 @@ interface TaskRowProps {
   draggable?: boolean;
   isDragging?: boolean;
   onCompletedChange: (task: Task, completed: boolean) => void;
+  onDeleted: (id: string) => void;
   onEdit: (task: Task) => void;
   rowRef?: (node: HTMLLIElement | null) => void;
   style?: CSSProperties;
@@ -183,6 +184,7 @@ export default function TaskRow({
   draggable = false,
   isDragging = false,
   onCompletedChange,
+  onDeleted,
   onEdit,
   rowRef,
   style,
@@ -274,7 +276,12 @@ export default function TaskRow({
           </Menu.Positioner>
         </Menu.Portal>
       </Menu.Root>
-      <TaskDeleteDialog id={task.id} onOpenChange={setIsDeleteOpen} open={isDeleteOpen} />
+      <TaskDeleteDialog
+        id={task.id}
+        onDeleted={onDeleted}
+        onOpenChange={setIsDeleteOpen}
+        open={isDeleteOpen}
+      />
     </li>
   );
 }

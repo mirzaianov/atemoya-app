@@ -6,13 +6,16 @@ import { headers } from 'next/headers';
 import {
   createTask,
   deleteTask,
+  getTask,
   reorderTasks,
   setTaskCompleted,
   TaskQueryError,
   taskTitleExists,
   updateTask,
 } from '../../db/queries';
+import type { TaskRecord } from '../../db/queries';
 import { auth } from '../../lib/auth';
+import type { Task } from '../../types';
 import {
   taskCompletionSchema,
   taskIdSchema,
@@ -24,7 +27,22 @@ import type { TaskFormInput } from './task-schemas';
 
 interface ActionResult {
   error?: string;
+  task?: Task;
 }
+
+const serializeTask = (record: TaskRecord | null): Task | null => {
+  if (!record) {
+    return null;
+  }
+
+  const { changedOn, completedAt, ...task } = record;
+
+  return {
+    ...task,
+    changedOn: changedOn.getTime(),
+    completedAt: completedAt?.getTime() ?? null,
+  };
+};
 
 const getUserId = async () => {
   const session = await auth.api.getSession({
@@ -58,7 +76,16 @@ export const createTaskAction = async (values: TaskFormInput): Promise<ActionRes
   }
 
   try {
-    await createTask(userId, parsed.data.title, parsed.data.tagIds);
+    const id = await createTask(userId, parsed.data.title, parsed.data.tagIds);
+    const task = serializeTask(await getTask(userId, id));
+
+    if (!task) {
+      return { error: 'Task could not be added. Please refresh and try again.' };
+    }
+
+    revalidatePath('/');
+
+    return { task };
   } catch (error) {
     if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
@@ -70,9 +97,6 @@ export const createTaskAction = async (values: TaskFormInput): Promise<ActionRes
 
     throw error;
   }
-  revalidatePath('/');
-
-  return {};
 };
 
 export const updateTaskAction = async (
@@ -96,7 +120,21 @@ export const updateTaskAction = async (
   }
 
   try {
-    await updateTask(userId, parsed.data.id, parsed.data.title, parsed.data.tagIds);
+    const updated = await updateTask(userId, parsed.data.id, parsed.data.title, parsed.data.tagIds);
+
+    if (!updated) {
+      return { error: 'Task could not be updated. Please refresh and try again.' };
+    }
+
+    const task = serializeTask(await getTask(userId, parsed.data.id));
+
+    if (!task) {
+      return { error: 'Task could not be updated. Please refresh and try again.' };
+    }
+
+    revalidatePath('/');
+
+    return { task };
   } catch (error) {
     if (isDuplicateTitle(error)) {
       return { error: 'Task already exists' };
@@ -108,9 +146,6 @@ export const updateTaskAction = async (
 
     throw error;
   }
-  revalidatePath('/');
-
-  return {};
 };
 
 export const setTaskCompletedAction = async (

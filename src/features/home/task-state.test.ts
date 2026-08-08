@@ -2,7 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import type { Task } from '../../types';
-import { moveTaskBetweenGroups } from './task-state.ts';
+import {
+  insertConfirmedTask,
+  moveTaskBetweenGroups,
+  removeConfirmedTask,
+  replaceConfirmedTask,
+} from './task-state.ts';
 
 const tasks: Task[] = [
   {
@@ -42,5 +47,40 @@ test('moves tasks between active and completed groups', () => {
       { completedAt: null, id: 'active-2', position: 1 },
       { completedAt: 10, id: 'active-1', position: 0 },
     ],
+  );
+});
+
+test('commits confirmed task creation, edition, and deletion', () => {
+  const created: Task = {
+    changedOn: 4,
+    completedAt: null,
+    id: 'active-3',
+    position: 0,
+    tags: [],
+    title: 'Created',
+  };
+  const afterCreate = insertConfirmedTask(tasks, created);
+
+  assert.deepEqual(
+    afterCreate.map(({ id, position }) => ({ id, position })),
+    [
+      { id: 'active-3', position: 0 },
+      { id: 'active-1', position: 1 },
+      { id: 'active-2', position: 2 },
+      { id: 'completed-1', position: 0 },
+    ],
+  );
+
+  const edited = { ...tasks[1], tags: tasks[0].tags, title: 'Edited' };
+  const afterEdit = replaceConfirmedTask(tasks, edited);
+
+  assert.equal(afterEdit[1], edited);
+  assert.deepEqual(
+    afterEdit.map(({ id }) => id),
+    tasks.map(({ id }) => id),
+  );
+  assert.deepEqual(
+    removeConfirmedTask(tasks, 'active-2').map(({ id }) => id),
+    ['active-1', 'completed-1'],
   );
 });

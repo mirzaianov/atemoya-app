@@ -106,8 +106,8 @@ Execution details: `database-theft-encryption-plan.md`
 - `@dnd-kit` owns grip-handle sortable task reordering in a small client island.
 - React Hook Form manages form-local client state.
 - Zod validates form and server-action inputs.
-- TanStack Query owns client mutation lifecycle and pending state without duplicating Server Component reads in its cache.
-- Local React state owns transient task-list edit selection inside the sortable task-list client island.
+- TanStack Query owns client mutation lifecycle and pending state without duplicating Server Component reads in its cache. Route-changing mutations extend that pending interval through the React navigation transition.
+- Local React state owns transient task-list edit selection plus server-confirmed task and Settings display values, allowing successful operations to render before background Server Component reconciliation.
 - Base UI is the default headless UI component system for new or reworked interactive controls.
 - `nuqs` owns URL-backed task-tag filter state.
 - `react-colorful` supplies the accessible custom tag color picker.

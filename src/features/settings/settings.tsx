@@ -1,6 +1,9 @@
+'use client';
+
 import clsx from 'clsx';
 import { House } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
 import BrandHeader from '../../components/brand-header';
 import type { Tag } from '../../types';
@@ -23,11 +26,34 @@ interface SettingsProps {
 }
 
 export default function Settings({
-  tags,
-  twoFactorEnabled,
+  tags: initialTags,
+  twoFactorEnabled: initialTwoFactorEnabled,
   userEmail,
-  userNickname,
+  userNickname: initialNickname,
 }: SettingsProps) {
+  const [previousInitialNickname, setPreviousInitialNickname] = useState(initialNickname);
+  const [previousInitialTags, setPreviousInitialTags] = useState(initialTags);
+  const [previousInitialTwoFactorEnabled, setPreviousInitialTwoFactorEnabled] =
+    useState(initialTwoFactorEnabled);
+  const [nickname, setNickname] = useState(initialNickname);
+  const [tags, setTags] = useState(initialTags);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(initialTwoFactorEnabled);
+
+  if (initialNickname !== previousInitialNickname) {
+    setPreviousInitialNickname(initialNickname);
+    setNickname(initialNickname);
+  }
+
+  if (initialTags !== previousInitialTags) {
+    setPreviousInitialTags(initialTags);
+    setTags(initialTags);
+  }
+
+  if (initialTwoFactorEnabled !== previousInitialTwoFactorEnabled) {
+    setPreviousInitialTwoFactorEnabled(initialTwoFactorEnabled);
+    setTwoFactorEnabled(initialTwoFactorEnabled);
+  }
+
   return (
     <div className={styles.container}>
       <BrandHeader />
@@ -42,9 +68,9 @@ export default function Settings({
               id="settings-nickname"
               type="text"
               readOnly
-              value={userNickname}
+              value={nickname}
             />
-            <NicknameEditDialog currentNickname={userNickname} />
+            <NicknameEditDialog currentNickname={nickname} onUpdated={setNickname} />
           </div>
         </div>
         <div className={styles.field}>
@@ -79,7 +105,7 @@ export default function Settings({
           <h2 className={styles.optionTitle} id="security-settings">
             Security
           </h2>
-          <TwoFactorSettings enabled={twoFactorEnabled} />
+          <TwoFactorSettings enabled={twoFactorEnabled} onEnabledChange={setTwoFactorEnabled} />
         </div>
       </section>
       <section className={styles.options} aria-labelledby="tag-settings">
@@ -87,7 +113,20 @@ export default function Settings({
           <h2 className={styles.optionTitle} id="tag-settings">
             Tags
           </h2>
-          <TagManagerDialog tags={tags} />
+          <TagManagerDialog
+            onDeleted={(id) => setTags((current) => current.filter((tag) => tag.id !== id))}
+            onUpdated={(updatedTag) =>
+              setTags((current) => {
+                const nextTags = current.map((tag) =>
+                  tag.id === updatedTag.id ? updatedTag : tag,
+                );
+
+                // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022.
+                return nextTags.sort((left, right) => left.name.localeCompare(right.name));
+              })
+            }
+            tags={tags}
+          />
         </div>
       </section>
       <section className={styles.options} aria-labelledby="account-settings">

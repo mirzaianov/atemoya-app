@@ -270,6 +270,7 @@ test('persists and reads encrypted task titles through the guarded database', as
   const {
     createTask,
     deleteTask,
+    getTask,
     listTasks,
     reorderTasks,
     setTaskCompleted,
@@ -340,6 +341,8 @@ test('persists and reads encrypted task titles through the guarded database', as
       { id: alphaId, position: 1, title: alphaTitle },
     ],
   );
+  assert.deepEqual(await getTask(userId, betaId), createdTasks[0]);
+  assert.equal(await getTask(crypto.randomUUID(), betaId), null);
   assert.equal(await taskTitleExists(userId, ` ${alphaTitle.toUpperCase()} `), true);
   await assert.rejects(createTask(userId, alphaTitle.toLowerCase(), []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
@@ -516,9 +519,13 @@ test('persists and manages encrypted tags through the guarded database', async (
       return true;
     },
   );
-  assert.equal(await updateTag(otherUserId, work.id, { color: '#ffffff', name: 'office' }), false);
+  assert.equal(await updateTag(otherUserId, work.id, { color: '#ffffff', name: 'office' }), null);
   assert.equal(await deleteTag(otherUserId, work.id), false);
-  assert.equal(await updateTag(userId, work.id, { color: '#ffffff', name: 'office' }), true);
+  assert.deepEqual(await updateTag(userId, work.id, { color: '#ffffff', name: 'office' }), {
+    color: '#ffffff',
+    id: work.id,
+    name: 'office',
+  });
 
   const taskId = crypto.randomUUID();
   const taskTitle = 'Tagged task';

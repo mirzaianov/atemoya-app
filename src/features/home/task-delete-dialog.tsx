@@ -14,11 +14,17 @@ import styles from './task-delete-dialog.module.css';
 
 interface TaskDeleteDialogProps {
   id: string;
+  onDeleted: (id: string) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }
 
-export default function TaskDeleteDialog({ id, onOpenChange, open }: TaskDeleteDialogProps) {
+export default function TaskDeleteDialog({
+  id,
+  onDeleted,
+  onOpenChange,
+  open,
+}: TaskDeleteDialogProps) {
   const router = useRouter();
   const deleteTaskMutation = useMutation({
     mutationFn: () => deleteTaskAction(id),
@@ -36,6 +42,7 @@ export default function TaskDeleteDialog({ id, onOpenChange, open }: TaskDeleteD
         return;
       }
 
+      onDeleted(id);
       toast.info('Task deleted');
       onOpenChange(false);
       router.refresh();

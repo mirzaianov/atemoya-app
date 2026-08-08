@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import DeleteModalLayout from '../../components/delete-modal-layout';
@@ -38,6 +38,7 @@ const getDeleteAccountError = (code?: string) => {
 export default function DeleteAccountDialog({ userEmail }: DeleteAccountDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const {
     clearErrors,
     control,
@@ -60,6 +61,7 @@ export default function DeleteAccountDialog({ userEmail }: DeleteAccountDialogPr
         callbackURL: '/login',
       }),
   });
+  const isPending = deleteAccountMutation.isPending || isNavigationPending;
 
   useEffect(() => {
     if (!isOpen) {
@@ -86,12 +88,21 @@ export default function DeleteAccountDialog({ userEmail }: DeleteAccountDialogPr
       return;
     }
 
-    router.push('/login');
-    router.refresh();
+    startNavigation(() => {
+      router.push('/login');
+      router.refresh();
+    });
   });
 
   return (
-    <AlertDialog.Root open={isOpen} onOpenChange={setIsOpen}>
+    <AlertDialog.Root
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!(isPending && !open)) {
+          setIsOpen(open);
+        }
+      }}
+    >
       <AlertDialog.Trigger
         className={clsx(
           buttonStyles.button,
@@ -106,10 +117,10 @@ export default function DeleteAccountDialog({ userEmail }: DeleteAccountDialogPr
           Delete Account
         </span>
       </AlertDialog.Trigger>
-      <ModalLayout alert title="Delete Account">
+      <ModalLayout alert closeDisabled={isPending} title="Delete Account">
         <DeleteModalLayout
           confirmDisabled={!isConfirmed}
-          confirmPending={deleteAccountMutation.isPending}
+          confirmPending={isPending}
           onSubmit={onSubmit}
         >
           <Controller

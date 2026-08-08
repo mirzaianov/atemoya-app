@@ -22,8 +22,13 @@ Network mutation state was also distributed across React Hook Form and component
 - Do not duplicate Server Component data in the TanStack Query client cache.
 - Keep form values, validation, and field errors in React Hook Form and Zod.
 - Keep task edit selection in local React state at the nearest shared client parent.
+- After a successful same-page mutation, return the confirmed display record and commit it to
+  local state before closing the surface or ending visible loading feedback.
+- Treat `router.refresh()` as background reconciliation with the authoritative Server Component
+  read, not as the only path that updates visible state.
+- For successful mutations that navigate, combine TanStack Query mutation pending state with a
+  React navigation transition so loading feedback remains visible until the destination commits.
 - Remove Zustand because no cross-route or independently consumed global client state remains.
-- Continue using `router.refresh()` after successful mutations that affect Server Component output.
 
 This decision supersedes ADR-003 only where ADR-003 assigns edit-selection state to Zustand. Its RSC-first boundary remains accepted.
 
@@ -47,10 +52,27 @@ This decision supersedes ADR-003 only where ADR-003 assigns edit-selection state
 - Cons: Edit selection is short-lived modal state with no current deep-linking requirement.
 - Rejected: URL state adds behavior the product does not need.
 
+### Depend on refresh for visible mutation results
+
+- Pros: No confirmed Server Action payload or local result callback is required.
+- Cons: Mutation pending state ends before the independent Server Component refresh commits,
+  producing a visible gap with stale or missing content.
+- Rejected: Refresh remains useful for reconciliation but cannot own immediate success feedback.
+
+### Apply every mutation optimistically
+
+- Pros: Changes appear before the network request completes.
+- Cons: Validation, uniqueness, authentication, and persistence failures require rollback and can
+  temporarily display data the server never accepted.
+- Rejected: The product prefers server-confirmed updates with no post-spinner gap.
+
 ## Consequences
 
 - The application has no global client-state store.
 - Mutation buttons use one pending-state model and shared loading feedback.
 - Edit selection remains colocated with the sortable list and its single edit dialog.
-- Server Component reads remain authoritative and refresh after successful writes.
+- Same-page mutation results render from confirmed local state before their surfaces close.
+- Navigation mutations remain pending through the destination route transition.
+- Server Component reads remain authoritative and reconcile confirmed local state after successful
+  writes.
 - A global state library should be reconsidered only when independently mounted areas need shared client-only state.

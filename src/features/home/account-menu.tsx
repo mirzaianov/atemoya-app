@@ -6,9 +6,11 @@ import clsx from 'clsx';
 import { LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTransition } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
 import Spinner from '../../components/spinner';
+import { toast } from '../../components/toast-provider';
 import { authClient } from '../../lib/auth-client';
 
 import buttonStyles from '../../components/button.module.css';
@@ -24,6 +26,7 @@ interface AccountMenuProps {
 
 export default function AccountMenu({ email, nickname }: AccountMenuProps) {
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const initials = nickname.slice(0, 2).toUpperCase();
   const actionBaseClassName = clsx(
     buttonStyles.button,
@@ -35,10 +38,18 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
   const signOutClassName = clsx(actionBaseClassName, buttonStyles.destructive);
   const signOutMutation = useMutation({
     mutationFn: () => authClient.signOut(),
-    onSuccess: () => {
-      router.push('/login');
+    onError: () => toast.error('Sign out failed. Please try again.'),
+    onSuccess: ({ error }) => {
+      if (error) {
+        toast.error('Sign out failed. Please try again.');
+
+        return;
+      }
+
+      startNavigation(() => router.push('/login'));
     },
   });
+  const isSignOutPending = signOutMutation.isPending || isNavigationPending;
 
   return (
     <Menu.Root>
@@ -66,14 +77,15 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
                   </span>
                 </Menu.LinkItem>
                 <Menu.Item
-                  aria-busy={signOutMutation.isPending || undefined}
-                  aria-label={signOutMutation.isPending ? 'Signing out' : undefined}
+                  aria-busy={isSignOutPending || undefined}
+                  aria-label={isSignOutPending ? 'Signing out' : undefined}
                   className={signOutClassName}
-                  disabled={signOutMutation.isPending}
+                  closeOnClick={false}
+                  disabled={isSignOutPending}
                   onClick={() => signOutMutation.mutate()}
                 >
                   <span className={buttonStyles.buttonTop}>
-                    {signOutMutation.isPending ? (
+                    {isSignOutPending ? (
                       <Spinner />
                     ) : (
                       <>

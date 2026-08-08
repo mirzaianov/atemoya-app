@@ -20,10 +20,12 @@ import buttonStyles from '../../components/button.module.css';
 import styles from './tag.module.css';
 
 interface TagManagerDialogProps {
+  onDeleted: (id: string) => void;
+  onUpdated: (tag: Tag) => void;
   tags: Tag[];
 }
 
-export default function TagManagerDialog({ tags }: TagManagerDialogProps) {
+export default function TagManagerDialog({ onDeleted, onUpdated, tags }: TagManagerDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingTag, setEditingTag] = useState<Tag | null>(null);
@@ -46,12 +48,13 @@ export default function TagManagerDialog({ tags }: TagManagerDialogProps) {
     try {
       const result = await updateMutation.mutateAsync({ id: editingTag.id, values });
 
-      if (result.error) {
-        toast.error(result.error);
+      if (result.error || !result.tag) {
+        toast.error(result.error ?? 'Tag could not be updated. Please try again.');
 
         return;
       }
 
+      onUpdated(result.tag);
       toast.info('Tag updated');
       closeManager();
       router.refresh();
@@ -138,7 +141,8 @@ export default function TagManagerDialog({ tags }: TagManagerDialogProps) {
       {deletingTag ? (
         <TagDeleteDialog
           id={deletingTag.id}
-          onDeleted={() => {
+          onDeleted={(id) => {
+            onDeleted(id);
             setDeletingTag(null);
             closeManager();
           }}

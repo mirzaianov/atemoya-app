@@ -11,6 +11,7 @@ import { Controller, useForm, useWatch } from 'react-hook-form';
 
 import Button from '../../components/button';
 import { toast } from '../../components/toast-provider';
+import type { Task } from '../../types';
 import { createTaskAction } from './task-actions';
 import { taskSchema } from './task-schemas';
 import type { TaskFormInput, TaskFormValues } from './task-schemas';
@@ -21,7 +22,11 @@ import inputStyles from './task-form.module.css';
 
 const iconSize = 20;
 
-export default function TaskForm() {
+interface TaskFormProps {
+  onCreated: (task: Task) => void;
+}
+
+export default function TaskForm({ onCreated }: TaskFormProps) {
   const router = useRouter();
   const { control, handleSubmit, reset, setFocus } = useForm<
     TaskFormInput,
@@ -45,12 +50,13 @@ export default function TaskForm() {
     try {
       const result = await createTaskMutation.mutateAsync(values);
 
-      if (result.error) {
-        toast.error(result.error);
+      if (result.error || !result.task) {
+        toast.error(result.error ?? 'Task could not be added. Please try again.');
 
         return;
       }
 
+      onCreated(result.task);
       toast.success('Task added');
       reset({ tagIds: [], title: '' });
       router.refresh();

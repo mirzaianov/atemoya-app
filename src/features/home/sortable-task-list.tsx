@@ -39,8 +39,14 @@ import {
 } from './tag-state';
 import { reorderTasksAction, setTaskCompletedAction } from './task-actions';
 import TaskEditDialog from './task-edit-dialog';
+import TaskForm from './task-form';
 import TaskRow, { TaskDragPreview } from './task-row';
-import { moveTaskBetweenGroups } from './task-state';
+import {
+  insertConfirmedTask,
+  moveTaskBetweenGroups,
+  removeConfirmedTask,
+  replaceConfirmedTask,
+} from './task-state';
 
 import listStyles from './task-list.module.css';
 
@@ -218,6 +224,9 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
 
   return (
     <>
+      <TaskForm
+        onCreated={(task) => setOrderedTasks((current) => insertConfirmedTask(current, task))}
+      />
       <TagFilter
         onChange={(tagIds) => void setTagIds(tagIds)}
         tags={eligibleTags}
@@ -264,6 +273,9 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
                       completionDisabled={completionMutation.isPending}
                       key={task.id}
                       onCompletedChange={handleCompletedChange}
+                      onDeleted={(id) =>
+                        setOrderedTasks((current) => removeConfirmedTask(current, id))
+                      }
                       onEdit={setEditingTask}
                       reducedMotion={reducedMotion}
                       task={task}
@@ -295,6 +307,7 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
                   completionDisabled={completionMutation.isPending}
                   key={task.id}
                   onCompletedChange={handleCompletedChange}
+                  onDeleted={(id) => setOrderedTasks((current) => removeConfirmedTask(current, id))}
                   onEdit={setEditingTask}
                   task={task}
                 />
@@ -306,6 +319,7 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
       <TaskEditDialog
         editingTask={editingTask}
         onClose={() => setEditingTask(null)}
+        onUpdated={(task) => setOrderedTasks((current) => replaceConfirmedTask(current, task))}
         tags={availableTags}
       />
     </>
