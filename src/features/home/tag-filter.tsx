@@ -19,6 +19,7 @@ interface TagFilterProps {
 }
 
 export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
+  const [isPointerFocus, setIsPointerFocus] = useState(false);
   const [query, setQuery] = useState('');
   const selectedIds = new Set(value);
   const selectedTags = value
@@ -46,7 +47,17 @@ export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
         }}
         value={selectedTags}
       >
-        <Combobox.InputGroup className={styles.filterSearchControl}>
+        <Combobox.InputGroup
+          className={styles.filterSearchControl}
+          data-pointer-focus={isPointerFocus ? '' : undefined}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setIsPointerFocus(false);
+            }
+          }}
+          onKeyDownCapture={() => setIsPointerFocus(false)}
+          onPointerDownCapture={() => setIsPointerFocus(true)}
+        >
           <Combobox.Chips className={styles.filterChips}>
             <Combobox.Value>
               {(selected: Tag[]) => (
