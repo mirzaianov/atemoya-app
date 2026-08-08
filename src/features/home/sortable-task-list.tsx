@@ -67,6 +67,10 @@ const tagParser = parseAsNativeArrayOf(parseAsString).withDefault([]).withOption
   scroll: false,
   shallow: true,
 });
+const filterRevealClassNames = [
+  listStyles.filterRevealFirst,
+  listStyles.filterRevealSecond,
+] as const;
 
 const TaskGroup = ({ children, count, defaultOpen = false, label }: TaskGroupProps) => (
   <Collapsible.Root className={listStyles.group} defaultOpen={defaultOpen}>
@@ -105,6 +109,7 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
   const [orderedTasks, setOrderedTasks] = useState(tasks);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [filterAnimationCycle, setFilterAnimationCycle] = useState<0 | 1 | null>(null);
   const reducedMotion = useReducedMotion();
   const isDragging = activeTask !== null;
   const sensors = useSensors(
@@ -172,6 +177,8 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
   const hasFilters = selectedTagIds.length > 0;
   const hasNoMatches =
     hasFilters && visibleActiveTasks.length === 0 && visibleCompletedTasks.length === 0;
+  const filterTransitionClassName =
+    filterAnimationCycle === null ? undefined : filterRevealClassNames[filterAnimationCycle];
 
   useEffect(() => {
     const isCanonical =
@@ -188,6 +195,11 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
 
     setOrderedTasks(moveTaskBetweenGroups(orderedTasks, task.id, completed));
     completionMutation.mutate({ completed, id: task.id, previousTasks: previousOrder });
+  };
+
+  const handleFilterChange = (tagIds: string[]) => {
+    setFilterAnimationCycle((current) => (current === 0 ? 1 : 0));
+    void setTagIds(tagIds);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -227,24 +239,20 @@ export default function SortableTaskList({ availableTags, tasks }: SortableTaskL
       <TaskForm
         onCreated={(task) => setOrderedTasks((current) => insertConfirmedTask(current, task))}
       />
-      <TagFilter
-        onChange={(tagIds) => void setTagIds(tagIds)}
-        tags={eligibleTags}
-        value={selectedTagIds}
-      />
+      <TagFilter onChange={handleFilterChange} tags={eligibleTags} value={selectedTagIds} />
       {hasNoMatches ? (
-        <div className={listStyles.noMatches}>
+        <div className={clsx(listStyles.noMatches, filterTransitionClassName)}>
           <p>No tasks match all selected tags.</p>
           <button
             className={listStyles.clearFilters}
-            onClick={() => void setTagIds([])}
+            onClick={() => handleFilterChange([])}
             type="button"
           >
             Clear filters
           </button>
         </div>
       ) : (
-        <div className={listStyles.groups}>
+        <div className={clsx(listStyles.groups, filterTransitionClassName)}>
           <TaskGroup
             count={
               hasFilters

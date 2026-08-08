@@ -4,6 +4,45 @@
   gap: 1rem;
 }
 
+.filterRevealFirst,
+.filterRevealSecond {
+  animation-duration: 180ms;
+  animation-fill-mode: both;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.filterRevealFirst {
+  animation-name: filter-reveal-first;
+}
+
+.filterRevealSecond {
+  animation-name: filter-reveal-second;
+}
+
+@keyframes filter-reveal-first {
+  from {
+    clip-path: inset(0 0 35% 0);
+    opacity: 0.45;
+  }
+
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}
+
+@keyframes filter-reveal-second {
+  from {
+    clip-path: inset(0 0 35% 0);
+    opacity: 0.45;
+  }
+
+  to {
+    clip-path: inset(0);
+    opacity: 1;
+  }
+}
+
 .noMatches {
   display: grid;
   justify-items: start;
@@ -113,6 +152,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .filterRevealFirst,
+  .filterRevealSecond {
+    animation-duration: 0ms;
+  }
+
   .groupChevron,
   .groupPanel {
     transition-duration: 0ms;
