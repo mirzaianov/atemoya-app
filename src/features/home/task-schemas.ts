@@ -1,6 +1,11 @@
 import { z } from 'zod';
 
 export const taskSchema = z.object({
+  tagIds: z
+    .array(z.string().uuid('Invalid tag'))
+    .max(10, 'Choose no more than 10 tags')
+    .refine((ids) => new Set(ids).size === ids.length, 'Choose each tag once')
+    .default([]),
   title: z.string().trim().min(1, 'Please enter a task'),
 });
 
@@ -18,4 +23,5 @@ export const taskOrderSchema = z.object({
 
 export const taskWithIdSchema = taskSchema.extend(taskIdSchema.shape);
 
-export type TaskFormValues = z.infer<typeof taskSchema>;
+export type TaskFormInput = z.input<typeof taskSchema>;
+export type TaskFormValues = z.output<typeof taskSchema>;

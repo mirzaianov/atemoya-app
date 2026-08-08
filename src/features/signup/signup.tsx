@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 
 import BrandHeader from '../../components/brand-header';
@@ -31,6 +31,7 @@ export default function Signup() {
   });
   const { setFocus } = form;
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const signUpMutation = useMutation({
     mutationFn: async ({ email, nickname, password }: SignUpFormValues) => {
       const nicknameResult = await isNicknameAvailableAction(nickname);
@@ -85,7 +86,7 @@ export default function Signup() {
       } catch {
         // The check-email page supports manual entry when browser storage is unavailable.
       }
-      router.replace('/check-email');
+      startNavigation(() => router.replace('/check-email'));
     },
     onError: () => {
       form.setError('root', { message: 'Sign up failed. Please try again.' });
@@ -105,7 +106,7 @@ export default function Signup() {
         <SignupForm
           control={form.control}
           rootError={form.formState.errors.root?.message}
-          isSubmitting={signUpMutation.isPending}
+          isSubmitting={signUpMutation.isPending || isNavigationPending}
           isValid={form.formState.isValid}
           onSubmit={submit}
           clearError={() => form.clearErrors('root')}

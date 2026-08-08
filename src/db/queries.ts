@@ -3,18 +3,24 @@ import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { DataProtectionError } from '../lib/data-protection.ts';
 import { getDataProtection } from '../lib/data-protection-config.ts';
 import { logSecurityEvent } from '../lib/security-logger.ts';
+import type { Tag } from '../types.ts';
 import { db } from './client.ts';
-import { tasks } from './schema.ts';
+import { tags, tasks, taskTags } from './schema.ts';
 
 export interface TaskRecord {
   changedOn: Date;
   completedAt: Date | null;
   id: string;
   position: number;
+  tags: Tag[];
   title: string;
 }
 
-export type TaskQueryErrorCode = 'DATA_UNAVAILABLE' | 'DUPLICATE_TITLE' | 'OPERATION_FAILED';
+export type TaskQueryErrorCode =
+  | 'DATA_UNAVAILABLE'
+  | 'DUPLICATE_TITLE'
+  | 'INVALID_TAGS'
+  | 'OPERATION_FAILED';
 
 export class TaskQueryError extends Error {
   readonly code: TaskQueryErrorCode;
@@ -90,34 +96,92 @@ const runTaskQuery = async <Result>(
   }
 };
 
-export const listTasks = (userId: string): Promise<TaskRecord[]> =>
+const readTasks = (userId: string, id?: string): Promise<TaskRecord[]> =>
   runTaskQuery('list', async () => {
-    const records = await db
-      .select({
-        changedOn: tasks.changedOn,
-        completedAt: tasks.completedAt,
-        id: tasks.id,
-        position: tasks.position,
-        titleCiphertext: tasks.title,
-      })
-      .from(tasks)
-      .where(eq(tasks.userId, userId))
-      .orderBy(
-        sql`${tasks.completedAt} IS NOT NULL`,
-        sql`CASE WHEN ${tasks.completedAt} IS NULL THEN ${tasks.position} END`,
-        desc(tasks.completedAt),
-        desc(tasks.changedOn),
-      );
+    const taskCondition = id
+      ? and(eq(tasks.userId, userId), eq(tasks.id, id))
+      : eq(tasks.userId, userId);
+    const assignmentCondition = id
+      ? and(eq(taskTags.userId, userId), eq(taskTags.taskId, id))
+      : eq(taskTags.userId, userId);
+    const [records, assignments] = await Promise.all([
+      db
+        .select({
+          changedOn: tasks.changedOn,
+          completedAt: tasks.completedAt,
+          id: tasks.id,
+          position: tasks.position,
+          titleCiphertext: tasks.title,
+        })
+        .from(tasks)
+        .where(taskCondition)
+        .orderBy(
+          sql`${tasks.completedAt} IS NOT NULL`,
+          sql`CASE WHEN ${tasks.completedAt} IS NULL THEN ${tasks.position} END`,
+          desc(tasks.completedAt),
+          desc(tasks.changedOn),
+        ),
+      db
+        .select({
+          color: tags.color,
+          nameCiphertext: tags.name,
+          tagId: tags.id,
+          taskId: taskTags.taskId,
+        })
+        .from(taskTags)
+        .innerJoin(tags, and(eq(taskTags.userId, tags.userId), eq(taskTags.tagId, tags.id)))
+        .where(assignmentCondition),
+    ]);
+    const tagsById = new Map<string, Tag>();
+    const tagsByTaskId = new Map<string, Tag[]>();
 
-    return records.map(({ titleCiphertext, ...record }) => ({
-      ...record,
-      title: dataProtection.decryptValue(titleCiphertext, {
-        field: 'title',
-        model: 'tasks',
-        recordId: record.id,
-      }),
-    }));
+    for (const assignment of assignments) {
+      let tag = tagsById.get(assignment.tagId);
+
+      if (!tag) {
+        tag = {
+          color: assignment.color,
+          id: assignment.tagId,
+          name: dataProtection.decryptValue(assignment.nameCiphertext, {
+            field: 'name',
+            model: 'tags',
+            recordId: assignment.tagId,
+          }),
+        };
+        tagsById.set(tag.id, tag);
+      }
+
+      const assignedTags = tagsByTaskId.get(assignment.taskId) ?? [];
+
+      assignedTags.push(tag);
+      tagsByTaskId.set(assignment.taskId, assignedTags);
+    }
+
+    return records.map(({ titleCiphertext, ...record }) => {
+      const assignedTags = tagsByTaskId.get(record.id) ?? [];
+
+      // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022, before Array#toSorted.
+      assignedTags.sort((left, right) => left.name.localeCompare(right.name));
+
+      return {
+        ...record,
+        tags: assignedTags,
+        title: dataProtection.decryptValue(titleCiphertext, {
+          field: 'title',
+          model: 'tasks',
+          recordId: record.id,
+        }),
+      };
+    });
   });
+
+export const listTasks = (userId: string) => readTasks(userId);
+
+export const getTask = async (userId: string, id: string) => {
+  const records = await readTasks(userId, id);
+
+  return records[0] ?? null;
+};
 
 export const taskTitleExists = (userId: string, title: string, excludedId?: string) =>
   runTaskQuery(
@@ -141,7 +205,18 @@ export const taskTitleExists = (userId: string, title: string, excludedId?: stri
     excludedId,
   );
 
-export const createTask = (userId: string, title: string) => {
+interface CreateTaskRow extends Record<string, unknown> {
+  assignmentCount: number;
+  insertedCount: number;
+}
+
+interface UpdateTaskRow extends Record<string, unknown> {
+  inputValid: boolean;
+  targetCount: number;
+  updatedCount: number;
+}
+
+export const createTask = (userId: string, title: string, tagIds: string[]) => {
   const id = crypto.randomUUID();
 
   return runTaskQuery(
@@ -153,24 +228,73 @@ export const createTask = (userId: string, title: string) => {
         recordId: id,
       });
       const titleLookup = dataProtection.taskTitleLookup(userId, title);
+      const serializedTagIds = JSON.stringify(tagIds);
 
-      await db.execute(sql`
-        WITH shifted AS (
+      const result = await db.execute<CreateTaskRow>(sql`
+        WITH requested_tags("id") AS (
+          SELECT value
+          FROM jsonb_array_elements_text(${serializedTagIds}::jsonb)
+        ),
+        counts AS (
+          SELECT
+            count(*)::int AS "inputCount",
+            count(DISTINCT "id")::int AS "distinctCount",
+            (
+              SELECT count(*)::int
+              FROM ${tags}
+              INNER JOIN (SELECT DISTINCT "id" FROM requested_tags) AS requested
+                ON ${tags.id} = requested.id
+              WHERE ${tags.userId} = ${userId}
+            ) AS "ownedCount"
+          FROM requested_tags
+        ),
+        validated AS (
+          SELECT 1
+          FROM counts
+          WHERE "inputCount" <= 10
+            AND "inputCount" = "distinctCount"
+            AND "distinctCount" = "ownedCount"
+        ),
+        shifted AS (
           UPDATE ${tasks}
           SET ${sql.identifier('position')} = ${tasks.position} + 1
           WHERE ${tasks.userId} = ${userId}
             AND ${tasks.completedAt} IS NULL
+            AND EXISTS (SELECT 1 FROM validated)
+        ),
+        inserted_task AS (
+          INSERT INTO ${tasks} (
+            ${sql.identifier('id')},
+            ${sql.identifier('user_id')},
+            ${sql.identifier('title_ciphertext')},
+            ${sql.identifier('title_lookup')},
+            ${sql.identifier('changed_on')},
+            ${sql.identifier('position')}
+          )
+          SELECT ${id}, ${userId}, ${titleCiphertext}, ${titleLookup}, now(), 0
+          FROM validated
+          RETURNING ${tasks.id}
+        ),
+        inserted_assignments AS (
+          INSERT INTO ${taskTags} (
+            ${sql.identifier('user_id')},
+            ${sql.identifier('task_id')},
+            ${sql.identifier('tag_id')}
+          )
+          SELECT ${userId}, inserted_task.id, requested_tags.id
+          FROM inserted_task
+          CROSS JOIN requested_tags
+          RETURNING ${taskTags.tagId}
         )
-        INSERT INTO ${tasks} (
-          ${sql.identifier('id')},
-          ${sql.identifier('user_id')},
-          ${sql.identifier('title_ciphertext')},
-          ${sql.identifier('title_lookup')},
-          ${sql.identifier('changed_on')},
-          ${sql.identifier('position')}
-        )
-        VALUES (${id}, ${userId}, ${titleCiphertext}, ${titleLookup}, now(), 0)
+        SELECT
+          (SELECT count(*)::int FROM inserted_task) AS "insertedCount",
+          (SELECT count(*)::int FROM inserted_assignments) AS "assignmentCount"
       `);
+      const [row] = result.rows;
+
+      if (row?.insertedCount !== 1 || row.assignmentCount !== tagIds.length) {
+        throw new TaskQueryError('INVALID_TAGS');
+      }
 
       return id;
     },
@@ -178,7 +302,7 @@ export const createTask = (userId: string, title: string) => {
   );
 };
 
-export const updateTask = (userId: string, id: string, title: string) =>
+export const updateTask = (userId: string, id: string, title: string, tagIds: string[]) =>
   runTaskQuery(
     'update',
     async () => {
@@ -188,13 +312,96 @@ export const updateTask = (userId: string, id: string, title: string) =>
         recordId: id,
       });
       const titleLookup = dataProtection.taskTitleLookup(userId, title);
-      const [task] = await db
-        .update(tasks)
-        .set({ changedOn: sql`now()`, title: titleCiphertext, titleLookup })
-        .where(and(eq(tasks.userId, userId), eq(tasks.id, id)))
-        .returning({ id: tasks.id });
+      const serializedTagIds = JSON.stringify(tagIds);
+      const result = await db.execute<UpdateTaskRow>(sql`
+        WITH requested_tags("id") AS (
+          SELECT value
+          FROM jsonb_array_elements_text(${serializedTagIds}::jsonb)
+        ),
+        counts AS (
+          SELECT
+            count(*)::int AS "inputCount",
+            count(DISTINCT "id")::int AS "distinctCount",
+            (
+              SELECT count(*)::int
+              FROM ${tags}
+              INNER JOIN (SELECT DISTINCT "id" FROM requested_tags) AS requested
+                ON ${tags.id} = requested.id
+              WHERE ${tags.userId} = ${userId}
+            ) AS "ownedCount"
+          FROM requested_tags
+        ),
+        target AS (
+          SELECT ${tasks.id}
+          FROM ${tasks}
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.id} = ${id}
+        ),
+        validated AS (
+          SELECT target.id
+          FROM target
+          CROSS JOIN counts
+          WHERE "inputCount" <= 10
+            AND "inputCount" = "distinctCount"
+            AND "distinctCount" = "ownedCount"
+        ),
+        updated_task AS (
+          UPDATE ${tasks}
+          SET
+            ${sql.identifier('changed_on')} = now(),
+            ${sql.identifier('title_ciphertext')} = ${titleCiphertext},
+            ${sql.identifier('title_lookup')} = ${titleLookup}
+          FROM validated
+          WHERE ${tasks.userId} = ${userId}
+            AND ${tasks.id} = validated.id
+          RETURNING ${tasks.id}
+        ),
+        deleted_assignments AS (
+          DELETE FROM ${taskTags}
+          USING updated_task
+          WHERE ${taskTags.userId} = ${userId}
+            AND ${taskTags.taskId} = updated_task.id
+            AND NOT EXISTS (
+              SELECT 1
+              FROM requested_tags
+              WHERE requested_tags.id = ${taskTags.tagId}
+            )
+          RETURNING ${taskTags.tagId}
+        ),
+        inserted_assignments AS (
+          INSERT INTO ${taskTags} (
+            ${sql.identifier('user_id')},
+            ${sql.identifier('task_id')},
+            ${sql.identifier('tag_id')}
+          )
+          SELECT ${userId}, updated_task.id, requested_tags.id
+          FROM updated_task
+          CROSS JOIN requested_tags
+          ON CONFLICT DO NOTHING
+          RETURNING ${taskTags.tagId}
+        )
+        SELECT
+          EXISTS (
+            SELECT 1
+            FROM counts
+            WHERE "inputCount" <= 10
+              AND "inputCount" = "distinctCount"
+              AND "distinctCount" = "ownedCount"
+          ) AS "inputValid",
+          (SELECT count(*)::int FROM target) AS "targetCount",
+          (SELECT count(*)::int FROM updated_task) AS "updatedCount"
+      `);
+      const [row] = result.rows;
 
-      return Boolean(task);
+      if (row?.targetCount === 0) {
+        return false;
+      }
+
+      if (!row?.inputValid || row.updatedCount !== 1) {
+        throw new TaskQueryError('INVALID_TAGS');
+      }
+
+      return true;
     },
     id,
   );

@@ -4,6 +4,73 @@
   gap: 1rem;
 }
 
+.filterRevealFirst,
+.filterRevealSecond {
+  animation-duration: 180ms;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.filterRevealFirst {
+  animation-name: filter-reveal-first;
+}
+
+.filterRevealSecond {
+  animation-name: filter-reveal-second;
+}
+
+@keyframes filter-reveal-first {
+  from {
+    clip-path: inset(0 -0.5rem 35% -0.5rem);
+    opacity: 0.45;
+  }
+
+  to {
+    clip-path: inset(0 -0.5rem);
+    opacity: 1;
+  }
+}
+
+@keyframes filter-reveal-second {
+  from {
+    clip-path: inset(0 -0.5rem 35% -0.5rem);
+    opacity: 0.45;
+  }
+
+  to {
+    clip-path: inset(0 -0.5rem);
+    opacity: 1;
+  }
+}
+
+.noMatches {
+  display: grid;
+  justify-items: start;
+  gap: 0.75rem;
+  margin-block-start: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+.noMatches p {
+  margin: 0;
+}
+
+.clearFilters {
+  min-height: 2rem;
+  padding-inline: 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.clearFilters:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
 .group {
   min-width: 0;
 }
@@ -84,6 +151,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .filterRevealFirst,
+  .filterRevealSecond {
+    animation-duration: 0ms;
+  }
+
   .groupChevron,
   .groupPanel {
     transition-duration: 0ms;

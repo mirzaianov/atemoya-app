@@ -1,8 +1,13 @@
+'use client';
+
 import clsx from 'clsx';
 import { House } from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
 
 import BrandHeader from '../../components/brand-header';
+import type { Tag } from '../../types';
+import TagManagerDialog from '../home/tag-manager-dialog';
 import DeleteAccountDialog from './delete-account-dialog';
 import NicknameEditDialog from './nickname-edit-dialog';
 import PasswordResetSettings from './password-reset-settings';
@@ -14,12 +19,43 @@ import styles from './settings.module.css';
 const buttonSmall = 20;
 
 interface SettingsProps {
+  homeHref: string;
+  tags: Tag[];
   twoFactorEnabled: boolean;
   userEmail: string;
   userNickname: string;
 }
 
-export default function Settings({ twoFactorEnabled, userEmail, userNickname }: SettingsProps) {
+export default function Settings({
+  homeHref,
+  tags: initialTags,
+  twoFactorEnabled: initialTwoFactorEnabled,
+  userEmail,
+  userNickname: initialNickname,
+}: SettingsProps) {
+  const [previousInitialNickname, setPreviousInitialNickname] = useState(initialNickname);
+  const [previousInitialTags, setPreviousInitialTags] = useState(initialTags);
+  const [previousInitialTwoFactorEnabled, setPreviousInitialTwoFactorEnabled] =
+    useState(initialTwoFactorEnabled);
+  const [nickname, setNickname] = useState(initialNickname);
+  const [tags, setTags] = useState(initialTags);
+  const [twoFactorEnabled, setTwoFactorEnabled] = useState(initialTwoFactorEnabled);
+
+  if (initialNickname !== previousInitialNickname) {
+    setPreviousInitialNickname(initialNickname);
+    setNickname(initialNickname);
+  }
+
+  if (initialTags !== previousInitialTags) {
+    setPreviousInitialTags(initialTags);
+    setTags(initialTags);
+  }
+
+  if (initialTwoFactorEnabled !== previousInitialTwoFactorEnabled) {
+    setPreviousInitialTwoFactorEnabled(initialTwoFactorEnabled);
+    setTwoFactorEnabled(initialTwoFactorEnabled);
+  }
+
   return (
     <div className={styles.container}>
       <BrandHeader />
@@ -34,9 +70,9 @@ export default function Settings({ twoFactorEnabled, userEmail, userNickname }: 
               id="settings-nickname"
               type="text"
               readOnly
-              value={userNickname}
+              value={nickname}
             />
-            <NicknameEditDialog currentNickname={userNickname} />
+            <NicknameEditDialog currentNickname={nickname} onUpdated={setNickname} />
           </div>
         </div>
         <div className={styles.field}>
@@ -71,7 +107,28 @@ export default function Settings({ twoFactorEnabled, userEmail, userNickname }: 
           <h2 className={styles.optionTitle} id="security-settings">
             Security
           </h2>
-          <TwoFactorSettings enabled={twoFactorEnabled} />
+          <TwoFactorSettings enabled={twoFactorEnabled} onEnabledChange={setTwoFactorEnabled} />
+        </div>
+      </section>
+      <section className={styles.options} aria-labelledby="tag-settings">
+        <div className={styles.optionRow}>
+          <h2 className={styles.optionTitle} id="tag-settings">
+            Tags
+          </h2>
+          <TagManagerDialog
+            onDeleted={(id) => setTags((current) => current.filter((tag) => tag.id !== id))}
+            onUpdated={(updatedTag) =>
+              setTags((current) => {
+                const nextTags = current.map((tag) =>
+                  tag.id === updatedTag.id ? updatedTag : tag,
+                );
+
+                // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022.
+                return nextTags.sort((left, right) => left.name.localeCompare(right.name));
+              })
+            }
+            tags={tags}
+          />
         </div>
       </section>
       <section className={styles.options} aria-labelledby="account-settings">
@@ -89,7 +146,7 @@ export default function Settings({ twoFactorEnabled, userEmail, userNickname }: 
           buttonStyles.fullWidth,
           buttonStyles.primary,
         )}
-        href="/"
+        href={homeHref}
       >
         <span className={buttonStyles.buttonTop}>
           <House size={buttonSmall} />

@@ -4,14 +4,20 @@ Status: project-state immediate recommendation
 
 ## Recommended Next Steps
 
-ADR-009 has no remaining rollout action. Before any multi-instance production
-scaling, decide whether Better Auth rate limiting requires shared storage. Do not
-run the pre-contract conversion command again; both application databases are on
-contract migration `0009`.
+Push the completed `feature/ATE-4-tags` commits, run migration `0010_task_tags`
+against Preview through the protected workflow, and complete ADR-014 manual
+acceptance plus the confirmed-UI synchronization checks before promoting the
+migration and feature through `develop` to `main`. No maintenance mode or data
+conversion is required because the migration is additive and does not modify
+existing rows.
 
 ## Immediate Goal
 
-Return to normal product work with the database-theft encryption rollout closed.
+Complete the Preview migration and manual tag acceptance checklist in
+`docs/architecture/task-tags-and-filters-plan.md`. Confirm task create, edit,
+and delete results appear when loading ends; Settings immediately reflects
+confirmed nickname, tag, and two-factor changes; and authentication/account
+loading remains visible until each destination route appears.
 
 ## Open Questions
 

@@ -3,10 +3,13 @@ import test from 'node:test';
 
 import { sql } from 'drizzle-orm';
 
+import { tagSchema } from '../features/home/tag-schemas.ts';
 import { createDataProtection } from '../lib/data-protection.ts';
 import { createTestDatabase } from './test-database.ts';
 
 interface TableCounts extends Record<string, unknown> {
+  tagCount: number;
+  taskTagCount: number;
   taskCount: number;
   userCount: number;
 }
@@ -22,10 +25,27 @@ interface ContractIndexState extends Record<string, unknown> {
   obsoleteCount: number;
 }
 
+interface ContractConstraintState extends Record<string, unknown> {
+  definitionCount: number;
+  foundCount: number;
+}
+
+interface MigrationState extends Record<string, unknown> {
+  latestMigration: string;
+  migrationCount: number;
+}
+
 interface PersistedTask extends Record<string, unknown> {
   id: string;
   titleCiphertext: string;
   titleLookup: string;
+}
+
+interface PersistedTag extends Record<string, unknown> {
+  color: string;
+  id: string;
+  nameCiphertext: string;
+  nameLookup: string;
 }
 
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
@@ -36,6 +56,18 @@ test('migrates and resets only the dedicated integration database', async () => 
   await testDatabase.migrate();
   await testDatabase.reset();
 
+  const migrationState = await testDatabase.db.execute<MigrationState>(sql`
+    SELECT
+      count(*)::int AS "migrationCount",
+      max(created_at)::text AS "latestMigration"
+    FROM drizzle.__drizzle_migrations
+  `);
+
+  assert.deepEqual(migrationState.rows[0], {
+    latestMigration: '1785930212109',
+    migrationCount: 11,
+  });
+
   const columnState = await testDatabase.db.execute<ContractColumnState>(sql`
     WITH expected("tableName", "columnName", "isNullable") AS (
       VALUES
@@ -43,6 +75,14 @@ test('migrates and resets only the dedicated integration database', async () => 
         ('session', 'token_ciphertext', false),
         ('session', 'token_lookup', false),
         ('session', 'user_agent_ciphertext', true),
+        ('tags', 'color', false),
+        ('tags', 'id', false),
+        ('tags', 'name_ciphertext', false),
+        ('tags', 'name_lookup', false),
+        ('tags', 'user_id', false),
+        ('task_tags', 'tag_id', false),
+        ('task_tags', 'task_id', false),
+        ('task_tags', 'user_id', false),
         ('tasks', 'title_ciphertext', false),
         ('tasks', 'title_lookup', false),
         ('user', 'email_ciphertext', false),
@@ -68,7 +108,7 @@ test('migrates and resets only the dedicated integration database', async () => 
       AND columns.column_name = expected."columnName"
   `);
 
-  assert.deepEqual(columnState.rows[0], { correctCount: 16, foundCount: 16 });
+  assert.deepEqual(columnState.rows[0], { correctCount: 24, foundCount: 24 });
 
   const obsoleteColumns = await testDatabase.db.execute<{ count: number }>(sql`
     SELECT count(*)::int AS "count"
@@ -93,6 +133,9 @@ test('migrates and resets only the dedicated integration database', async () => 
     WITH expected("indexName", "isUnique", "isPartial") AS (
       VALUES
         ('session_token_lookup_unique_idx', true, false),
+        ('tags_user_id_id_unique_idx', true, false),
+        ('tags_user_id_name_lookup_unique_idx', true, false),
+        ('tasks_user_id_id_unique_idx', true, false),
         ('tasks_user_id_title_lookup_unique_idx', true, false),
         ('user_email_lookup_unique_idx', true, false),
         ('user_name_lookup_unique_idx', true, false),
@@ -124,7 +167,36 @@ test('migrates and resets only the dedicated integration database', async () => 
       AND indexes.indexname = expected."indexName"
   `);
 
-  assert.deepEqual(indexState.rows[0], { definitionCount: 6, foundCount: 6, obsoleteCount: 0 });
+  assert.deepEqual(indexState.rows[0], { definitionCount: 9, foundCount: 9, obsoleteCount: 0 });
+
+  const constraintState = await testDatabase.db.execute<ContractConstraintState>(sql`
+    WITH expected("constraintName", "definition") AS (
+      VALUES
+        (
+          'task_tags_user_id_task_id_tag_id_pk',
+          'PRIMARY KEY (user_id, task_id, tag_id)'
+        ),
+        (
+          'task_tags_user_task_fk',
+          'FOREIGN KEY (user_id, task_id) REFERENCES tasks(user_id, id) ON DELETE CASCADE'
+        ),
+        (
+          'task_tags_user_tag_fk',
+          'FOREIGN KEY (user_id, tag_id) REFERENCES tags(user_id, id) ON DELETE CASCADE'
+        )
+    )
+    SELECT
+      count(constraints.oid) FILTER (
+        WHERE position(expected."definition" IN pg_get_constraintdef(constraints.oid)) > 0
+      )::int AS "definitionCount",
+      count(constraints.oid)::int AS "foundCount"
+    FROM expected
+    LEFT JOIN pg_constraint AS constraints
+      ON constraints.conname = expected."constraintName"
+      AND constraints.conrelid = 'public.task_tags'::regclass
+  `);
+
+  assert.deepEqual(constraintState.rows[0], { definitionCount: 3, foundCount: 3 });
 
   const userId = crypto.randomUUID();
 
@@ -167,11 +239,13 @@ test('migrates and resets only the dedicated integration database', async () => 
 
   const result = await testDatabase.db.execute<TableCounts>(sql`
     SELECT
+      (SELECT count(*)::int FROM "tags") AS "tagCount",
+      (SELECT count(*)::int FROM "task_tags") AS "taskTagCount",
       (SELECT count(*)::int FROM "tasks") AS "taskCount",
       (SELECT count(*)::int FROM "user") AS "userCount"
   `);
 
-  assert.deepEqual(result.rows[0], { taskCount: 0, userCount: 0 });
+  assert.deepEqual(result.rows[0], { tagCount: 0, taskCount: 0, taskTagCount: 0, userCount: 0 });
 });
 
 test('persists and reads encrypted task titles through the guarded database', async (context) => {
@@ -196,6 +270,7 @@ test('persists and reads encrypted task titles through the guarded database', as
   const {
     createTask,
     deleteTask,
+    getTask,
     listTasks,
     reorderTasks,
     setTaskCompleted,
@@ -229,7 +304,7 @@ test('persists and reads encrypted task titles through the guarded database', as
     )
   `);
 
-  await assert.rejects(createTask(crypto.randomUUID(), orphanTitle), (error: unknown) => {
+  await assert.rejects(createTask(crypto.randomUUID(), orphanTitle, []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'OPERATION_FAILED');
 
@@ -256,7 +331,7 @@ test('persists and reads encrypted task titles through the guarded database', as
     )
   `);
 
-  const betaId = await createTask(userId, betaTitle);
+  const betaId = await createTask(userId, betaTitle, []);
   const createdTasks = await listTasks(userId);
 
   assert.deepEqual(
@@ -266,18 +341,20 @@ test('persists and reads encrypted task titles through the guarded database', as
       { id: alphaId, position: 1, title: alphaTitle },
     ],
   );
+  assert.deepEqual(await getTask(userId, betaId), createdTasks[0]);
+  assert.equal(await getTask(crypto.randomUUID(), betaId), null);
   assert.equal(await taskTitleExists(userId, ` ${alphaTitle.toUpperCase()} `), true);
-  await assert.rejects(createTask(userId, alphaTitle.toLowerCase()), (error: unknown) => {
+  await assert.rejects(createTask(userId, alphaTitle.toLowerCase(), []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'DUPLICATE_TITLE');
 
     return true;
   });
 
-  assert.equal(await updateTask(userId, betaId, gammaTitle), true);
+  assert.equal(await updateTask(userId, betaId, gammaTitle, []), true);
   assert.equal(await taskTitleExists(userId, gammaTitle, betaId), false);
   assert.equal(await taskTitleExists(userId, gammaTitle), true);
-  await assert.rejects(updateTask(userId, betaId, alphaTitle), (error: unknown) => {
+  await assert.rejects(updateTask(userId, betaId, alphaTitle, []), (error: unknown) => {
     assert.ok(error instanceof TaskQueryError);
     assert.equal(error.code, 'DUPLICATE_TITLE');
 
@@ -339,6 +416,298 @@ test('persists and reads encrypted task titles through the guarded database', as
   for (const title of [alphaTitle, betaTitle, gammaTitle, orphanTitle]) {
     assert.equal(capturedOutput.includes(title), false);
   }
+
+  await testDatabase.reset();
+});
+
+test('persists and manages encrypted tags through the guarded database', async (context) => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  process.env.DATA_ENCRYPTION_KEYS = JSON.stringify({ 1: key(1) });
+  process.env.DATA_ENCRYPTION_ACTIVE_VERSION = '1';
+  process.env.BLIND_INDEX_KEYS = JSON.stringify({ 1: key(2) });
+  process.env.BLIND_INDEX_ACTIVE_VERSION = '1';
+
+  const { createTag, deleteTag, listTags, TagQueryError, updateTag } =
+    await import('./tag-queries.ts');
+  const dataProtection = createDataProtection({
+    blindIndexActiveVersion: '1',
+    blindIndexKeys: process.env.BLIND_INDEX_KEYS,
+    dataEncryptionActiveVersion: '1',
+    dataEncryptionKeys: process.env.DATA_ENCRYPTION_KEYS,
+  });
+  const userId = crypto.randomUUID();
+  const otherUserId = crypto.randomUUID();
+  const stderr: string[] = [];
+
+  context.mock.method(process.stderr, 'write', (chunk: string | Uint8Array) => {
+    stderr.push(String(chunk));
+
+    return true;
+  });
+
+  await Promise.all(
+    [userId, otherUserId].map((id) =>
+      testDatabase.db.execute(sql`
+        INSERT INTO "user" (
+          "id", "email_ciphertext", "email_lookup", "name_ciphertext", "name_lookup"
+        )
+        VALUES (
+          ${id},
+          'enc:v1:1:email',
+          ${`email-${id}`},
+          'enc:v1:1:name',
+          ${`name-${id}`}
+        )
+      `),
+    ),
+  );
+
+  await assert.rejects(
+    createTag(crypto.randomUUID(), { color: '#000000', name: 'orphan' }),
+    (error: unknown) => {
+      assert.ok(error instanceof TagQueryError);
+      assert.equal(error.code, 'OPERATION_FAILED');
+
+      return true;
+    },
+  );
+
+  const workInput = tagSchema.parse({ color: '#AA0000', name: ' Work ' });
+  const work = await createTag(userId, workInput);
+  const duplicate = await createTag(userId, tagSchema.parse({ color: '#00FF00', name: 'WORK' }));
+
+  assert.deepEqual(duplicate, work);
+  assert.deepEqual(work, { color: '#aa0000', id: work.id, name: 'work' });
+
+  const zeta = await createTag(userId, { color: '#0000ff', name: 'zeta' });
+  const alpha = await createTag(userId, { color: '#00ff00', name: 'alpha' });
+
+  const createdTags = await listTags(userId);
+
+  assert.deepEqual(
+    createdTags.map(({ name }) => name),
+    ['alpha', 'work', 'zeta'],
+  );
+
+  const persisted = await testDatabase.db.execute<PersistedTag>(sql`
+    SELECT
+      "color",
+      "id",
+      "name_ciphertext" AS "nameCiphertext",
+      "name_lookup" AS "nameLookup"
+    FROM "tags"
+    WHERE "id" = ${work.id}
+  `);
+
+  assert.equal(persisted.rows[0]?.color, '#aa0000');
+  assert.equal(persisted.rows[0]?.id, work.id);
+  assert.match(persisted.rows[0]?.nameCiphertext ?? '', /^enc:v1:1:/u);
+  assert.notEqual(persisted.rows[0]?.nameCiphertext, 'work');
+  assert.equal(persisted.rows[0]?.nameLookup, dataProtection.tagNameLookup(userId, 'work'));
+
+  await assert.rejects(
+    updateTag(userId, work.id, { color: '#ffffff', name: alpha.name }),
+    (error: unknown) => {
+      assert.ok(error instanceof TagQueryError);
+      assert.equal(error.code, 'DUPLICATE_TAG');
+
+      return true;
+    },
+  );
+  assert.equal(await updateTag(otherUserId, work.id, { color: '#ffffff', name: 'office' }), null);
+  assert.equal(await deleteTag(otherUserId, work.id), false);
+  assert.deepEqual(await updateTag(userId, work.id, { color: '#ffffff', name: 'office' }), {
+    color: '#ffffff',
+    id: work.id,
+    name: 'office',
+  });
+
+  const taskId = crypto.randomUUID();
+  const taskTitle = 'Tagged task';
+
+  await testDatabase.db.execute(sql`
+    INSERT INTO "tasks" (
+      "id", "user_id", "title_ciphertext", "title_lookup", "changed_on", "position"
+    )
+    VALUES (
+      ${taskId},
+      ${userId},
+      ${dataProtection.encryptValue(taskTitle, {
+        field: 'title',
+        model: 'tasks',
+        recordId: taskId,
+      })},
+      ${dataProtection.taskTitleLookup(userId, taskTitle)},
+      now(),
+      0
+    )
+  `);
+  await testDatabase.db.execute(sql`
+    INSERT INTO "task_tags" ("user_id", "task_id", "tag_id")
+    VALUES (${userId}, ${taskId}, ${work.id})
+  `);
+
+  assert.equal(await deleteTag(userId, work.id), true);
+
+  const retainedTask = await testDatabase.db.execute<{
+    assignmentCount: number;
+    taskCount: number;
+  }>(sql`
+    SELECT
+      (SELECT count(*)::int FROM "task_tags" WHERE "task_id" = ${taskId}) AS "assignmentCount",
+      (SELECT count(*)::int FROM "tasks" WHERE "id" = ${taskId}) AS "taskCount"
+  `);
+
+  assert.deepEqual(retainedTask.rows[0], { assignmentCount: 0, taskCount: 1 });
+
+  const remainingTags = await listTags(userId);
+
+  assert.deepEqual(
+    remainingTags.map(({ id }) => id),
+    [alpha.id, zeta.id],
+  );
+
+  const capturedOutput = stderr.join('');
+
+  assert.match(capturedOutput, /"category":"DUPLICATE_TAG"/u);
+
+  for (const value of ['alpha', 'office', 'orphan', 'work', 'zeta']) {
+    assert.equal(capturedOutput.includes(value), false);
+  }
+
+  await testDatabase.reset();
+});
+
+test('assigns tags to tasks atomically', async () => {
+  const testDatabase = await createTestDatabase();
+
+  await testDatabase.migrate();
+  await testDatabase.reset();
+
+  process.env.DATABASE_URL = process.env.TEST_DATABASE_URL;
+  process.env.DATA_ENCRYPTION_KEYS = JSON.stringify({ 1: key(1) });
+  process.env.DATA_ENCRYPTION_ACTIVE_VERSION = '1';
+  process.env.BLIND_INDEX_KEYS = JSON.stringify({ 1: key(2) });
+  process.env.BLIND_INDEX_ACTIVE_VERSION = '1';
+
+  const { createTask, deleteTask, listTasks, TaskQueryError, updateTask } =
+    await import('./queries.ts');
+  const { createTag } = await import('./tag-queries.ts');
+  const userId = crypto.randomUUID();
+  const otherUserId = crypto.randomUUID();
+
+  await Promise.all(
+    [userId, otherUserId].map((id) =>
+      testDatabase.db.execute(sql`
+        INSERT INTO "user" (
+          "id", "email_ciphertext", "email_lookup", "name_ciphertext", "name_lookup"
+        )
+        VALUES (
+          ${id},
+          'enc:v1:1:email',
+          ${`email-${id}`},
+          'enc:v1:1:name',
+          ${`name-${id}`}
+        )
+      `),
+    ),
+  );
+
+  const alpha = await createTag(userId, { color: '#00ff00', name: 'alpha' });
+  const zeta = await createTag(userId, { color: '#0000ff', name: 'zeta' });
+  const foreign = await createTag(otherUserId, { color: '#ff0000', name: 'foreign' });
+  const taskId = await createTask(userId, 'Tagged task', [zeta.id, alpha.id]);
+  const untaggedTaskId = await createTask(userId, 'Untagged task', []);
+  const initialTasks = await listTasks(userId);
+
+  assert.deepEqual(
+    initialTasks.map(({ id, position, tags, title }) => ({
+      id,
+      position,
+      tags: tags.map(({ name }) => name),
+      title,
+    })),
+    [
+      { id: untaggedTaskId, position: 0, tags: [], title: 'Untagged task' },
+      { id: taskId, position: 1, tags: ['alpha', 'zeta'], title: 'Tagged task' },
+    ],
+  );
+
+  const assertInvalidTags = (error: unknown) => {
+    assert.ok(error instanceof TaskQueryError);
+    assert.equal(error.code, 'INVALID_TAGS');
+
+    return true;
+  };
+  const invalidCreates = [
+    { ids: [alpha.id, alpha.id], title: 'Duplicate tags' },
+    { ids: [crypto.randomUUID()], title: 'Missing tag' },
+    { ids: [foreign.id], title: 'Foreign tag' },
+    {
+      ids: Array.from({ length: 11 }, () => crypto.randomUUID()),
+      title: 'Too many tags',
+    },
+  ];
+
+  await Promise.all(
+    invalidCreates.map(({ ids, title }) =>
+      assert.rejects(createTask(userId, title, ids), assertInvalidTags),
+    ),
+  );
+
+  const tasksAfterRejectedCreates = await listTasks(userId);
+
+  assert.deepEqual(
+    tasksAfterRejectedCreates.map(({ id, position, title }) => ({ id, position, title })),
+    [
+      { id: untaggedTaskId, position: 0, title: 'Untagged task' },
+      { id: taskId, position: 1, title: 'Tagged task' },
+    ],
+  );
+
+  await assert.rejects(
+    updateTask(userId, taskId, 'Rejected foreign update', [foreign.id]),
+    assertInvalidTags,
+  );
+  await assert.rejects(
+    updateTask(userId, taskId, 'Rejected duplicate update', [alpha.id, alpha.id]),
+    assertInvalidTags,
+  );
+  assert.equal(await updateTask(otherUserId, taskId, 'Foreign owner update', []), false);
+
+  const tasksAfterRejectedUpdates = await listTasks(userId);
+  const taskAfterRejectedUpdates = tasksAfterRejectedUpdates.find(({ id }) => id === taskId);
+
+  assert.equal(taskAfterRejectedUpdates?.title, 'Tagged task');
+  assert.deepEqual(
+    taskAfterRejectedUpdates?.tags.map(({ name }) => name),
+    ['alpha', 'zeta'],
+  );
+
+  assert.equal(await updateTask(userId, taskId, 'Updated task', [zeta.id]), true);
+
+  const tasksAfterUpdate = await listTasks(userId);
+  const updatedTask = tasksAfterUpdate.find(({ id }) => id === taskId);
+
+  assert.equal(updatedTask?.title, 'Updated task');
+  assert.deepEqual(
+    updatedTask?.tags.map(({ name }) => name),
+    ['zeta'],
+  );
+  assert.equal(await deleteTask(userId, taskId), true);
+
+  const remainingAssignments = await testDatabase.db.execute<{ count: number }>(sql`
+    SELECT count(*)::int AS "count"
+    FROM "task_tags"
+    WHERE "task_id" = ${taskId}
+  `);
+
+  assert.equal(remainingAssignments.rows[0]?.count, 0);
 
   await testDatabase.reset();
 });

@@ -36,6 +36,7 @@ type TotpFormValues = z.infer<typeof totpFormSchema>;
 
 interface TwoFactorSettingsProps {
   enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
 }
 
 const getDialogTitle = (flow: Flow, step: Step) => {
@@ -78,7 +79,7 @@ const revokeOtherSessions = async () => {
   return true;
 };
 
-export default function TwoFactorSettings({ enabled }: TwoFactorSettingsProps) {
+export default function TwoFactorSettings({ enabled, onEnabledChange }: TwoFactorSettingsProps) {
   const [backupCodes, setBackupCodes] = useState<string[]>([]);
   const [codesSaved, setCodesSaved] = useState(false);
   const [flow, setFlow] = useState<Flow>('setup');
@@ -203,6 +204,7 @@ export default function TwoFactorSettings({ enabled }: TwoFactorSettingsProps) {
 
     const sessionsRevoked = await revokeOtherSessions();
 
+    onEnabledChange(false);
     setIsOpen(false);
     resetDialog();
     router.refresh();
@@ -223,6 +225,7 @@ export default function TwoFactorSettings({ enabled }: TwoFactorSettingsProps) {
 
     const sessionsRevoked = await revokeOtherSessions();
 
+    onEnabledChange(true);
     setStep('codes');
     router.refresh();
 

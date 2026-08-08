@@ -30,6 +30,27 @@ Decision: `../decisions/ADR-013-use-neon-branches-for-environment-isolation.md`
 
 Execution details: `neon-environment-isolation-plan.md`
 
+## Task Tags And Filters
+
+ADR-014 is implemented on the feature branch. Reusable user-owned tags use
+encrypted lower-case names, per-user blind indexes, readable hexadecimal color
+metadata, and same-owner `task_tags` relationships. Additive migration
+`0010_task_tags` leaves existing task rows unchanged and is verified against
+the guarded integration database at migration count `11`; Preview and
+Production rollout remain pending.
+
+Server Components remain authoritative for task and tag reads. The existing
+sortable client island uses `nuqs` to own repeated opaque `tag` query
+parameters, a Base UI multiple Select with normal tag-chip rendering for
+filtering, a searchable Base UI multiple Combobox for Edit Task assignment, and
+a pure merge helper that reorders matching active tasks only within their
+visible slots. Tag management lives in Settings. `react-colorful` supplies the
+custom color picker because Base UI has no color-picker primitive.
+
+Decision: `../decisions/ADR-014-use-reusable-task-tags-and-url-filters.md`
+
+Execution details: `task-tags-and-filters-plan.md`
+
 ## Planned Database-Theft Protection
 
 ADR-009 accepts application-level encryption for sensitive task, identity,
@@ -85,9 +106,11 @@ Execution details: `database-theft-encryption-plan.md`
 - `@dnd-kit` owns grip-handle sortable task reordering in a small client island.
 - React Hook Form manages form-local client state.
 - Zod validates form and server-action inputs.
-- TanStack Query owns client mutation lifecycle and pending state without duplicating Server Component reads in its cache.
-- Local React state owns transient task-list edit selection inside the sortable task-list client island.
+- TanStack Query owns client mutation lifecycle and pending state without duplicating Server Component reads in its cache. Route-changing mutations extend that pending interval through the React navigation transition.
+- Local React state owns transient task-list edit selection plus server-confirmed task and Settings display values, allowing successful operations to render before background Server Component reconciliation.
 - Base UI is the default headless UI component system for new or reworked interactive controls.
+- `nuqs` owns URL-backed task-tag filter state.
+- `react-colorful` supplies the accessible custom tag color picker.
 - CSS Modules provide component/page styling.
 - Global CSS provides fonts, resets, and reusable CSS custom properties.
 - Varlock loads local server-only environment values before development and local build commands.

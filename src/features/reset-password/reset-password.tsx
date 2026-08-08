@@ -6,7 +6,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { ArrowLeft, Eye, EyeClosed, KeyRound, Mail } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 
 import BrandHeader from '../../components/brand-header';
@@ -32,6 +32,7 @@ interface Props {
 
 export default function ResetPassword({ state }: Props) {
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const form = useForm<ResetPasswordFormValues>({
     defaultValues: { confirmPassword: '', newPassword: '' },
     mode: 'onChange',
@@ -57,7 +58,7 @@ export default function ResetPassword({ state }: Props) {
         return;
       }
 
-      router.replace('/login?reset=1');
+      startNavigation(() => router.replace('/login?reset=1'));
     },
     onError: () => {
       form.setError('root', {
@@ -253,7 +254,7 @@ export default function ResetPassword({ state }: Props) {
             text="Reset Password"
             type="submit"
             disabled={!form.formState.isValid}
-            loading={resetMutation.isPending}
+            loading={resetMutation.isPending || isNavigationPending}
           />
         </form>
         <Button

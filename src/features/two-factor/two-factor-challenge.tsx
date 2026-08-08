@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { KeyRound, LogIn, RotateCcw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -35,6 +35,7 @@ type ChallengeValues = z.infer<typeof totpSchema>;
 export default function TwoFactorChallenge() {
   const [mode, setMode] = useState<ChallengeMode>('totp');
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const form = useForm<ChallengeValues>({
     defaultValues: { code: '', trustDevice: false },
     mode: 'onChange',
@@ -84,7 +85,7 @@ export default function TwoFactorChallenge() {
 
     if (error) {
       if (isExpiredTwoFactorChallenge(error.code)) {
-        router.replace('/login');
+        startNavigation(() => router.replace('/login'));
 
         return;
       }
@@ -94,9 +95,12 @@ export default function TwoFactorChallenge() {
       return;
     }
 
-    router.replace('/');
-    router.refresh();
+    startNavigation(() => {
+      router.replace('/');
+      router.refresh();
+    });
   });
+  const isPending = verifyMutation.isPending || isNavigationPending;
   const isCodeValid = mode === 'totp' ? /^\d{6}$/u.test(code) : code.trim().length > 0;
   const rootError = form.formState.errors.root?.message;
 
@@ -155,13 +159,13 @@ export default function TwoFactorChallenge() {
           <Button
             disabled={!isCodeValid}
             icon={<LogIn size={iconSize} />}
-            loading={verifyMutation.isPending}
+            loading={isPending}
             styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.primary)}
             text="Verify and Sign In"
             type="submit"
           />
           <Button
-            disabled={verifyMutation.isPending}
+            disabled={isPending}
             handleOnClick={switchMode}
             icon={mode === 'totp' ? <KeyRound size={iconSize} /> : <RotateCcw size={iconSize} />}
             styling={clsx(buttonStyles.standard, buttonStyles.fullWidth, buttonStyles.neutral)}

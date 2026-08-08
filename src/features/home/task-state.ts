@@ -1,5 +1,18 @@
 import type { Task } from '../../types';
 
+export const insertConfirmedTask = (tasks: Task[], task: Task) => [
+  task,
+  ...tasks.map((current) =>
+    current.completedAt === null ? { ...current, position: current.position + 1 } : current,
+  ),
+];
+
+export const replaceConfirmedTask = (tasks: Task[], task: Task) =>
+  tasks.map((current) => (current.id === task.id ? task : current));
+
+export const removeConfirmedTask = (tasks: Task[], id: string) =>
+  tasks.filter((task) => task.id !== id);
+
 export const moveTaskBetweenGroups = (
   tasks: Task[],
   id: string,

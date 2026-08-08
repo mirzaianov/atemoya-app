@@ -23,29 +23,54 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { parseAsNativeArrayOf, parseAsString, useQueryState } from 'nuqs';
+import { useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 
 import { toast } from '../../components/toast-provider';
-import type { Task } from '../../types';
+import type { Tag, Task } from '../../types';
 import SortableTask from './sortable-task';
+import TagFilter from './tag-filter';
+import {
+  filterTasksByTagIds,
+  getEligibleFilterTags,
+  mergeFilteredTaskOrder,
+  normalizeSelectedTagIds,
+} from './tag-state';
 import { reorderTasksAction, setTaskCompletedAction } from './task-actions';
 import TaskEditDialog from './task-edit-dialog';
+import TaskForm from './task-form';
 import TaskRow, { TaskDragPreview } from './task-row';
-import { moveTaskBetweenGroups } from './task-state';
+import {
+  insertConfirmedTask,
+  moveTaskBetweenGroups,
+  removeConfirmedTask,
+  replaceConfirmedTask,
+} from './task-state';
 
 import listStyles from './task-list.module.css';
 
 interface SortableTaskListProps {
+  availableTags: Tag[];
   tasks: Task[];
 }
 
 interface TaskGroupProps {
   children: ReactNode;
-  count: number;
+  count: ReactNode;
   defaultOpen?: boolean;
   label: string;
 }
+
+const tagParser = parseAsNativeArrayOf(parseAsString).withDefault([]).withOptions({
+  history: 'replace',
+  scroll: false,
+  shallow: true,
+});
+const filterRevealClassNames = [
+  listStyles.filterRevealFirst,
+  listStyles.filterRevealSecond,
+] as const;
 
 const TaskGroup = ({ children, count, defaultOpen = false, label }: TaskGroupProps) => (
   <Collapsible.Root className={listStyles.group} defaultOpen={defaultOpen}>
@@ -77,12 +102,14 @@ const useReducedMotion = () => {
   return reducedMotion;
 };
 
-export default function SortableTaskList({ tasks }: SortableTaskListProps) {
+export default function SortableTaskList({ availableTags, tasks }: SortableTaskListProps) {
   const router = useRouter();
+  const [rawTagIds, setTagIds] = useQueryState('tag', tagParser);
   const [previousInputTasks, setPreviousInputTasks] = useState(tasks);
   const [orderedTasks, setOrderedTasks] = useState(tasks);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [filterAnimationCycle, setFilterAnimationCycle] = useState<0 | 1 | null>(null);
   const reducedMotion = useReducedMotion();
   const isDragging = activeTask !== null;
   const sensors = useSensors(
@@ -137,12 +164,42 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
 
   const activeTasks = orderedTasks.filter((task) => task.completedAt === null);
   const completedTasks = orderedTasks.filter((task) => task.completedAt !== null);
+  const eligibleTags = useMemo(
+    () => getEligibleFilterTags(availableTags, orderedTasks),
+    [availableTags, orderedTasks],
+  );
+  const selectedTagIds = useMemo(
+    () => normalizeSelectedTagIds(rawTagIds, eligibleTags),
+    [eligibleTags, rawTagIds],
+  );
+  const visibleActiveTasks = filterTasksByTagIds(activeTasks, selectedTagIds);
+  const visibleCompletedTasks = filterTasksByTagIds(completedTasks, selectedTagIds);
+  const hasFilters = selectedTagIds.length > 0;
+  const hasNoMatches =
+    hasFilters && visibleActiveTasks.length === 0 && visibleCompletedTasks.length === 0;
+  const filterTransitionClassName =
+    filterAnimationCycle === null ? undefined : filterRevealClassNames[filterAnimationCycle];
+
+  useEffect(() => {
+    const isCanonical =
+      rawTagIds.length === selectedTagIds.length &&
+      rawTagIds.every((id, index) => id === selectedTagIds[index]);
+
+    if (!isCanonical) {
+      void setTagIds(selectedTagIds);
+    }
+  }, [rawTagIds, selectedTagIds, setTagIds]);
 
   const handleCompletedChange = (task: Task, completed: boolean) => {
     const previousOrder = orderedTasks;
 
     setOrderedTasks(moveTaskBetweenGroups(orderedTasks, task.id, completed));
     completionMutation.mutate({ completed, id: task.id, previousTasks: previousOrder });
+  };
+
+  const handleFilterChange = (tagIds: string[]) => {
+    setFilterAnimationCycle((current) => (current === 0 ? 1 : 0));
+    void setTagIds(tagIds);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -154,78 +211,125 @@ export default function SortableTaskList({ tasks }: SortableTaskListProps) {
       return;
     }
 
-    const oldIndex = activeTasks.findIndex((task) => task.id === active.id);
-    const newIndex = activeTasks.findIndex((task) => task.id === over.id);
+    const oldIndex = visibleActiveTasks.findIndex((task) => task.id === active.id);
+    const newIndex = visibleActiveTasks.findIndex((task) => task.id === over.id);
 
     if (oldIndex === -1 || newIndex === -1) {
       return;
     }
 
     const previousOrder = orderedTasks;
-    const nextTasks = arrayMove(activeTasks, oldIndex, newIndex);
+    const reorderedVisibleTasks = arrayMove(visibleActiveTasks, oldIndex, newIndex);
+    const nextTasks = mergeFilteredTaskOrder(
+      activeTasks,
+      visibleActiveTasks,
+      reorderedVisibleTasks,
+    );
 
     setOrderedTasks([...nextTasks, ...completedTasks]);
     reorderMutation.mutate({ nextTasks, previousTasks: previousOrder });
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveTask(activeTasks.find((task) => task.id === event.active.id) ?? null);
+    setActiveTask(visibleActiveTasks.find((task) => task.id === event.active.id) ?? null);
   };
 
   return (
     <>
-      <div className={listStyles.groups}>
-        <TaskGroup count={activeTasks.length} defaultOpen label="Active">
-          <DndContext
-            collisionDetection={closestCenter}
-            id="task-list-sortable"
-            modifiers={[restrictToVerticalAxis]}
-            onDragCancel={() => setActiveTask(null)}
-            onDragEnd={handleDragEnd}
-            onDragStart={handleDragStart}
-            sensors={sensors}
+      <TaskForm
+        onCreated={(task) => setOrderedTasks((current) => insertConfirmedTask(current, task))}
+      />
+      <TagFilter onChange={handleFilterChange} tags={eligibleTags} value={selectedTagIds} />
+      {hasNoMatches ? (
+        <div className={clsx(listStyles.noMatches, filterTransitionClassName)}>
+          <p>No tasks match all selected tags.</p>
+          <button
+            className={listStyles.clearFilters}
+            onClick={() => handleFilterChange([])}
+            type="button"
           >
-            <SortableContext
-              items={activeTasks.map((task) => task.id)}
-              strategy={verticalListSortingStrategy}
+            Clear filters
+          </button>
+        </div>
+      ) : (
+        <div className={clsx(listStyles.groups, filterTransitionClassName)}>
+          <TaskGroup
+            count={
+              hasFilters
+                ? `${visibleActiveTasks.length} of ${activeTasks.length}`
+                : activeTasks.length
+            }
+            defaultOpen
+            label="Active"
+          >
+            <DndContext
+              collisionDetection={closestCenter}
+              id="task-list-sortable"
+              modifiers={[restrictToVerticalAxis]}
+              onDragCancel={() => setActiveTask(null)}
+              onDragEnd={handleDragEnd}
+              onDragStart={handleDragStart}
+              sensors={sensors}
             >
-              <ul className={clsx(listStyles.tasks, isDragging && listStyles.dragging)}>
-                {activeTasks.map((task) => (
-                  <SortableTask
-                    completionDisabled={completionMutation.isPending}
-                    key={task.id}
-                    onCompletedChange={handleCompletedChange}
-                    onEdit={setEditingTask}
-                    reducedMotion={reducedMotion}
-                    task={task}
-                  />
-                ))}
-              </ul>
-            </SortableContext>
-            <DragOverlay
-              adjustScale={false}
-              dropAnimation={reducedMotion ? null : undefined}
-              zIndex={10}
-            >
-              {activeTask ? <TaskDragPreview task={activeTask} /> : null}
-            </DragOverlay>
-          </DndContext>
-        </TaskGroup>
-        <TaskGroup count={completedTasks.length} defaultOpen label="Completed">
-          <ul className={listStyles.tasks}>
-            {completedTasks.map((task) => (
-              <TaskRow
-                completionDisabled={completionMutation.isPending}
-                key={task.id}
-                onCompletedChange={handleCompletedChange}
-                onEdit={setEditingTask}
-                task={task}
-              />
-            ))}
-          </ul>
-        </TaskGroup>
-      </div>
-      <TaskEditDialog editingTask={editingTask} onClose={() => setEditingTask(null)} />
+              <SortableContext
+                items={visibleActiveTasks.map((task) => task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <ul className={clsx(listStyles.tasks, isDragging && listStyles.dragging)}>
+                  {visibleActiveTasks.map((task) => (
+                    <SortableTask
+                      completionDisabled={completionMutation.isPending}
+                      key={task.id}
+                      onCompletedChange={handleCompletedChange}
+                      onDeleted={(id) =>
+                        setOrderedTasks((current) => removeConfirmedTask(current, id))
+                      }
+                      onEdit={setEditingTask}
+                      reducedMotion={reducedMotion}
+                      task={task}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+              <DragOverlay
+                adjustScale={false}
+                dropAnimation={reducedMotion ? null : undefined}
+                zIndex={10}
+              >
+                {activeTask ? <TaskDragPreview task={activeTask} /> : null}
+              </DragOverlay>
+            </DndContext>
+          </TaskGroup>
+          <TaskGroup
+            count={
+              hasFilters
+                ? `${visibleCompletedTasks.length} of ${completedTasks.length}`
+                : completedTasks.length
+            }
+            defaultOpen
+            label="Completed"
+          >
+            <ul className={listStyles.tasks}>
+              {visibleCompletedTasks.map((task) => (
+                <TaskRow
+                  completionDisabled={completionMutation.isPending}
+                  key={task.id}
+                  onCompletedChange={handleCompletedChange}
+                  onDeleted={(id) => setOrderedTasks((current) => removeConfirmedTask(current, id))}
+                  onEdit={setEditingTask}
+                  task={task}
+                />
+              ))}
+            </ul>
+          </TaskGroup>
+        </div>
+      )}
+      <TaskEditDialog
+        editingTask={editingTask}
+        onClose={() => setEditingTask(null)}
+        onUpdated={(task) => setOrderedTasks((current) => replaceConfirmedTask(current, task))}
+        tags={availableTags}
+      />
     </>
   );
 }
