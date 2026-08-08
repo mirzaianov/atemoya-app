@@ -4,6 +4,7 @@ import { Combobox } from '@base-ui/react/combobox';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
+import IconTooltip from '../../components/icon-tooltip';
 import type { Tag } from '../../types';
 import TagChip from './tag-chip';
 
@@ -74,6 +75,16 @@ export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
               )}
             </Combobox.Value>
           </Combobox.Chips>
+          {selectedTags.length > 0 ? (
+            <IconTooltip label="Clear tag filters">
+              <Combobox.Clear
+                aria-label="Clear tag filters"
+                className={`${styles.filterIconButton} ${styles.filterClearButton}`}
+              >
+                <X aria-hidden="true" size={20} />
+              </Combobox.Clear>
+            </IconTooltip>
+          ) : null}
         </Combobox.InputGroup>
         <Combobox.Portal>
           <Combobox.Positioner
@@ -83,6 +94,7 @@ export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
             sideOffset={4}
           >
             <Combobox.Popup className={styles.filterPopup}>
+              <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>
                 {(tag: Tag) => (
                   <Combobox.Item
