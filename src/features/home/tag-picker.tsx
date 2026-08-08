@@ -16,6 +16,7 @@ import TagChip from './tag-chip';
 import TagEditor from './tag-editor';
 import type { TagFormValues } from './tag-schemas';
 
+import formStyles from '../../components/modal-form-layout.module.css';
 import popupStyles from '../../styles/popup.module.css';
 import styles from './tag.module.css';
 
@@ -91,7 +92,7 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
 
   return (
     <div className={styles.picker}>
-      <label className={styles.filterLabel} htmlFor={inputId}>
+      <label className={formStyles.label} htmlFor={inputId}>
         Tags
       </label>
       <Combobox.Root<Tag, true>
