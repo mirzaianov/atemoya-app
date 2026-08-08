@@ -5,7 +5,7 @@ import { Menu } from '@base-ui/react/menu';
 import { Popover } from '@base-ui/react/popover';
 import clsx from 'clsx';
 import { Check, EllipsisVertical, FilePen, Trash2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { ComponentPropsWithoutRef, CSSProperties } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
@@ -21,17 +21,81 @@ const actionIconSize = 20;
 const checkIconSize = 14;
 
 const TaskTags = ({ task }: { task: Task }) => {
-  // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
-  const tags = [...task.tags].sort((left, right) => left.name.localeCompare(right.name));
-  const visibleTags = tags.slice(0, 2);
-  const remainingTags = tags.slice(2);
+  const tags = useMemo(
+    // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
+    () => [...task.tags].sort((left, right) => left.name.localeCompare(right.name)),
+    [task.tags],
+  );
+  const [visibleCount, setVisibleCount] = useState(tags.length);
+  const measurementRef = useRef<HTMLDivElement>(null);
+  const rowRef = useRef<HTMLDivElement>(null);
+  const resolvedVisibleCount = Math.min(visibleCount, tags.length);
+  const visibleTags = tags.slice(0, resolvedVisibleCount);
+  const remainingTags = tags.slice(resolvedVisibleCount);
+
+  useEffect(() => {
+    const measurement = measurementRef.current;
+    const row = rowRef.current;
+
+    if (!(measurement && row)) {
+      return;
+    }
+
+    const updateVisibleCount = () => {
+      const measurements = [...measurement.children].map(
+        (element) => (element as HTMLElement).getBoundingClientRect().width,
+      );
+      const tagWidths = measurements.slice(0, tags.length);
+      const overflowWidths = measurements.slice(tags.length);
+      const gap = Number(getComputedStyle(row).columnGap) || 0;
+      const availableWidth = row.clientWidth;
+      const allTagsWidth =
+        tagWidths.reduce((total, width) => total + width, 0) + Math.max(0, tags.length - 1) * gap;
+      let nextVisibleCount = tags.length;
+
+      if (allTagsWidth > availableWidth) {
+        nextVisibleCount = 0;
+
+        let visibleWidth = 0;
+
+        for (const [index, tagWidth] of tagWidths.entries()) {
+          visibleWidth += (index === 0 ? 0 : gap) + tagWidth;
+
+          const proposedVisibleCount = index + 1;
+          const hiddenCount = tags.length - proposedVisibleCount;
+
+          if (hiddenCount === 0) {
+            break;
+          }
+
+          const overflowWidth = overflowWidths[hiddenCount - 1] ?? 0;
+          const proposedWidth = visibleWidth + gap + overflowWidth;
+
+          if (proposedWidth <= availableWidth) {
+            nextVisibleCount = proposedVisibleCount;
+          }
+        }
+      }
+
+      setVisibleCount((current) => (current === nextVisibleCount ? current : nextVisibleCount));
+    };
+
+    updateVisibleCount();
+
+    const resizeObserver = new ResizeObserver(updateVisibleCount);
+
+    resizeObserver.observe(row);
+    resizeObserver.observe(measurement);
+
+    return () => resizeObserver.disconnect();
+  }, [tags]);
 
   if (tags.length === 0) {
     return null;
   }
 
   return (
-    <div className={tagStyles.taskTags}>
+    <div className={tagStyles.taskTags} ref={rowRef}>
       {visibleTags.map((tag) => (
         <TagChip key={tag.id} tag={tag} />
       ))}
@@ -59,6 +123,21 @@ const TaskTags = ({ task }: { task: Task }) => {
           </Popover.Portal>
         </Popover.Root>
       ) : null}
+      <div aria-hidden="true" className={tagStyles.tagMeasurements} ref={measurementRef}>
+        {tags.map((tag) => (
+          <TagChip key={`tag-${tag.id}`} tag={tag} />
+        ))}
+        {tags.map((tag, index) => (
+          <button
+            className={tagStyles.tagOverflowTrigger}
+            key={`overflow-${tag.id}`}
+            tabIndex={-1}
+            type="button"
+          >
+            +{index + 1}
+          </button>
+        ))}
+      </div>
     </div>
   );
 };

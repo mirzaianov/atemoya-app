@@ -218,10 +218,24 @@
 }
 
 .taskTags {
+  position: relative;
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
   gap: 0.25rem;
-  margin-block-start: 0.25rem;
+  /* margin-block-start: 0.25rem; */
+}
+
+.tagMeasurements {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  display: flex;
+  gap: 0.25rem;
+  width: max-content;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .tagOverflowTrigger {
