@@ -190,7 +190,7 @@
   min-height: 1.375rem;
   padding-inline: 0.4rem;
   overflow: hidden;
-  border-radius: 999px;
+  border-radius: var(--radius-control);
   background: var(--tag-color);
   color: var(--tag-foreground);
   font-size: 0.75rem;
