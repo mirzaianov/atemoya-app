@@ -5,13 +5,16 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useTransition } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
 import Spinner from '../../components/spinner';
+import { toast } from '../../components/toast-provider';
 import { authClient } from '../../lib/auth-client';
 
 import buttonStyles from '../../components/button.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import styles from './account-menu.module.css';
 
 const actionIconSize = 20;
@@ -23,7 +26,17 @@ interface AccountMenuProps {
 
 export default function AccountMenu({ email, nickname }: AccountMenuProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isNavigationPending, startNavigation] = useTransition();
   const initials = nickname.slice(0, 2).toUpperCase();
+  const settingsSearchParams = new URLSearchParams();
+
+  for (const tagId of searchParams.getAll('tag')) {
+    settingsSearchParams.append('returnTag', tagId);
+  }
+
+  const settingsQuery = settingsSearchParams.toString();
+  const settingsHref = settingsQuery ? `/settings?${settingsQuery}` : '/settings';
   const actionBaseClassName = clsx(
     buttonStyles.button,
     buttonStyles.standard,
@@ -34,10 +47,18 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
   const signOutClassName = clsx(actionBaseClassName, buttonStyles.destructive);
   const signOutMutation = useMutation({
     mutationFn: () => authClient.signOut(),
-    onSuccess: () => {
-      router.push('/login');
+    onError: () => toast.error('Sign out failed. Please try again.'),
+    onSuccess: ({ error }) => {
+      if (error) {
+        toast.error('Sign out failed. Please try again.');
+
+        return;
+      }
+
+      startNavigation(() => router.push('/login'));
     },
   });
+  const isSignOutPending = signOutMutation.isPending || isNavigationPending;
 
   return (
     <Menu.Root>
@@ -51,28 +72,29 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
       </IconTooltip>
       <Menu.Portal>
         <Menu.Positioner align="end" className={styles.positioner} side="bottom" sideOffset={8}>
-          <Menu.Popup className={styles.popup}>
+          <Menu.Popup className={clsx(styles.panel, popupStyles.popup)}>
             <Menu.Group className={styles.group}>
               <Menu.GroupLabel className={styles.identity}>
                 <span className={styles.nickname}>{nickname}</span>
                 <span className={styles.email}>{email}</span>
               </Menu.GroupLabel>
               <div className={styles.actions}>
-                <Menu.LinkItem className={settingsClassName} render={<Link href="/settings" />}>
+                <Menu.LinkItem className={settingsClassName} render={<Link href={settingsHref} />}>
                   <span className={buttonStyles.buttonTop}>
                     <Settings size={actionIconSize} />
                     Settings
                   </span>
                 </Menu.LinkItem>
                 <Menu.Item
-                  aria-busy={signOutMutation.isPending || undefined}
-                  aria-label={signOutMutation.isPending ? 'Signing out' : undefined}
+                  aria-busy={isSignOutPending || undefined}
+                  aria-label={isSignOutPending ? 'Signing out' : undefined}
                   className={signOutClassName}
-                  disabled={signOutMutation.isPending}
+                  closeOnClick={false}
+                  disabled={isSignOutPending}
                   onClick={() => signOutMutation.mutate()}
                 >
                   <span className={buttonStyles.buttonTop}>
-                    {signOutMutation.isPending ? (
+                    {isSignOutPending ? (
                       <Spinner />
                     ) : (
                       <>

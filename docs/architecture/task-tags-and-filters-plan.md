@@ -322,9 +322,9 @@ createTaskAction(values: TaskFormValues)
 updateTaskAction(id: string, values: TaskFormValues)
 ```
 
-In `app/page.tsx`, load `[tasks, tags]` with `Promise.all([listTasks(userId), listTags(userId)])`, map dates to numbers, retain task tag arrays, and pass `availableTags` through `Home`, `TaskForm`, and `TaskList` to the sortable client island.
+In `app/page.tsx`, load `[tasks, tags]` with `Promise.all([listTasks(userId), listTags(userId)])`, map dates to numbers, retain task tag arrays, and pass `availableTags` through `Home` and `TaskList` to the sortable client island.
 
-Update the existing form callers in the same commit so the new action contract is buildable before the picker UI exists: Add Task submits `tagIds: []`; Edit Task submits `editingTask.tags.map(({ id }) => id)` to preserve existing assignments. Task 6 replaces these hidden defaults with user-controlled form state.
+Update the existing form callers in the same commit so the new action contract is buildable before the picker UI exists: Add Task submits `tagIds: []`; Edit Task submits `editingTask.tags.map(({ id }) => id)` to preserve existing assignments. Task 6 replaces only the Edit Task default with user-controlled form state.
 
 - [ ] **Step 6: Run atomicity verification**
 
@@ -455,7 +455,7 @@ const tagParser = parseAsNativeArrayOf(parseAsString).withDefault([]).withOption
 const [rawTagIds, setTagIds] = useQueryState('tag', tagParser);
 ```
 
-Normalize against assigned eligible tags. Synchronize pruned IDs back to the URL only when the normalized sequence differs from the external query value. Render two selected chips plus `+N more`, a clear action, color swatches with text, search, and an accessible ten-selection limit.
+Normalize against assigned eligible tags. Synchronize pruned IDs back to the URL only when the normalized sequence differs from the external query value. Let users type to narrow existing tags without creating free-form values. Render selected `TagChip` values inside the input, show the placeholder only when no tag is selected, and omit both the count and a separate disclosure icon. Reveal each remove control over a masked section of its chip text on hover or keyboard focus without reserving extra width. Preserve the accessible ten-selection limit and use the normal `TagChip` UI for options.
 
 - [ ] **Step 4: Integrate filtering and filtered reorder**
 
@@ -482,7 +482,7 @@ git commit -m "feat(ATE-4): Add URL-backed tag filter"
 
 ---
 
-### Task 6: Add Tag Assignment To Task Forms
+### Task 6: Add Tag Assignment To Edit Task
 
 **Files:**
 
@@ -496,7 +496,7 @@ git commit -m "feat(ATE-4): Add URL-backed tag filter"
 **Interfaces:**
 
 - Consumes: `Tag[]`, `TaskFormValues`, Base UI multiple Combobox, and complete-set task actions from Task 3.
-- Produces: one reusable assignment picker used by Add Task and Edit Task, with staged form-state selections.
+- Produces: one assignment picker used by Edit Task with staged form-state selections.
 
 - [ ] **Step 1: Build the shared assignment picker**
 
@@ -513,9 +513,9 @@ interface TagPickerProps {
 
 Use Base UI multiple Combobox, alphabetical options, tag colors plus names, removable selected chips, and the same ten-selection limit. Do not persist assignment changes from this component.
 
-- [ ] **Step 2: Add tag IDs to Add Task form state**
+- [ ] **Step 2: Keep Add Task untagged**
 
-Initialize `defaultValues: { tagIds: [], title: '' }`, render `TagPicker` through a React Hook Form `Controller`, and submit the complete parsed values to `createTaskAction`. Reset both title and tag IDs only after success.
+Keep `defaultValues: { tagIds: [], title: '' }`, render no tag picker, and submit the parsed values to `createTaskAction`. Reset both title and the hidden empty tag-ID array only after success.
 
 - [ ] **Step 3: Add tag IDs to Edit Task form state**
 
@@ -559,13 +559,14 @@ git commit -m "feat(ATE-4): Add task tag picker"
 - Create: `src/features/home/tag-manager-dialog.tsx`
 - Create: `src/features/home/tag-delete-dialog.tsx`
 - Modify: `src/features/home/tag-picker.tsx`
-- Modify: `src/features/home/tag-filter.tsx`
+- Modify: `app/settings/page.tsx`
+- Modify: `src/features/settings/settings.tsx`
 - Modify: `src/features/home/tag-chip.tsx`
 - Modify: `src/features/home/tag.module.css`
 
 **Interfaces:**
 
-- Consumes: Tag actions, Base UI forms/dialogs/alert dialogs, and TagPicker/TagFilter.
+- Consumes: Tag actions, Base UI forms/dialogs/alert dialogs, TagPicker, and the protected Settings route.
 - Produces: fixed palette, custom HexColorPicker, readable foreground helper, immediate inline creation, and full tag management.
 
 - [ ] **Step 1: Install react-colorful**
@@ -592,13 +593,13 @@ Export the fixed palette, `normalizeTagColor`, and `getTagForeground`. Parse six
 
 Use Base UI Field for lower-case name and exact hex input, Base UI single-selection controls for palette colors, and `react-colorful`'s controlled `HexColorPicker` only when Custom is selected. Provide a visible label and pass an explicit `aria-label` to the third-party picker.
 
-- [ ] **Step 5: Add immediate inline creation**
+- [ ] **Step 5: Add immediate Edit Task creation**
 
-From `TagPicker`, open the tag editor, call `createTagAction`, append the returned new-or-existing tag to local options, and select its ID. The tag remains persisted if the surrounding task form is cancelled. If the returned tag already existed, preserve its stored color.
+From the Edit Task `TagPicker`, open the tag editor, call `createTagAction`, append the returned new-or-existing tag to local options, and select its ID. Do not expose creation from the Add Task picker. The tag remains persisted if the edit is cancelled. If the returned tag already existed, preserve its stored color.
 
 - [ ] **Step 6: Add Manage tags**
 
-Open `TagManagerDialog` from the filter controls. List all tags alphabetically, support rename/recolor through `updateTagAction`, and use a Base UI Alert Dialog before `deleteTagAction`. After success, refresh authoritative server props; deletion leaves tasks unchanged and removes assignments through cascade.
+Load all owned tags in the protected Settings route and open `TagManagerDialog` from a Tags settings section. List tags alphabetically, support rename/recolor through `updateTagAction`, and use a Base UI Alert Dialog before `deleteTagAction`. After success, refresh authoritative server props; deletion leaves tasks unchanged and removes assignments through cascade.
 
 - [ ] **Step 7: Run focused and repository checks**
 
@@ -680,13 +681,13 @@ FROM drizzle.__drizzle_migrations;
 Expected: `migration_count = 11`; `latest_migration` matches migration `0010` in `drizzle/meta/_journal.json`.
 
 4. Merge `feature/ATE-4-tags` into `develop` through a pull request and wait for the Vercel Preview deployment.
-5. In Preview, create `work`, `urgent`, and one custom-color tag; assign combinations through Add and Edit.
+5. In Preview, create `work`, `urgent`, and one custom-color tag through Edit Task; create tasks untagged, then assign combinations through Edit Task. Open Manage Tags from Settings and confirm all three tags appear.
 6. Confirm task rows show two alphabetical chips and a keyboard/touch-accessible `+N` Popover.
-7. Select `work` and `urgent`; confirm only tasks containing both remain, including tasks with additional tags.
+7. Type in the tag filter Combobox and confirm the available options narrow by name. Select `work` and `urgent`; confirm both appear as chips inside the input, the placeholder and count are absent, their remove controls replace the masked text beneath them on hover or keyboard focus, and only tasks containing both remain, including tasks with additional tags.
 8. Refresh, navigate away and back, and confirm the final filters remain while browser Back does not replay each filter click.
 9. Reorder visible active tasks, clear filters, and confirm hidden tasks stayed in their original slots.
 10. Complete and restore tagged tasks; confirm the same filter applies to Active and Completed.
-11. Rename and recolor a tag; confirm every chip updates. Delete it; confirm tasks remain and the selected URL ID is pruned.
+11. From Settings, rename and recolor a tag; confirm every chip updates. Delete it; confirm tasks remain and the selected URL ID is pruned.
 12. Verify palette and custom picker behavior with keyboard, touch, visible focus, and accessible labels on a mobile-width viewport.
 13. In Neon development, confirm names are ciphertext and ownership constraints exist:
 

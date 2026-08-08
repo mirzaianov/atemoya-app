@@ -14,7 +14,7 @@ import styles from './tag.module.css';
 
 interface TagDeleteDialogProps {
   id: string;
-  onDeleted: () => void;
+  onDeleted: (id: string) => void;
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }
@@ -44,7 +44,7 @@ export default function TagDeleteDialog({
 
       toast.info('Tag deleted');
       onOpenChange(false);
-      onDeleted();
+      onDeleted(id);
       router.refresh();
     } catch {
       toast.error('Tag could not be deleted. Please try again.');

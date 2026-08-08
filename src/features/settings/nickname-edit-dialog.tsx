@@ -28,9 +28,13 @@ type NicknameFormValues = z.infer<typeof nicknameFormSchema>;
 
 interface NicknameEditDialogProps {
   currentNickname: string;
+  onUpdated: (nickname: string) => void;
 }
 
-export default function NicknameEditDialog({ currentNickname }: NicknameEditDialogProps) {
+export default function NicknameEditDialog({
+  currentNickname,
+  onUpdated,
+}: NicknameEditDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
   const {
@@ -74,6 +78,7 @@ export default function NicknameEditDialog({ currentNickname }: NicknameEditDial
       return;
     }
 
+    onUpdated(nickname);
     setIsOpen(false);
     router.refresh();
   });

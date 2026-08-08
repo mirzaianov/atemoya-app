@@ -96,8 +96,14 @@ const runTaskQuery = async <Result>(
   }
 };
 
-export const listTasks = (userId: string): Promise<TaskRecord[]> =>
+const readTasks = (userId: string, id?: string): Promise<TaskRecord[]> =>
   runTaskQuery('list', async () => {
+    const taskCondition = id
+      ? and(eq(tasks.userId, userId), eq(tasks.id, id))
+      : eq(tasks.userId, userId);
+    const assignmentCondition = id
+      ? and(eq(taskTags.userId, userId), eq(taskTags.taskId, id))
+      : eq(taskTags.userId, userId);
     const [records, assignments] = await Promise.all([
       db
         .select({
@@ -108,7 +114,7 @@ export const listTasks = (userId: string): Promise<TaskRecord[]> =>
           titleCiphertext: tasks.title,
         })
         .from(tasks)
-        .where(eq(tasks.userId, userId))
+        .where(taskCondition)
         .orderBy(
           sql`${tasks.completedAt} IS NOT NULL`,
           sql`CASE WHEN ${tasks.completedAt} IS NULL THEN ${tasks.position} END`,
@@ -124,7 +130,7 @@ export const listTasks = (userId: string): Promise<TaskRecord[]> =>
         })
         .from(taskTags)
         .innerJoin(tags, and(eq(taskTags.userId, tags.userId), eq(taskTags.tagId, tags.id)))
-        .where(eq(taskTags.userId, userId)),
+        .where(assignmentCondition),
     ]);
     const tagsById = new Map<string, Tag>();
     const tagsByTaskId = new Map<string, Tag[]>();
@@ -168,6 +174,14 @@ export const listTasks = (userId: string): Promise<TaskRecord[]> =>
       };
     });
   });
+
+export const listTasks = (userId: string) => readTasks(userId);
+
+export const getTask = async (userId: string, id: string) => {
+  const records = await readTasks(userId, id);
+
+  return records[0] ?? null;
+};
 
 export const taskTitleExists = (userId: string, title: string, excludedId?: string) =>
   runTaskQuery(

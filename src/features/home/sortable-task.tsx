@@ -21,6 +21,7 @@ const visualTransition =
 interface SortableTaskProps {
   completionDisabled: boolean;
   onCompletedChange: (task: Task, completed: boolean) => void;
+  onDeleted: (id: string) => void;
   onEdit: (task: Task) => void;
   reducedMotion: boolean;
   task: Task;
@@ -29,6 +30,7 @@ interface SortableTaskProps {
 export default function SortableTask({
   completionDisabled,
   onCompletedChange,
+  onDeleted,
   onEdit,
   reducedMotion,
   task,
@@ -62,6 +64,7 @@ export default function SortableTask({
       dragHandleRef={setActivatorNodeRef}
       isDragging={isDragging}
       onCompletedChange={onCompletedChange}
+      onDeleted={onDeleted}
       onEdit={onEdit}
       rowRef={setNodeRef}
       style={style}

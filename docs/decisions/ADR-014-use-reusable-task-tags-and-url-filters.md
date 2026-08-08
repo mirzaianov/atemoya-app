@@ -70,18 +70,19 @@ only conveyed information. A task can have at most ten tags.
 
 Use the following interaction model:
 
-- assign tags in both the Add Task form and Edit Task dialog
-- reuse one searchable multi-select picker in both flows
+- create tasks without tags and assign tags only in the Edit Task dialog
+- use one searchable multi-select picker in Edit Task
 - keep assignment selections in form state and replace the task's complete tag
   set only when the task saves successfully; cancelling leaves assignments
   unchanged
 - list available tags alphabetically after decryption
-- allow tag creation from the picker as an immediate independent mutation; a
-  created tag remains available if the surrounding task form is cancelled or
-  fails to save
+- allow tag creation only from the Edit Task picker as an immediate independent
+  mutation; a created tag remains available if the edit is cancelled or fails
+  to save
 - show all owned tags in task pickers and Manage tags, but show only tags
   assigned to at least one active or completed task in the filter Combobox
-- provide a Manage tags dialog for rename, recolor, and confirmed deletion
+- provide a Manage tags dialog from Settings for rename, recolor, and confirmed
+  deletion
 - deleting a tag removes all its assignments but never deletes tasks
 - sort each task's assigned tags alphabetically, show the first two tag chips,
   and follow them with a `+N` Base UI Popover trigger when more remain; the
@@ -91,14 +92,20 @@ Use the following interaction model:
 - show filtered and total group counts and a clearable empty state
 
 Use Base UI components when their semantics fit. In particular, use a
-controlled multiple-selection `Combobox` for the searchable tag filter and its
-removable selected chips. Show two selected filter chips and collapse additional
-selections into `+N more`; opening the Combobox exposes every selection. This
-keeps the filter compact when a user owns many tags. Use Base UI form and dialog
-primitives around task assignment and tag management, including a multiple
-`Combobox` for the shared task tag picker. Base UI 1.6 has no color picker, so
-use `react-colorful`'s controlled `HexColorPicker` for custom colors rather than
-implementing color-area, pointer, keyboard, or touch behavior.
+controlled multiple-selection `Combobox` for the tag filter so the full-width
+project-style input can narrow the finite set of existing tags by name without
+creating free-form values. Show `Filter by tag` only while no tag is selected,
+keep the typed query transient, and render selected filters as Base UI Combobox
+chips inside the input. Omit the selected count and separate disclosure icon. A
+chip's remove control is visually hidden until hover or keyboard focus and
+overlays a masked section of chip text without reserving space. The anchored list lays tags out
+inline with wrapping, moves selected tags to the start, and marks them with a
+layout-stable color-matched shadow. Use
+Base UI form and dialog primitives around task assignment and tag management,
+including a searchable multiple `Combobox` for the Edit Task tag picker. Base UI
+1.6 has no color picker, so use `react-colorful`'s controlled `HexColorPicker` for
+custom colors rather than implementing color-area, pointer, keyboard, or touch
+behavior.
 
 Use `nuqs` as the URL-state owner. Install its Next.js App Router adapter at the
 existing root layout boundary. Store selected opaque tag IDs as repeated `tag`
@@ -107,7 +114,8 @@ current history entry on each filter change. Remove the query parameter when no
 filters are selected. Do not put tag names in URLs. Ignore unknown, deleted, or
 foreign tag IDs when filtering and prune them from the URL. Also prune selected
 tags that no longer have any task assignments because they are no longer valid
-filter options.
+filter options. Carry selected IDs into Settings as repeated `returnTag`
+parameters so explicit Home navigation can reconstruct the URL-backed filter.
 
 If a modified URL contains more than ten valid IDs, retain the first ten and
 prune the remainder.
@@ -155,8 +163,8 @@ maintenance mode, data-conversion command, or backfill.
 - Pros: Every tag remains visible and can be toggled with one activation.
 - Cons: A user-owned tag collection has no small fixed size, so wrapped toggle
   buttons can consume unbounded vertical space, especially on mobile.
-- Rejected: Base UI's multiple Combobox preserves search and multi-selection in
-  a compact control.
+- Rejected: Base UI's multiple Combobox preserves compact multi-selection and
+  additionally lets users narrow a growing finite tag set by name.
 
 ### Store tags as JSON on each task
 
@@ -209,8 +217,10 @@ maintenance mode, data-conversion command, or backfill.
   ownership, cascades, atomic assignments, AND filtering, URL parsing, and
   filtered reorder merging. Color tests must cover hexadecimal normalization
   and readable foreground selection.
-- Preview acceptance must cover tag CRUD, preset and custom colors, Add/Edit
-  assignment, compact chips, URL persistence, active and completed filtering,
-  filtered drag reorder, empty results, deletion, and mobile layout. It must
-  also verify the third-party color picker and hidden-tag Popover with keyboard,
-  touch, focus visibility, and accessible labeling.
+- Preview acceptance must cover tag CRUD from Settings, preset and custom
+  colors, untagged task creation, Edit Task assignment, compact chips, URL
+  persistence, searchable Combobox filtering, filtered drag reorder, empty
+  results, deletion,
+  and mobile layout. It must also verify the third-party color picker and
+  hidden-tag Popover with keyboard, touch, focus visibility, and accessible
+  labeling.

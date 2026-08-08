@@ -154,9 +154,9 @@ export const updateTag = (userId: string, id: string, input: TagWrite) =>
         .update(tags)
         .set({ color: input.color, name, nameLookup })
         .where(and(eq(tags.userId, userId), eq(tags.id, id)))
-        .returning({ id: tags.id });
+        .returning({ color: tags.color, id: tags.id, nameCiphertext: tags.name });
 
-      return Boolean(updated);
+      return updated ? decryptTag(updated) : null;
     },
     id,
   );

@@ -25,10 +25,16 @@ import inputStyles from './task-form.module.css';
 interface TaskEditDialogProps {
   editingTask: Task | null;
   onClose: () => void;
+  onUpdated: (task: Task) => void;
   tags: Tag[];
 }
 
-export default function TaskEditDialog({ editingTask, onClose, tags }: TaskEditDialogProps) {
+export default function TaskEditDialog({
+  editingTask,
+  onClose,
+  onUpdated,
+  tags,
+}: TaskEditDialogProps) {
   const router = useRouter();
   const {
     control,
@@ -71,12 +77,13 @@ export default function TaskEditDialog({ editingTask, onClose, tags }: TaskEditD
         values,
       });
 
-      if (result.error) {
-        toast.error(result.error);
+      if (result.error || !result.task) {
+        toast.error(result.error ?? 'Task could not be updated. Please try again.');
 
         return;
       }
 
+      onUpdated(result.task);
       toast.info('Task updated');
       onClose();
       reset({ tagIds: [], title: '' });

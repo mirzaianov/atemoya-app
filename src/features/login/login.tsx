@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 
 import BrandHeader from '../../components/brand-header';
@@ -28,6 +28,7 @@ export default function Login({ notice }: LoginProps) {
   });
   const { setFocus } = form;
   const router = useRouter();
+  const [isNavigationPending, startNavigation] = useTransition();
   const signInMutation = useMutation({
     mutationFn: async ({ email, password }: SignInFormValues) => {
       const { data, error } = await authClient.signIn.email({
@@ -42,10 +43,12 @@ export default function Login({ notice }: LoginProps) {
       }
 
       if ('twoFactorRedirect' in data && data.twoFactorRedirect) {
+        startNavigation(() => router.replace('/two-factor'));
+
         return;
       }
 
-      router.push('/');
+      startNavigation(() => router.push('/'));
     },
     onError: () => {
       form.setError('root', { message: 'Sign in failed. Please try again.' });
@@ -66,7 +69,7 @@ export default function Login({ notice }: LoginProps) {
           control={form.control}
           notice={notice}
           rootError={form.formState.errors.root?.message}
-          isSubmitting={signInMutation.isPending}
+          isSubmitting={signInMutation.isPending || isNavigationPending}
           isValid={form.formState.isValid}
           onSubmit={submit}
           clearError={() => form.clearErrors('root')}

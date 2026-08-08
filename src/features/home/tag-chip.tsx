@@ -18,7 +18,7 @@ export default function TagChip({ tag }: { tag: Tag }) {
 
   return (
     <span className={styles.tagChip} style={style}>
-      {tag.name}
+      <span className={styles.tagChipText}>{tag.name}</span>
     </span>
   );
 }

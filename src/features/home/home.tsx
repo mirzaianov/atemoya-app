@@ -1,7 +1,6 @@
 import BrandHeader from '../../components/brand-header';
 import type { Tag, Task } from '../../types';
 import AccountMenu from './account-menu';
-import TaskForm from './task-form';
 import TaskList from './task-list';
 
 import styles from './home.module.css';
@@ -17,7 +16,6 @@ export default function Home({ availableTags, initialTasks, userEmail, userNickn
   return (
     <div className={styles.container}>
       <BrandHeader action={<AccountMenu email={userEmail} nickname={userNickname} />} />
-      <TaskForm tags={availableTags} />
       <TaskList tags={availableTags} tasks={initialTasks} />
     </div>
   );

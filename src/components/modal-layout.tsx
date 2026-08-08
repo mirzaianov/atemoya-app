@@ -15,6 +15,7 @@ interface ModalLayoutProps {
   alert?: boolean;
   children: ReactNode;
   closeDisabled?: boolean;
+  compact?: boolean;
   title: string;
   titleId?: string;
 }
@@ -23,6 +24,7 @@ export default function ModalLayout({
   alert = false,
   children,
   closeDisabled = false,
+  compact = false,
   title,
   titleId,
 }: ModalLayoutProps) {
@@ -33,7 +35,7 @@ export default function ModalLayout({
     <Modal.Portal>
       <Modal.Backdrop className={styles.backdrop} />
       <Modal.Viewport className={styles.viewport}>
-        <Modal.Popup className={styles.popup}>
+        <Modal.Popup className={clsx(styles.popup, compact && styles.compact)}>
           <IconTooltip label={closeLabel}>
             <Modal.Close
               aria-label={closeLabel}

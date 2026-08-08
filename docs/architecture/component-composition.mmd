@@ -13,6 +13,7 @@ flowchart TD
 
   HomeRoute --> AuthServer["auth.api.getSession<br/>src/lib/auth.ts<br/>Server"]:::server
   HomeRoute --> ListQuery["listTasks<br/>src/db/queries.ts<br/>Server"]:::data
+  HomeRoute --> TagListQuery["listTags<br/>src/db/tag-queries.ts<br/>Server"]:::data
   HomeRoute --> Home["Home<br/>src/features/home/home.tsx<br/>Server"]:::server
   Home --> BrandHeader["BrandHeader<br/>src/components/brand-header.tsx<br/>Server shared UI"]:::server
 
@@ -22,8 +23,10 @@ flowchart TD
 
   TaskForm --> TaskActions["task-actions.ts<br/>Server actions<br/>create/update/delete/reorder"]:::action
   TaskList --> SortableTaskList["SortableTaskList<br/>src/features/home/sortable-task-list.tsx<br/>Client island<br/>local edit selection"]:::client
+  SortableTaskList --> TagFilter["TagFilter<br/>Client descendant<br/>Base UI multiple Select + nuqs"]:::client
   SortableTaskList --> SortableTask["SortableTask<br/>src/features/home/sortable-task.tsx<br/>Client descendant"]:::client
   SortableTaskList --> TaskEditDialog["TaskEditDialog<br/>Client dialog<br/>RHF + Query mutation"]:::client
+  TaskEditDialog --> TagPicker["TagPicker<br/>Client descendant<br/>Base UI multiple Combobox"]:::client
   SortableTask --> TaskDeleteDialog["TaskDeleteDialog<br/>Client dialog<br/>Query mutation"]:::client
   TaskDeleteDialog --> TaskActions
   TaskEditDialog --> TaskActions
@@ -31,11 +34,12 @@ flowchart TD
   TaskActions --> AuthServer
   TaskActions --> Queries["create/update/delete/reorder/list queries<br/>src/db/queries.ts"]:::data
   ListQuery --> DbClient["Drizzle client<br/>src/db/client.ts"]:::data
+  TagListQuery --> DbClient
   Queries --> DbClient
   AuthServer --> DbClient
   AuthRoute --> AuthServer
 
-  DbClient --> Schema["Drizzle schema<br/>user / account / session / tasks"]:::data
+  DbClient --> Schema["Drizzle schema<br/>user / account / session / tasks / tags / task_tags"]:::data
   Schema --> Neon["Neon PostgreSQL"]:::external
 
   LoginRoute --> AuthServer
@@ -53,10 +57,17 @@ flowchart TD
   Signup --> AuthClient
 
   SettingsRoute --> AuthServer
+  SettingsRoute --> TagListQuery
   SettingsRoute --> Settings["Settings<br/>src/features/settings/settings.tsx<br/>Server"]:::server
   Settings --> BrandHeader
   Settings --> DeleteAccountDialog["DeleteAccountDialog<br/>src/features/settings/delete-account-dialog.tsx<br/>Client island<br/>Base UI + RHF + Query mutation"]:::client
   Settings --> NicknameEditDialog["NicknameEditDialog<br/>src/features/settings/nickname-edit-dialog.tsx<br/>Client island<br/>Base UI + RHF + Query mutation"]:::client
+  Settings --> TagManagerDialog["TagManagerDialog<br/>Client island<br/>Base UI dialog + Query mutation"]:::client
+  TagManagerDialog --> TagActions["tag-actions.ts<br/>Server actions<br/>create/update/delete"]:::action
+  TagPicker --> TagActions
+  TagActions --> AuthServer
+  TagActions --> TagQueries["tag queries<br/>src/db/tag-queries.ts"]:::data
+  TagQueries --> DbClient
   DeleteAccountDialog --> AuthClient
 
   LoginForm --> Button["Button<br/>src/components/button.tsx<br/>Client descendant"]:::client

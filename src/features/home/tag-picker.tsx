@@ -3,11 +3,11 @@
 import { Combobox } from '@base-ui/react/combobox';
 import { Dialog } from '@base-ui/react/dialog';
 import { useMutation } from '@tanstack/react-query';
-import { Check, ChevronDown, CirclePlus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useId, useMemo, useState } from 'react';
-import type { CSSProperties } from 'react';
 
+import IconTooltip from '../../components/icon-tooltip';
 import ModalLayout from '../../components/modal-layout';
 import { toast } from '../../components/toast-provider';
 import type { Tag } from '../../types';
@@ -16,13 +16,11 @@ import TagChip from './tag-chip';
 import TagEditor from './tag-editor';
 import type { TagFormValues } from './tag-schemas';
 
+import formStyles from '../../components/modal-form-layout.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import styles from './tag.module.css';
 
 const maxSelectedTags = 10;
-
-interface SwatchStyle extends CSSProperties {
-  '--tag-color': string;
-}
 
 interface TagPickerProps {
   disabled?: boolean;
@@ -36,7 +34,9 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
   const inputId = useId();
   const [createdTags, setCreatedTags] = useState<Tag[]>([]);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [isPointerFocus, setIsPointerFocus] = useState(false);
   const [previousTags, setPreviousTags] = useState(tags);
+  const [query, setQuery] = useState('');
 
   if (tags !== previousTags) {
     const serverTagIds = new Set(tags.map(({ id }) => id));
@@ -55,6 +55,10 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
   const selectedTags = value
     .map((id) => availableTags.find((tag) => tag.id === id))
     .filter((tag): tag is Tag => tag !== undefined);
+  const orderedTags = [
+    ...availableTags.filter(({ id }) => selectedIds.has(id)),
+    ...availableTags.filter(({ id }) => !selectedIds.has(id)),
+  ];
   const atLimit = selectedTags.length >= maxSelectedTags;
   const createMutation = useMutation({ mutationFn: createTagAction });
 
@@ -88,38 +92,55 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
 
   return (
     <div className={styles.picker}>
-      <label className={styles.filterLabel} htmlFor={inputId}>
+      <label className={formStyles.label} htmlFor={inputId}>
         Tags
       </label>
-      <Combobox.Root
+      <Combobox.Root<Tag, true>
         disabled={disabled}
+        inputValue={query}
         isItemEqualToValue={(item, selected) => item.id === selected.id}
         itemToStringLabel={(tag) => tag.name}
-        items={availableTags}
+        items={orderedTags}
         multiple
-        onValueChange={(selected) =>
-          onChange(selected.slice(0, maxSelectedTags).map(({ id }) => id))
-        }
+        onInputValueChange={setQuery}
+        onValueChange={(selected) => {
+          setQuery('');
+          onChange(selected.slice(0, maxSelectedTags).map(({ id }) => id));
+        }}
         value={selectedTags}
       >
-        <Combobox.InputGroup className={styles.filterControl}>
+        <Combobox.InputGroup
+          className={styles.filterSearchControl}
+          data-pointer-focus={isPointerFocus ? '' : undefined}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) {
+              setIsPointerFocus(false);
+            }
+          }}
+          onKeyDownCapture={() => setIsPointerFocus(false)}
+          onPointerDownCapture={() => setIsPointerFocus(true)}
+        >
           <Combobox.Chips className={styles.filterChips}>
             <Combobox.Value>
               {(selected: Tag[]) => (
                 <>
                   {selected.map((tag) => (
-                    <Combobox.Chip aria-label={tag.name} className={styles.filterChip} key={tag.id}>
+                    <Combobox.Chip
+                      aria-label={tag.name}
+                      className={styles.selectedFilterTag}
+                      key={tag.id}
+                    >
                       <TagChip tag={tag} />
                       <Combobox.ChipRemove
                         aria-label={`Remove ${tag.name}`}
-                        className={styles.chipRemove}
+                        className={styles.selectedFilterRemove}
                       >
                         <X aria-hidden="true" size={13} />
                       </Combobox.ChipRemove>
                     </Combobox.Chip>
                   ))}
                   <Combobox.Input
-                    className={styles.filterInput}
+                    className={styles.filterSearchInput}
                     id={inputId}
                     placeholder={selected.length === 0 ? 'Choose tags' : ''}
                   />
@@ -128,38 +149,51 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
             </Combobox.Value>
           </Combobox.Chips>
           {selectedTags.length > 0 ? (
-            <Combobox.Clear aria-label="Clear tags" className={styles.filterIconButton}>
-              <X aria-hidden="true" size={16} />
-            </Combobox.Clear>
+            <IconTooltip label="Clear tags">
+              <Combobox.Clear
+                aria-label="Clear tags"
+                className={`${styles.filterIconButton} ${styles.filterClearButton}`}
+              >
+                <X aria-hidden="true" size={20} />
+              </Combobox.Clear>
+            </IconTooltip>
           ) : null}
-          <Combobox.Trigger aria-label="Open tags" className={styles.filterIconButton}>
-            <ChevronDown aria-hidden="true" size={17} />
-          </Combobox.Trigger>
         </Combobox.InputGroup>
         <Combobox.Portal>
-          <Combobox.Positioner className={styles.pickerPositioner} sideOffset={4}>
-            <Combobox.Popup className={styles.filterPopup}>
+          <Combobox.Positioner
+            align="start"
+            className={styles.pickerPositioner}
+            side="bottom"
+            sideOffset={4}
+          >
+            <Combobox.Popup
+              className={`${styles.filterPopup} ${styles.pickerPopup} ${popupStyles.popup}`}
+            >
               <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>
-                {(tag: Tag) => {
-                  const selected = selectedIds.has(tag.id);
-                  const swatchStyle: SwatchStyle = { '--tag-color': tag.color };
-
-                  return (
+                <Combobox.Collection>
+                  {(tag: Tag) => (
                     <Combobox.Item
                       className={styles.filterItem}
-                      disabled={atLimit && !selected}
+                      disabled={atLimit && !selectedIds.has(tag.id)}
                       key={tag.id}
                       value={tag}
                     >
-                      <Combobox.ItemIndicator className={styles.itemIndicator}>
-                        <Check aria-hidden="true" size={15} />
-                      </Combobox.ItemIndicator>
-                      <span aria-hidden="true" className={styles.tagSwatch} style={swatchStyle} />
-                      <span>{tag.name}</span>
+                      <TagChip tag={tag} />
                     </Combobox.Item>
-                  );
-                }}
+                  )}
+                </Combobox.Collection>
+                <button
+                  className={styles.createTagButton}
+                  disabled={disabled || atLimit}
+                  onClick={() => {
+                    setQuery('');
+                    setEditorOpen(true);
+                  }}
+                  type="button"
+                >
+                  <span className={styles.createTagChip}>Create tag</span>
+                </button>
               </Combobox.List>
             </Combobox.Popup>
           </Combobox.Positioner>
@@ -168,17 +202,8 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
       <span aria-live="polite" className={styles.visuallyHidden}>
         {atLimit ? 'Maximum of 10 tags selected' : ''}
       </span>
-      <button
-        className={styles.createTagButton}
-        disabled={disabled || atLimit}
-        onClick={() => setEditorOpen(true)}
-        type="button"
-      >
-        <CirclePlus aria-hidden="true" size={16} />
-        Create tag
-      </button>
       <Dialog.Root open={editorOpen} onOpenChange={setEditorOpen}>
-        <ModalLayout closeDisabled={createMutation.isPending} title="Create Tag">
+        <ModalLayout compact closeDisabled={createMutation.isPending} title="Create Tag">
           <TagEditor
             onCancel={() => setEditorOpen(false)}
             onSave={handleCreate}
