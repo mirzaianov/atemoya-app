@@ -6,7 +6,7 @@ import { Popover } from '@base-ui/react/popover';
 import clsx from 'clsx';
 import { Check, EllipsisVertical, FilePen, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ComponentPropsWithoutRef, CSSProperties } from 'react';
+import type { ComponentPropsWithoutRef, CSSProperties, ReactNode } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
 import type { Task } from '../../types';
@@ -21,7 +21,7 @@ import styles from './task.module.css';
 const actionIconSize = 20;
 const checkIconSize = 14;
 
-const TaskTags = ({ task }: { task: Task }) => {
+const TaskTags = ({ interactive = true, task }: { interactive?: boolean; task: Task }) => {
   const tags = useMemo(
     // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
     () => [...task.tags].sort((left, right) => left.name.localeCompare(right.name)),
@@ -95,49 +95,52 @@ const TaskTags = ({ task }: { task: Task }) => {
     return null;
   }
 
+  let overflowContent: ReactNode = null;
+
+  if (remainingTags.length > 0) {
+    overflowContent = interactive ? (
+      <Popover.Root>
+        <Popover.Trigger
+          aria-label={`Show ${remainingTags.length} more tags for "${task.title}"`}
+          className={tagStyles.tagOverflowTrigger}
+          onKeyDown={(event) => event.stopPropagation()}
+          onPointerDown={(event) => event.stopPropagation()}
+        >
+          +{remainingTags.length}
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Positioner className={tagStyles.tagOverflowPositioner} sideOffset={4}>
+            <Popover.Popup
+              aria-label={`More tags for "${task.title}"`}
+              className={clsx(tagStyles.tagOverflowPopup, popupStyles.popup)}
+            >
+              {remainingTags.map((tag) => (
+                <TagChip key={tag.id} tag={tag} />
+              ))}
+            </Popover.Popup>
+          </Popover.Positioner>
+        </Popover.Portal>
+      </Popover.Root>
+    ) : (
+      <span className={tagStyles.tagOverflowTrigger}>+{remainingTags.length}</span>
+    );
+  }
+
   return (
     <div className={tagStyles.taskTags} ref={rowRef}>
       {visibleTags.map((tag) => (
         <TagChip key={tag.id} tag={tag} />
       ))}
-      {remainingTags.length > 0 ? (
-        <Popover.Root>
-          <Popover.Trigger
-            aria-label={`Show ${remainingTags.length} more tags for "${task.title}"`}
-            className={tagStyles.tagOverflowTrigger}
-            onKeyDown={(event) => event.stopPropagation()}
-            onPointerDown={(event) => event.stopPropagation()}
-          >
-            +{remainingTags.length}
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Positioner className={tagStyles.tagOverflowPositioner} sideOffset={4}>
-              <Popover.Popup
-                aria-label={`More tags for "${task.title}"`}
-                className={clsx(tagStyles.tagOverflowPopup, popupStyles.popup)}
-              >
-                {remainingTags.map((tag) => (
-                  <TagChip key={tag.id} tag={tag} />
-                ))}
-              </Popover.Popup>
-            </Popover.Positioner>
-          </Popover.Portal>
-        </Popover.Root>
-      ) : null}
+      {overflowContent}
       <div aria-hidden="true" className={tagStyles.tagMeasurementViewport}>
         <div className={tagStyles.tagMeasurements} ref={measurementRef}>
           {tags.map((tag) => (
             <TagChip key={`tag-${tag.id}`} tag={tag} />
           ))}
           {tags.map((tag, index) => (
-            <button
-              className={tagStyles.tagOverflowTrigger}
-              key={`overflow-${tag.id}`}
-              tabIndex={-1}
-              type="button"
-            >
+            <span className={tagStyles.tagOverflowTrigger} key={`overflow-${tag.id}`}>
               +{index + 1}
-            </button>
+            </span>
           ))}
         </div>
       </div>
@@ -165,6 +168,7 @@ export const TaskDragPreview = ({ task }: { task: Task }) => (
     </span>
     <div className={styles.taskContent}>
       <span className={styles.taskTitle}>{task.title}</span>
+      <TaskTags interactive={false} task={task} />
     </div>
     <span className={clsx(buttonStyles.button, styles.optionsButton)}>
       <EllipsisVertical size="1.25rem" />
