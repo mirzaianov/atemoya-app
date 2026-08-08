@@ -80,7 +80,7 @@ Use the following interaction model:
   mutation; a created tag remains available if the edit is cancelled or fails
   to save
 - show all owned tags in task pickers and Manage tags, but show only tags
-  assigned to at least one active or completed task in the filter Select
+  assigned to at least one active or completed task in the filter Combobox
 - provide a Manage tags dialog from Settings for rename, recolor, and confirmed
   deletion
 - deleting a tag removes all its assignments but never deletes tasks
@@ -92,16 +92,20 @@ Use the following interaction model:
 - show filtered and total group counts and a clearable empty state
 
 Use Base UI components when their semantics fit. In particular, use a
-controlled multiple-selection `Select` for the tag filter because filtering is
-selection from the finite set of assigned tags, not text entry. Render each
-option and selected value with the same default tag chip UI. Show two selected
-filter chips and collapse additional selections into `+N more`; opening the
-Select exposes every selection. This keeps the filter compact when a user owns
-many tags. Use Base UI form and dialog primitives around task assignment and tag
-management, including a searchable multiple `Combobox` for the Edit Task tag
-picker. Base UI 1.6 has no color picker, so use `react-colorful`'s controlled
-`HexColorPicker` for custom colors rather than implementing color-area, pointer,
-keyboard, or touch behavior.
+controlled multiple-selection `Combobox` for the tag filter so the full-width
+project-style input can narrow the finite set of existing tags by name without
+creating free-form values. Show `Filter by tag` only while no tag is selected,
+keep the typed query transient, and render selected filters as Base UI Combobox
+chips inside the input. Omit the selected count and separate disclosure icon. A
+chip's remove control is visually hidden until hover or keyboard focus and
+overlays a masked section of chip text without reserving space. The anchored list lays tags out
+inline with wrapping, moves selected tags to the start, and marks them with a
+layout-stable color-matched shadow. Use
+Base UI form and dialog primitives around task assignment and tag management,
+including a searchable multiple `Combobox` for the Edit Task tag picker. Base UI
+1.6 has no color picker, so use `react-colorful`'s controlled `HexColorPicker` for
+custom colors rather than implementing color-area, pointer, keyboard, or touch
+behavior.
 
 Use `nuqs` as the URL-state owner. Install its Next.js App Router adapter at the
 existing root layout boundary. Store selected opaque tag IDs as repeated `tag`
@@ -158,8 +162,8 @@ maintenance mode, data-conversion command, or backfill.
 - Pros: Every tag remains visible and can be toggled with one activation.
 - Cons: A user-owned tag collection has no small fixed size, so wrapped toggle
   buttons can consume unbounded vertical space, especially on mobile.
-- Rejected: Base UI's multiple Select preserves multi-selection in a compact
-  control without presenting filtering as text input.
+- Rejected: Base UI's multiple Combobox preserves compact multi-selection and
+  additionally lets users narrow a growing finite tag set by name.
 
 ### Store tags as JSON on each task
 
@@ -214,7 +218,8 @@ maintenance mode, data-conversion command, or backfill.
   and readable foreground selection.
 - Preview acceptance must cover tag CRUD from Settings, preset and custom
   colors, untagged task creation, Edit Task assignment, compact chips, URL
-  persistence, Select filtering, filtered drag reorder, empty results, deletion,
+  persistence, searchable Combobox filtering, filtered drag reorder, empty
+  results, deletion,
   and mobile layout. It must also verify the third-party color picker and
   hidden-tag Popover with keyboard, touch, focus visibility, and accessible
   labeling.

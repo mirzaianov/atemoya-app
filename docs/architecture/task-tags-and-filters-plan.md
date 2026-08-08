@@ -421,7 +421,7 @@ git commit -m "feat(ATE-4): Add tag filtering state"
 
 **Interfaces:**
 
-- Consumes: `Tag`, `Task.tags`, Task 4 pure helpers, Base UI Select/Popover, and full-list `reorderTasksAction`.
+- Consumes: `Tag`, `Task.tags`, Task 4 pure helpers, Base UI Combobox/Popover, and full-list `reorderTasksAction`.
 - Produces: repeated `tag` query state, compact filter controls, two task chips plus an accessible overflow Popover, and filtered drag behavior.
 
 - [ ] **Step 1: Install nuqs**
@@ -442,7 +442,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 Keep every existing provider in its current relative order; this wrapper only supplies nuqs App Router context.
 
-- [ ] **Step 3: Build the Base UI multiple Select filter**
+- [ ] **Step 3: Build the Base UI multiple Combobox filter**
 
 Use a native repeated array parser and replace history:
 
@@ -455,7 +455,7 @@ const tagParser = parseAsNativeArrayOf(parseAsString).withDefault([]).withOption
 const [rawTagIds, setTagIds] = useQueryState('tag', tagParser);
 ```
 
-Normalize against assigned eligible tags. Synchronize pruned IDs back to the URL only when the normalized sequence differs from the external query value. Render two selected values plus `+N more`, a clear action, and an accessible ten-selection limit. Use the normal `TagChip` UI for selected values and options; filtering is selection from assigned tags, not text input.
+Normalize against assigned eligible tags. Synchronize pruned IDs back to the URL only when the normalized sequence differs from the external query value. Let users type to narrow existing tags without creating free-form values. Render selected `TagChip` values inside the input, show the placeholder only when no tag is selected, and omit both the count and a separate disclosure icon. Reveal each remove control over a masked section of its chip text on hover or keyboard focus without reserving extra width. Preserve the accessible ten-selection limit and use the normal `TagChip` UI for options.
 
 - [ ] **Step 4: Integrate filtering and filtered reorder**
 
@@ -654,7 +654,7 @@ Confirm `0010_task_tags.sql` is additive, no plaintext tag-name column exists, n
 
 - [ ] **Step 3: Update canonical project documentation**
 
-Record implementation status, encrypted tag schema, Base UI Select and Combobox boundaries, URL filter ownership, filtered reorder semantics, migration number, and remaining rollout actions. Keep ADR-014 accepted and add a concise implementation-status section; do not duplicate the full plan in state docs.
+Record implementation status, encrypted tag schema, Base UI Combobox boundaries, URL filter ownership, filtered reorder semantics, migration number, and remaining rollout actions. Keep ADR-014 accepted and add a concise implementation-status section; do not duplicate the full plan in state docs.
 
 - [ ] **Step 4: Commit verification and docs**
 
@@ -683,7 +683,7 @@ Expected: `migration_count = 11`; `latest_migration` matches migration `0010` in
 4. Merge `feature/ATE-4-tags` into `develop` through a pull request and wait for the Vercel Preview deployment.
 5. In Preview, create `work`, `urgent`, and one custom-color tag through Edit Task; create tasks untagged, then assign combinations through Edit Task. Open Manage Tags from Settings and confirm all three tags appear.
 6. Confirm task rows show two alphabetical chips and a keyboard/touch-accessible `+N` Popover.
-7. Open the tag filter Select and confirm options and selected values retain their normal tag-chip UI. Select `work` and `urgent`; confirm only tasks containing both remain, including tasks with additional tags.
+7. Type in the tag filter Combobox and confirm the available options narrow by name. Select `work` and `urgent`; confirm both appear as chips inside the input, the placeholder and count are absent, their remove controls replace the masked text beneath them on hover or keyboard focus, and only tasks containing both remain, including tasks with additional tags.
 8. Refresh, navigate away and back, and confirm the final filters remain while browser Back does not replay each filter click.
 9. Reorder visible active tasks, clear filters, and confirm hidden tasks stayed in their original slots.
 10. Complete and restore tagged tasks; confirm the same filter applies to Active and Completed.

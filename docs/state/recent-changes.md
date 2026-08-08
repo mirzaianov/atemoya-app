@@ -6,6 +6,8 @@ Keep only the 10 most recent entries.
 
 ## Recent Changes
 
+- 2026-08-08: Reworked tag filtering into a searchable multiple Base UI Combobox whose full-width project-style input narrows existing tags by name and contains selected chips, hides its placeholder after selection, omits the count and disclosure icon, masks text beneath overlaid remove controls during hover or keyboard focus, and opens an anchored wrapping tag list with selected tags moved first and marked by color-matched shadows while preserving URL-backed AND semantics. [Reason why added: records the approved filter interaction refinement before Preview acceptance.]
+
 - 2026-08-06: Implemented ADR-014 reusable task tags with encrypted lower-case names, atomic same-owner assignments, searchable Base UI Edit Task assignment, chip-rendered Base UI Select filtering, `nuqs` URL-backed AND filtering, visible-slot drag reordering, compact chips, custom colors, and Settings-based tag management. Additive migration `0010` and all local checks pass against the guarded test database; Preview and production rollout remain pending. [Reason why added: records the completed feature implementation and its remaining deployment boundary.]
 
 - 2026-08-04: Closed ADR-009 after Neon rejected the recorded production plaintext checkpoint as outside the available history window. [Reason why added: confirms the final six-hour restore-history condition passed and the database-theft encryption rollout is complete.]
