@@ -7,7 +7,6 @@
 .filterRevealFirst,
 .filterRevealSecond {
   animation-duration: 180ms;
-  animation-fill-mode: both;
   animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -21,24 +20,24 @@
 
 @keyframes filter-reveal-first {
   from {
-    clip-path: inset(0 0 35% 0);
+    clip-path: inset(0 -0.5rem 35% -0.5rem);
     opacity: 0.45;
   }
 
   to {
-    clip-path: inset(0);
+    clip-path: inset(0 -0.5rem);
     opacity: 1;
   }
 }
 
 @keyframes filter-reveal-second {
   from {
-    clip-path: inset(0 0 35% 0);
+    clip-path: inset(0 -0.5rem 35% -0.5rem);
     opacity: 0.45;
   }
 
   to {
-    clip-path: inset(0);
+    clip-path: inset(0 -0.5rem);
     opacity: 1;
   }
 }

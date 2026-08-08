@@ -234,6 +234,9 @@
 
 .tagChip,
 .tagOverflowTrigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 1.25rem;
   padding-inline: 0.4rem;
   font-size: 0.75rem;
@@ -241,8 +244,6 @@
 }
 
 .tagChip {
-  display: inline-flex;
-  align-items: center;
   max-width: 9rem;
   overflow: hidden;
   border: 1px solid var(--tag-color);
