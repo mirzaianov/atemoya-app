@@ -68,7 +68,13 @@ export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
             </Select.Icon>
           </Select.Trigger>
           <Select.Portal>
-            <Select.Positioner className={styles.filterPositioner} sideOffset={4}>
+            <Select.Positioner
+              align="start"
+              alignItemWithTrigger={false}
+              className={styles.filterPositioner}
+              side="bottom"
+              sideOffset={4}
+            >
               <Select.Popup className={styles.filterPopup}>
                 <Select.List className={styles.filterList}>
                   {tags.map((tag) => (
