@@ -16,6 +16,7 @@ import TagChip from './tag-chip';
 import TagEditor from './tag-editor';
 import type { TagFormValues } from './tag-schemas';
 
+import popupStyles from '../../styles/popup.module.css';
 import styles from './tag.module.css';
 
 const maxSelectedTags = 10;
@@ -138,7 +139,7 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
         </Combobox.InputGroup>
         <Combobox.Portal>
           <Combobox.Positioner className={styles.pickerPositioner} sideOffset={4}>
-            <Combobox.Popup className={styles.filterPopup}>
+            <Combobox.Popup className={`${styles.filterPopup} ${popupStyles.popup}`}>
               <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>
                 {(tag: Tag) => {

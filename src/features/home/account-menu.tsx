@@ -12,6 +12,7 @@ import Spinner from '../../components/spinner';
 import { authClient } from '../../lib/auth-client';
 
 import buttonStyles from '../../components/button.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import styles from './account-menu.module.css';
 
 const actionIconSize = 20;
@@ -51,7 +52,7 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
       </IconTooltip>
       <Menu.Portal>
         <Menu.Positioner align="end" className={styles.positioner} side="bottom" sideOffset={8}>
-          <Menu.Popup className={styles.popup}>
+          <Menu.Popup className={clsx(styles.panel, popupStyles.popup)}>
             <Menu.Group className={styles.group}>
               <Menu.GroupLabel className={styles.identity}>
                 <span className={styles.nickname}>{nickname}</span>

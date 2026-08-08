@@ -8,6 +8,7 @@ import IconTooltip from '../../components/icon-tooltip';
 import type { Tag } from '../../types';
 import TagChip from './tag-chip';
 
+import popupStyles from '../../styles/popup.module.css';
 import styles from './tag.module.css';
 
 const maxSelectedTags = 10;
@@ -104,7 +105,7 @@ export default function TagFilter({ onChange, tags, value }: TagFilterProps) {
             side="bottom"
             sideOffset={4}
           >
-            <Combobox.Popup className={styles.filterPopup}>
+            <Combobox.Popup className={`${styles.filterPopup} ${popupStyles.popup}`}>
               <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>
                 {(tag: Tag) => (

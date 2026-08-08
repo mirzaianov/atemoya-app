@@ -14,6 +14,7 @@ import TagChip from './tag-chip';
 import TaskDeleteDialog from './task-delete-dialog';
 
 import buttonStyles from '../../components/button.module.css';
+import popupStyles from '../../styles/popup.module.css';
 import tagStyles from './tag.module.css';
 import styles from './task.module.css';
 
@@ -113,7 +114,7 @@ const TaskTags = ({ task }: { task: Task }) => {
             <Popover.Positioner className={tagStyles.tagOverflowPositioner} sideOffset={4}>
               <Popover.Popup
                 aria-label={`More tags for "${task.title}"`}
-                className={tagStyles.tagOverflowPopup}
+                className={clsx(tagStyles.tagOverflowPopup, popupStyles.popup)}
               >
                 {remainingTags.map((tag) => (
                   <TagChip key={tag.id} tag={tag} />
@@ -236,7 +237,7 @@ export default function TaskRow({
             side="bottom"
             sideOffset={4}
           >
-            <Menu.Popup className={styles.optionsPanel}>
+            <Menu.Popup className={clsx(styles.optionsPanel, popupStyles.popup)}>
               <Menu.Item
                 className={clsx(
                   buttonStyles.button,
