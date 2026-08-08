@@ -190,6 +190,7 @@
   min-height: 1.375rem;
   padding-inline: 0.4rem;
   overflow: hidden;
+  border: 1px solid var(--tag-color);
   border-radius: var(--radius-control);
   background: var(--tag-color);
   color: var(--tag-foreground);
@@ -197,6 +198,19 @@
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.filterValue .tagChip,
+.filterItem[data-selected] .tagChip {
+  border-width: 2px;
+}
+
+@supports (color: oklch(from red l c h)) {
+  .tagChip {
+    border-color: oklch(from var(--tag-color) 0.78 calc(c * 0.5) h);
+    background: oklch(from var(--tag-color) 0.94 calc(c * 0.25) h);
+    color: oklch(from var(--tag-color) 0.4 calc(c * 0.85) h);
+  }
 }
 
 .taskTags {
