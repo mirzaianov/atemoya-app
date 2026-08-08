@@ -3,7 +3,7 @@
 import { Combobox } from '@base-ui/react/combobox';
 import { Dialog } from '@base-ui/react/dialog';
 import { useMutation } from '@tanstack/react-query';
-import { CirclePlus, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useId, useMemo, useState } from 'react';
 
@@ -165,19 +165,34 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
             side="bottom"
             sideOffset={4}
           >
-            <Combobox.Popup className={`${styles.filterPopup} ${popupStyles.popup}`}>
+            <Combobox.Popup
+              className={`${styles.filterPopup} ${styles.pickerPopup} ${popupStyles.popup}`}
+            >
               <Combobox.Empty className={styles.filterEmpty}>No tags found</Combobox.Empty>
               <Combobox.List className={styles.filterList}>
-                {(tag: Tag) => (
-                  <Combobox.Item
-                    className={styles.filterItem}
-                    disabled={atLimit && !selectedIds.has(tag.id)}
-                    key={tag.id}
-                    value={tag}
-                  >
-                    <TagChip tag={tag} />
-                  </Combobox.Item>
-                )}
+                <Combobox.Collection>
+                  {(tag: Tag) => (
+                    <Combobox.Item
+                      className={styles.filterItem}
+                      disabled={atLimit && !selectedIds.has(tag.id)}
+                      key={tag.id}
+                      value={tag}
+                    >
+                      <TagChip tag={tag} />
+                    </Combobox.Item>
+                  )}
+                </Combobox.Collection>
+                <button
+                  className={styles.createTagButton}
+                  disabled={disabled || atLimit}
+                  onClick={() => {
+                    setQuery('');
+                    setEditorOpen(true);
+                  }}
+                  type="button"
+                >
+                  <span className={styles.createTagChip}>Create tag</span>
+                </button>
               </Combobox.List>
             </Combobox.Popup>
           </Combobox.Positioner>
@@ -186,15 +201,6 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
       <span aria-live="polite" className={styles.visuallyHidden}>
         {atLimit ? 'Maximum of 10 tags selected' : ''}
       </span>
-      <button
-        className={styles.createTagButton}
-        disabled={disabled || atLimit}
-        onClick={() => setEditorOpen(true)}
-        type="button"
-      >
-        <CirclePlus aria-hidden="true" size={16} />
-        Create tag
-      </button>
       <Dialog.Root open={editorOpen} onOpenChange={setEditorOpen}>
         <ModalLayout compact closeDisabled={createMutation.isPending} title="Create Tag">
           <TagEditor
