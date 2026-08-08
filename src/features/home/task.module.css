@@ -170,7 +170,7 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-control);
   background: var(--color-surface);
-  box-shadow: 3px 3px 0 0 var(--color-neutral);
+  box-shadow: var(--shadow-card);
 }
 
 @media (prefers-reduced-motion: reduce) {
