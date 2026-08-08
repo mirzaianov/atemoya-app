@@ -126,3 +126,62 @@ test('enforces padding around variable declarations and before returns', () => {
     0,
   );
 });
+
+test('enforces padding around complete try statements', () => {
+  const tryStatement = 'try {\n  run();\n} catch {\n  recover();\n} finally {\n  cleanUp();\n}';
+  const missingBothPadding = `before();\n${tryStatement}\nafter();`;
+  const validPadding = `before();\n\n${tryStatement}\n\nafter();`;
+  const leadingTry = `${tryStatement}\n\nafter();`;
+  const terminalTry = `before();\n\n${tryStatement}`;
+  const singleTry = tryStatement;
+  const commentWithoutPadding = `before();\n// explanation\n${tryStatement}`;
+  const crlfTry = tryStatement.replaceAll('\n', '\r\n');
+  const crlfPadding = `before();\r\n\r\n${crlfTry}\r\n\r\nafter();`;
+
+  assert.equal(
+    reportCount(missingBothPadding, [
+      statement(missingBothPadding, 'before();', 'ExpressionStatement'),
+      statement(missingBothPadding, tryStatement, 'TryStatement'),
+      statement(missingBothPadding, 'after();', 'ExpressionStatement'),
+    ]),
+    2,
+  );
+  assert.equal(
+    reportCount(validPadding, [
+      statement(validPadding, 'before();', 'ExpressionStatement'),
+      statement(validPadding, tryStatement, 'TryStatement'),
+      statement(validPadding, 'after();', 'ExpressionStatement'),
+    ]),
+    0,
+  );
+  assert.equal(
+    reportCount(leadingTry, [
+      statement(leadingTry, tryStatement, 'TryStatement'),
+      statement(leadingTry, 'after();', 'ExpressionStatement'),
+    ]),
+    0,
+  );
+  assert.equal(
+    reportCount(terminalTry, [
+      statement(terminalTry, 'before();', 'ExpressionStatement'),
+      statement(terminalTry, tryStatement, 'TryStatement'),
+    ]),
+    0,
+  );
+  assert.equal(reportCount(singleTry, [statement(singleTry, tryStatement, 'TryStatement')]), 0);
+  assert.equal(
+    reportCount(commentWithoutPadding, [
+      statement(commentWithoutPadding, 'before();', 'ExpressionStatement'),
+      statement(commentWithoutPadding, tryStatement, 'TryStatement'),
+    ]),
+    1,
+  );
+  assert.equal(
+    reportCount(crlfPadding, [
+      statement(crlfPadding, 'before();', 'ExpressionStatement'),
+      statement(crlfPadding, crlfTry, 'TryStatement'),
+      statement(crlfPadding, 'after();', 'ExpressionStatement'),
+    ]),
+    0,
+  );
+});
