@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
 import { LogOut, Settings } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTransition } from 'react';
 
 import IconTooltip from '../../components/icon-tooltip';
@@ -26,8 +26,17 @@ interface AccountMenuProps {
 
 export default function AccountMenu({ email, nickname }: AccountMenuProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isNavigationPending, startNavigation] = useTransition();
   const initials = nickname.slice(0, 2).toUpperCase();
+  const settingsSearchParams = new URLSearchParams();
+
+  for (const tagId of searchParams.getAll('tag')) {
+    settingsSearchParams.append('returnTag', tagId);
+  }
+
+  const settingsQuery = settingsSearchParams.toString();
+  const settingsHref = settingsQuery ? `/settings?${settingsQuery}` : '/settings';
   const actionBaseClassName = clsx(
     buttonStyles.button,
     buttonStyles.standard,
@@ -70,7 +79,7 @@ export default function AccountMenu({ email, nickname }: AccountMenuProps) {
                 <span className={styles.email}>{email}</span>
               </Menu.GroupLabel>
               <div className={styles.actions}>
-                <Menu.LinkItem className={settingsClassName} render={<Link href="/settings" />}>
+                <Menu.LinkItem className={settingsClassName} render={<Link href={settingsHref} />}>
                   <span className={buttonStyles.buttonTop}>
                     <Settings size={actionIconSize} />
                     Settings

@@ -19,6 +19,7 @@ import styles from './settings.module.css';
 const buttonSmall = 20;
 
 interface SettingsProps {
+  homeHref: string;
   tags: Tag[];
   twoFactorEnabled: boolean;
   userEmail: string;
@@ -26,6 +27,7 @@ interface SettingsProps {
 }
 
 export default function Settings({
+  homeHref,
   tags: initialTags,
   twoFactorEnabled: initialTwoFactorEnabled,
   userEmail,
@@ -144,7 +146,7 @@ export default function Settings({
           buttonStyles.fullWidth,
           buttonStyles.primary,
         )}
-        href="/"
+        href={homeHref}
       >
         <span className={buttonStyles.buttonTop}>
           <House size={buttonSmall} />

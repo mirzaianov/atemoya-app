@@ -114,7 +114,8 @@ current history entry on each filter change. Remove the query parameter when no
 filters are selected. Do not put tag names in URLs. Ignore unknown, deleted, or
 foreign tag IDs when filtering and prune them from the URL. Also prune selected
 tags that no longer have any task assignments because they are no longer valid
-filter options.
+filter options. Carry selected IDs into Settings as repeated `returnTag`
+parameters so explicit Home navigation can reconstruct the URL-backed filter.
 
 If a modified URL contains more than ten valid IDs, retain the first ten and
 prune the remainder.
