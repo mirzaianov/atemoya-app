@@ -227,15 +227,21 @@
   /* margin-block-start: 0.25rem; */
 }
 
-.tagMeasurements {
+.tagMeasurementViewport {
   position: absolute;
   inset-block-start: 0;
   inset-inline-start: 0;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tagMeasurements {
   display: flex;
   gap: 0.25rem;
   width: max-content;
-  visibility: hidden;
-  pointer-events: none;
 }
 
 .tagOverflowTrigger {

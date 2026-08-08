@@ -123,20 +123,22 @@ const TaskTags = ({ task }: { task: Task }) => {
           </Popover.Portal>
         </Popover.Root>
       ) : null}
-      <div aria-hidden="true" className={tagStyles.tagMeasurements} ref={measurementRef}>
-        {tags.map((tag) => (
-          <TagChip key={`tag-${tag.id}`} tag={tag} />
-        ))}
-        {tags.map((tag, index) => (
-          <button
-            className={tagStyles.tagOverflowTrigger}
-            key={`overflow-${tag.id}`}
-            tabIndex={-1}
-            type="button"
-          >
-            +{index + 1}
-          </button>
-        ))}
+      <div aria-hidden="true" className={tagStyles.tagMeasurementViewport}>
+        <div className={tagStyles.tagMeasurements} ref={measurementRef}>
+          {tags.map((tag) => (
+            <TagChip key={`tag-${tag.id}`} tag={tag} />
+          ))}
+          {tags.map((tag, index) => (
+            <button
+              className={tagStyles.tagOverflowTrigger}
+              key={`overflow-${tag.id}`}
+              tabIndex={-1}
+              type="button"
+            >
+              +{index + 1}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
