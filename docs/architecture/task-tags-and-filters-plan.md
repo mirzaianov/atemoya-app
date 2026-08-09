@@ -1,6 +1,6 @@
 # Task Tags And Filters Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Completed steps use checked boxes for tracking.
 
 **Goal:** Add reusable encrypted task tags, colored tag management, URL-backed AND filtering, and filtered drag reordering without changing hidden task positions.
 
@@ -10,12 +10,15 @@
 
 ## Implementation Status
 
-Tasks 1-8 are implemented and locally verified on `feature/ATE-4-tags`.
-Migration `0010_task_tags` passes against guarded `atemoya_test` at migration
-count `11` with journal timestamp `1785930212109`; `pnpm check`, all 30 unit
-tests, all six integration tests, and `git diff --check` pass. The checklists
-below retain the approved implementation recipe. Manual Migration And
-Acceptance remains pending.
+Tasks 1-8 are implemented and locally verified. Migration `0010_task_tags`
+passes against guarded `atemoya_test` and is applied to both Neon application
+branches at migration count `11` with journal timestamp `1785930212109`;
+`pnpm check`, all 30 unit tests, all six integration tests, and
+`git diff --check` pass. Preview manual acceptance passed. Production initially
+deployed before `0010`, causing tag-backed Server Component reads to fail; the
+schema is now aligned, the focused Production smoke test passed, and ADR-014
+rollout completed on 2026-08-09. The completed checklists below retain the
+approved implementation and rollout record.
 
 ## Global Constraints
 
@@ -51,7 +54,7 @@ Acceptance remains pending.
 - Consumes: Existing `createDataProtection`, `EncryptionContext`, `tasks`, and `user` schema definitions.
 - Produces: `tagNameLookup(userId: string, name: string): string`, encrypted `tags`, and same-owner `taskTags` schema exports.
 
-- [ ] **Step 1: Add failing encryption tests**
+- [x] **Step 1: Add failing encryption tests**
 
 Add cases proving dedicated lookup normalization and encryption context:
 
@@ -76,13 +79,13 @@ assert.notEqual(
 );
 ```
 
-- [ ] **Step 2: Run the unit test and confirm failure**
+- [x] **Step 2: Run the unit test and confirm failure**
 
 Run: `pnpm test`
 
 Expected: TypeScript execution fails because the `tags/name` encryption context and `tagNameLookup` do not exist.
 
-- [ ] **Step 3: Extend the data-protection boundary**
+- [x] **Step 3: Extend the data-protection boundary**
 
 Add `tags: new Set(['name'])` to `protectedFields`, add `{ field: 'name'; model: 'tags'; recordId: string }` to `EncryptionContext`, and expose:
 
@@ -96,7 +99,7 @@ tagNameLookup: (userId: string, name: string) => {
 },
 ```
 
-- [ ] **Step 4: Define relational ownership in Drizzle**
+- [x] **Step 4: Define relational ownership in Drizzle**
 
 Add `tags` with `name_ciphertext`, `name_lookup`, `color`, and `user_id`. Add a unique `(user_id, name_lookup)` index and a supporting unique `(user_id, id)` index. Add a supporting unique `(user_id, id)` index to `tasks`.
 
@@ -118,13 +121,13 @@ foreignKey({
 
 Add `user`, `tasks`, `tags`, and `taskTags` relations without changing existing task columns.
 
-- [ ] **Step 5: Generate and inspect migration 0010**
+- [x] **Step 5: Generate and inspect migration 0010**
 
 Run: `pnpm db:generate -- --name=task_tags`
 
 Expected: `drizzle/0010_task_tags.sql` creates only the new tables, supporting unique indexes, primary key, and composite foreign keys. It must not update, delete, decrypt, or backfill existing rows.
 
-- [ ] **Step 6: Extend guarded schema assertions**
+- [x] **Step 6: Extend guarded schema assertions**
 
 Update the integration schema test to assert:
 
@@ -138,7 +141,7 @@ task_tags_user_task_fk: composite cascading FK
 task_tags_user_tag_fk: composite cascading FK
 ```
 
-- [ ] **Step 7: Run focused verification**
+- [x] **Step 7: Run focused verification**
 
 Run: `pnpm test`
 
@@ -146,7 +149,7 @@ Run with the dedicated integration database configured: `pnpm test:integration`
 
 Expected: all data-protection tests pass; schema integration reports migration count `11` and validates the new ownership constraints.
 
-- [ ] **Step 8: Commit the schema slice**
+- [x] **Step 8: Commit the schema slice**
 
 ```bash
 git add src/lib/data-protection.ts src/lib/data-protection.unit.test.ts src/db/schema.ts src/db/database.integration.test.ts drizzle/0010_task_tags.sql drizzle/meta/_journal.json drizzle/meta/0010_snapshot.json
@@ -170,7 +173,7 @@ git commit -m "feat(ATE-4): Add encrypted tag schema"
 - Consumes: `tags`, `taskTags`, `getDataProtection()`, authenticated session lookup, and security logging conventions.
 - Produces: `Tag`, `TagFormValues`, `listTags`, `createTag`, `updateTag`, `deleteTag`, and authenticated tag actions.
 
-- [ ] **Step 1: Add tag contracts**
+- [x] **Step 1: Add tag contracts**
 
 Define the shared client type:
 
@@ -200,11 +203,11 @@ export const tagSchema = z.object({ color: tagColorSchema, name: tagNameSchema }
 
 Export `TagFormValues` directly from that schema with `z.infer`; do not duplicate the shape in another type.
 
-- [ ] **Step 2: Add failing integration cases**
+- [x] **Step 2: Add failing integration cases**
 
 Cover encrypted-at-rest names, alphabetical decrypted reads, lower-case idempotent create, rename collision, recolor, ownership rejection, and cascading delete. Direct SQL assertions must verify `name_ciphertext` starts with `enc:v1:` and never equals the plaintext name.
 
-- [ ] **Step 3: Implement tag database operations**
+- [x] **Step 3: Implement tag database operations**
 
 Create `src/db/tag-queries.ts` following `runTaskQuery` security logging. Export:
 
@@ -219,7 +222,7 @@ export const deleteTag: (userId: string, id: string) => Promise<boolean>;
 
 `listTags` decrypts names and sorts with `name.localeCompare` after decryption. `deleteTag` is one owned `DELETE`; PostgreSQL cascades assignments atomically.
 
-- [ ] **Step 4: Add authenticated server actions**
+- [x] **Step 4: Add authenticated server actions**
 
 Create actions with the same session, validation, friendly-error, `revalidatePath('/')`, and strict logging boundaries as task actions:
 
@@ -236,7 +239,7 @@ deleteTagAction(id: string): Promise<TagActionResult>
 
 Create returns the newly inserted or existing tag. Rename collisions return `Tag already exists`; raw database and cryptography errors never reach the client.
 
-- [ ] **Step 5: Run persistence verification**
+- [x] **Step 5: Run persistence verification**
 
 Run: `pnpm test`
 
@@ -244,7 +247,7 @@ Run: `pnpm test:integration`
 
 Expected: duplicate create returns one stable tag, rename collision fails without mutation, cross-user updates/deletes return false, ciphertext is protected, and tag deletion leaves tasks intact.
 
-- [ ] **Step 6: Commit tag persistence**
+- [x] **Step 6: Commit tag persistence**
 
 ```bash
 git add src/features/home/tag-schemas.ts src/db/tag-queries.ts src/features/home/tag-actions.ts src/db/database.integration.test.ts src/types.ts
@@ -274,13 +277,13 @@ git commit -m "feat(ATE-4): Add tag persistence"
 - Consumes: `Tag`, `tags`, `taskTags`, the ten-tag domain limit, and existing authenticated task actions.
 - Produces: `Task.tags: Tag[]`, `TaskFormValues { title: string; tagIds: string[] }`, and task create/update operations that atomically replace the complete assignment set.
 
-- [ ] **Step 1: Add failing assignment integration cases**
+- [x] **Step 1: Add failing assignment integration cases**
 
 Cover create with zero and several tags, edit replacing the full set, duplicate IDs, more than ten IDs, missing/foreign IDs, task deletion cascade, tag deletion cascade, and list reads containing decrypted alphabetically sorted tags.
 
 For every rejected input, assert that neither task fields nor assignments changed.
 
-- [ ] **Step 2: Extend task contracts**
+- [x] **Step 2: Extend task contracts**
 
 Add `tags: Tag[]` to `Task` and `TaskRecord`. Extend the form schema:
 
@@ -296,11 +299,11 @@ export const taskSchema = z.object({
 });
 ```
 
-- [ ] **Step 3: Read tags with tasks**
+- [x] **Step 3: Read tags with tasks**
 
 Extend `listTasks(userId)` to read owned assignments and owned tags, decrypt each tag once, group by task ID, sort each task's tags alphabetically, and return `tags: []` for untagged tasks. Continue ordering active tasks by dense position and completed tasks newest-first.
 
-- [ ] **Step 4: Make create and update atomic with single SQL statements**
+- [x] **Step 4: Make create and update atomic with single SQL statements**
 
 Change signatures to:
 
@@ -313,7 +316,7 @@ Do not call `db.transaction()`. Build each mutation as one SQL statement with a 
 
 For update, delete only assignments absent from the requested set and insert only requested assignments with `ON CONFLICT DO NOTHING`; the two sets are disjoint, so the data-modifying CTEs never target the same join row.
 
-- [ ] **Step 5: Update server actions and page data**
+- [x] **Step 5: Update server actions and page data**
 
 Change actions to accept parsed form values:
 
@@ -326,7 +329,7 @@ In `app/page.tsx`, load `[tasks, tags]` with `Promise.all([listTasks(userId), li
 
 Update the existing form callers in the same commit so the new action contract is buildable before the picker UI exists: Add Task submits `tagIds: []`; Edit Task submits `editingTask.tags.map(({ id }) => id)` to preserve existing assignments. Task 6 replaces only the Edit Task default with user-controlled form state.
 
-- [ ] **Step 6: Run atomicity verification**
+- [x] **Step 6: Run atomicity verification**
 
 Run: `pnpm test`
 
@@ -334,7 +337,7 @@ Run: `pnpm test:integration`
 
 Expected: every task lifecycle path preserves tag assignments, invalid ownership writes nothing, and the existing complete/restore/reorder behavior remains green.
 
-- [ ] **Step 7: Commit task assignments**
+- [x] **Step 7: Commit task assignments**
 
 ```bash
 git add src/types.ts src/db/queries.ts src/features/home/task-schemas.ts src/features/home/task-actions.ts src/db/database.integration.test.ts app/page.tsx src/features/home/home.tsx src/features/home/task-list.tsx src/features/home/sortable-task-list.tsx
@@ -356,7 +359,7 @@ git commit -m "feat(ATE-4): Assign tags to tasks"
 - Consumes: `Task`, `Tag`, dense active-task order, AND filter semantics, and the ten-filter limit.
 - Produces: `filterTasksByTagIds`, `getEligibleFilterTags`, `normalizeSelectedTagIds`, and `mergeFilteredTaskOrder`.
 
-- [ ] **Step 1: Write failing pure tests**
+- [x] **Step 1: Write failing pure tests**
 
 Use tasks tagged `[work]`, `[urgent]`, `[work, urgent]`, `[work, urgent, personal]`, and `[]` to assert:
 
@@ -369,13 +372,13 @@ Assert eligible filters exclude unassigned tags, normalization removes duplicate
 
 For full order `[A-visible, B-hidden, C-visible, D-hidden]`, assert dragging C before A returns `[C, B, A, D]`.
 
-- [ ] **Step 2: Confirm the tests fail**
+- [x] **Step 2: Confirm the tests fail**
 
 Run: `node --test --experimental-strip-types src/features/home/tag-state.test.ts`
 
 Expected: module-not-found failure for `tag-state.ts`.
 
-- [ ] **Step 3: Implement the minimal pure helpers**
+- [x] **Step 3: Implement the minimal pure helpers**
 
 Implement AND filtering with `selectedIds.every`, eligible tags with one assigned-ID set, and normalization with stable deduplication, eligibility filtering, and `.slice(0, 10)`.
 
@@ -390,13 +393,13 @@ return allActiveTasks.map((task) =>
 
 Return the original order when membership validation fails.
 
-- [ ] **Step 4: Run focused and existing state tests**
+- [x] **Step 4: Run focused and existing state tests**
 
 Run: `node --test --experimental-strip-types src/features/home/tag-state.test.ts src/features/home/task-state.test.ts`
 
 Expected: all filtering, normalization, reorder, completion, and restoration cases pass.
 
-- [ ] **Step 5: Commit state logic**
+- [x] **Step 5: Commit state logic**
 
 ```bash
 git add src/features/home/tag-state.ts src/features/home/tag-state.test.ts src/features/home/task-state.test.ts
@@ -424,13 +427,13 @@ git commit -m "feat(ATE-4): Add tag filtering state"
 - Consumes: `Tag`, `Task.tags`, Task 4 pure helpers, Base UI Combobox/Popover, and full-list `reorderTasksAction`.
 - Produces: repeated `tag` query state, compact filter controls, two task chips plus an accessible overflow Popover, and filtered drag behavior.
 
-- [ ] **Step 1: Install nuqs**
+- [x] **Step 1: Install nuqs**
 
 Run: `pnpm add nuqs`
 
 Expected: only `package.json` and `pnpm-lock.yaml` dependency metadata changes.
 
-- [ ] **Step 2: Add the App Router adapter**
+- [x] **Step 2: Add the App Router adapter**
 
 Wrap the existing application providers without moving their ownership:
 
@@ -442,7 +445,7 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app';
 
 Keep every existing provider in its current relative order; this wrapper only supplies nuqs App Router context.
 
-- [ ] **Step 3: Build the Base UI multiple Combobox filter**
+- [x] **Step 3: Build the Base UI multiple Combobox filter**
 
 Use a native repeated array parser and replace history:
 
@@ -457,15 +460,15 @@ const [rawTagIds, setTagIds] = useQueryState('tag', tagParser);
 
 Normalize against assigned eligible tags. Synchronize pruned IDs back to the URL only when the normalized sequence differs from the external query value. Let users type to narrow existing tags without creating free-form values. Render selected `TagChip` values inside the input, show the placeholder only when no tag is selected, and omit both the count and a separate disclosure icon. Reveal each remove control over a masked section of its chip text on hover or keyboard focus without reserving extra width. Preserve the accessible ten-selection limit and use the normal `TagChip` UI for options.
 
-- [ ] **Step 4: Integrate filtering and filtered reorder**
+- [x] **Step 4: Integrate filtering and filtered reorder**
 
 Derive filtered active and completed groups with `filterTasksByTagIds`. Show `visible of total` counts and one clearable no-results state. Pass only visible active IDs to dnd-kit, but merge the drag result into the complete active order with `mergeFilteredTaskOrder` before calling the unchanged full-list reorder action.
 
-- [ ] **Step 5: Render compact task tags**
+- [x] **Step 5: Render compact task tags**
 
 Create `TagChip` with visible name and computed foreground color. In `TaskRow`, render the first two alphabetically sorted tags and a Base UI Popover trigger labeled with the hidden count. The Popover lists every remaining tag and must work by pointer, touch, and keyboard.
 
-- [ ] **Step 6: Run repository checks**
+- [x] **Step 6: Run repository checks**
 
 Run: `pnpm check`
 
@@ -473,7 +476,7 @@ Run: `pnpm test`
 
 Expected: lint, format, types, and pure state tests pass. Confirm no task-title area regains `touch-action: none`.
 
-- [ ] **Step 7: Commit URL filtering**
+- [x] **Step 7: Commit URL filtering**
 
 ```bash
 git add package.json pnpm-lock.yaml app/layout.tsx src/features/home/tag-filter.tsx src/features/home/tag-chip.tsx src/features/home/tag.module.css src/features/home/sortable-task-list.tsx src/features/home/task-row.tsx src/features/home/task-list.module.css
@@ -498,7 +501,7 @@ git commit -m "feat(ATE-4): Add URL-backed tag filter"
 - Consumes: `Tag[]`, `TaskFormValues`, Base UI multiple Combobox, and complete-set task actions from Task 3.
 - Produces: one assignment picker used by Edit Task with staged form-state selections.
 
-- [ ] **Step 1: Build the shared assignment picker**
+- [x] **Step 1: Build the shared assignment picker**
 
 Create a controlled component:
 
@@ -513,11 +516,11 @@ interface TagPickerProps {
 
 Use Base UI multiple Combobox, alphabetical options, tag colors plus names, removable selected chips, and the same ten-selection limit. Do not persist assignment changes from this component.
 
-- [ ] **Step 2: Keep Add Task untagged**
+- [x] **Step 2: Keep Add Task untagged**
 
 Keep `defaultValues: { tagIds: [], title: '' }`, render no tag picker, and submit the parsed values to `createTaskAction`. Reset both title and the hidden empty tag-ID array only after success.
 
-- [ ] **Step 3: Add tag IDs to Edit Task form state**
+- [x] **Step 3: Add tag IDs to Edit Task form state**
 
 When opening, reset with:
 
@@ -530,7 +533,7 @@ reset({
 
 Cancel closes without mutation. Save sends the complete set to `updateTaskAction`; failure keeps the dialog and values open.
 
-- [ ] **Step 4: Run task-form checks**
+- [x] **Step 4: Run task-form checks**
 
 Run: `pnpm check`
 
@@ -538,7 +541,7 @@ Run: `pnpm test`
 
 Expected: types and validation pass; existing title validation and duplicate-title behavior remain unchanged.
 
-- [ ] **Step 5: Commit assignment UI**
+- [x] **Step 5: Commit assignment UI**
 
 ```bash
 git add src/features/home/tag-picker.tsx src/features/home/tag.module.css src/features/home/task-form.tsx src/features/home/task-edit-dialog.tsx src/features/home/task-actions.ts src/features/home/home.tsx
@@ -569,13 +572,13 @@ git commit -m "feat(ATE-4): Add task tag picker"
 - Consumes: Tag actions, Base UI forms/dialogs/alert dialogs, TagPicker, and the protected Settings route.
 - Produces: fixed palette, custom HexColorPicker, readable foreground helper, immediate inline creation, and full tag management.
 
-- [ ] **Step 1: Install react-colorful**
+- [x] **Step 1: Install react-colorful**
 
 Run: `pnpm add react-colorful`
 
 Expected: dependency metadata changes only; do not add another color or popover library.
 
-- [ ] **Step 2: Test color normalization and contrast**
+- [x] **Step 2: Test color normalization and contrast**
 
 Add tests for uppercase input normalization and black/white foreground selection at light, dark, and threshold-adjacent colors:
 
@@ -585,23 +588,23 @@ assert.equal(getTagForeground('#ffffff'), '#111111');
 assert.equal(getTagForeground('#000000'), '#ffffff');
 ```
 
-- [ ] **Step 3: Implement the minimal color boundary**
+- [x] **Step 3: Implement the minimal color boundary**
 
 Export the fixed palette, `normalizeTagColor`, and `getTagForeground`. Parse six hex bytes, calculate sRGB relative luminance, and return whichever approved dark/light token has greater WCAG contrast. Do not add alpha, gradients, color names, or extra color spaces.
 
-- [ ] **Step 4: Build one reusable tag editor**
+- [x] **Step 4: Build one reusable tag editor**
 
 Use Base UI Field for lower-case name and exact hex input, Base UI single-selection controls for palette colors, and `react-colorful`'s controlled `HexColorPicker` only when Custom is selected. Provide a visible label and pass an explicit `aria-label` to the third-party picker.
 
-- [ ] **Step 5: Add immediate Edit Task creation**
+- [x] **Step 5: Add immediate Edit Task creation**
 
 From the Edit Task `TagPicker`, open the tag editor, call `createTagAction`, append the returned new-or-existing tag to local options, and select its ID. Do not expose creation from the Add Task picker. The tag remains persisted if the edit is cancelled. If the returned tag already existed, preserve its stored color.
 
-- [ ] **Step 6: Add Manage tags**
+- [x] **Step 6: Add Manage tags**
 
 Load all owned tags in the protected Settings route and open `TagManagerDialog` from a Tags settings section. List tags alphabetically, support rename/recolor through `updateTagAction`, and use a Base UI Alert Dialog before `deleteTagAction`. After success, refresh authoritative server props; deletion leaves tasks unchanged and removes assignments through cascade.
 
-- [ ] **Step 7: Run focused and repository checks**
+- [x] **Step 7: Run focused and repository checks**
 
 Run: `node --test --experimental-strip-types src/features/home/tag-colors.test.ts src/features/home/tag-state.test.ts`
 
@@ -611,7 +614,7 @@ Run: `pnpm test`
 
 Expected: color and state tests pass; no accessibility lint violations; no raw tag names appear in errors or logs.
 
-- [ ] **Step 8: Commit management UI**
+- [x] **Step 8: Commit management UI**
 
 ```bash
 git add package.json pnpm-lock.yaml src/features/home/tag-colors.ts src/features/home/tag-colors.test.ts src/features/home/tag-editor.tsx src/features/home/tag-manager-dialog.tsx src/features/home/tag-delete-dialog.tsx src/features/home/tag-picker.tsx src/features/home/tag-filter.tsx src/features/home/tag-chip.tsx src/features/home/tag.module.css
@@ -636,7 +639,7 @@ git commit -m "feat(ATE-4): Add tag management"
 - Consumes: Completed implementation, generated migration metadata, unit/integration results, and repository state conventions.
 - Produces: Commit-ready verification evidence and implementation-status documentation.
 
-- [ ] **Step 1: Run the complete local checks**
+- [x] **Step 1: Run the complete local checks**
 
 Run: `pnpm check`
 
@@ -648,15 +651,15 @@ Run: `git diff --check`
 
 Expected: every command exits `0`; integration migration count is `11`; the latest migration equals the `0010` journal entry.
 
-- [ ] **Step 2: Review the final migration and dependency surface**
+- [x] **Step 2: Review the final migration and dependency surface**
 
 Confirm `0010_task_tags.sql` is additive, no plaintext tag-name column exists, no migration touches existing task values, and only `nuqs` plus `react-colorful` were added as direct dependencies.
 
-- [ ] **Step 3: Update canonical project documentation**
+- [x] **Step 3: Update canonical project documentation**
 
 Record implementation status, encrypted tag schema, Base UI Combobox boundaries, URL filter ownership, filtered reorder semantics, migration number, and remaining rollout actions. Keep ADR-014 accepted and add a concise implementation-status section; do not duplicate the full plan in state docs.
 
-- [ ] **Step 4: Commit verification and docs**
+- [x] **Step 4: Commit verification and docs**
 
 ```bash
 git add docs/state/current-status.md docs/state/recent-changes.md docs/state/next-steps.md docs/architecture/overview.md docs/decisions/ADR-014-use-reusable-task-tags-and-url-filters.md docs/architecture/task-tags-and-filters-plan.md
@@ -666,6 +669,8 @@ git commit -m "docs(ATE-4): Record tag implementation"
 ---
 
 ## Manual Migration And Acceptance
+
+Status: completed on 2026-08-09.
 
 These steps happen only after Tasks 1-8 are committed and pushed.
 
