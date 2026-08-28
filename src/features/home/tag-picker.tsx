@@ -47,9 +47,11 @@ export default function TagPicker({ disabled = false, onChange, tags, value }: T
 
   const availableTags = useMemo(() => {
     const tagsById = new Map([...createdTags, ...tags].map((tag) => [tag.id, tag]));
+    const mergedTags = [...tagsById.values()];
 
-    // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022.
-    return [...tagsById.values()].sort((left, right) => left.name.localeCompare(right.name));
+    mergedTags.sort((left, right) => left.name.localeCompare(right.name));
+
+    return mergedTags;
   }, [createdTags, tags]);
   const selectedIds = new Set(value);
   const selectedTags = value

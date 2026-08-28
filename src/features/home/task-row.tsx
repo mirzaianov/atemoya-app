@@ -22,11 +22,13 @@ const actionIconSize = 20;
 const checkIconSize = 14;
 
 const TaskTags = ({ interactive = true, task }: { interactive?: boolean; task: Task }) => {
-  const tags = useMemo(
-    // oxlint-disable-next-line unicorn/no-array-sort -- ES2022 lacks Array.toSorted; this is a copy.
-    () => [...task.tags].sort((left, right) => left.name.localeCompare(right.name)),
-    [task.tags],
-  );
+  const tags = useMemo(() => {
+    const sortedTags = [...task.tags];
+
+    sortedTags.sort((left, right) => left.name.localeCompare(right.name));
+
+    return sortedTags;
+  }, [task.tags]);
   const [visibleCount, setVisibleCount] = useState(tags.length);
   const measurementRef = useRef<HTMLDivElement>(null);
   const rowRef = useRef<HTMLDivElement>(null);

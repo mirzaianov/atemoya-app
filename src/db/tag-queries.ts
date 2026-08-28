@@ -98,8 +98,11 @@ export const listTags = (userId: string): Promise<Tag[]> =>
       .from(tags)
       .where(eq(tags.userId, userId));
 
-    // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022, before Array#toSorted.
-    return records.map(decryptTag).sort((left, right) => left.name.localeCompare(right.name));
+    const decryptedTags = records.map(decryptTag);
+
+    decryptedTags.sort((left, right) => left.name.localeCompare(right.name));
+
+    return decryptedTags;
   });
 
 export const createTag = (userId: string, input: TagWrite): Promise<Tag> => {

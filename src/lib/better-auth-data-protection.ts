@@ -12,8 +12,6 @@ import type {
 import type { createDataProtection, EncryptionContext } from './data-protection.ts';
 import { logSecurityEvent } from './security-logger.ts';
 
-/* oxlint-disable promise/prefer-await-to-callbacks -- Better Auth exposes callback-based adapter and transaction APIs. */
-
 type DataProtection = ReturnType<typeof createDataProtection>;
 type ProtectedModel = 'session' | 'user' | 'verification';
 type AdapterOperation =
@@ -120,9 +118,13 @@ const fail = (): never => {
   throw new BetterAuthDataProtectionError();
 };
 
-const run = async <Result>(operation: AdapterOperation, callback: () => Promise<Result>) => {
+interface AdapterCall<Result> {
+  execute: () => Promise<Result>;
+}
+
+const run = async <Result>(operation: AdapterOperation, call: AdapterCall<Result>) => {
   try {
-    return await callback();
+    return await call.execute();
   } catch {
     logSecurityEvent({ code: 'better_auth_adapter_failure', operation, severity: 'error' });
 
@@ -439,67 +441,80 @@ const decorateTransactionAdapter = (
 ): DBTransactionAdapter => ({
   ...adapter,
   consumeOne: <T>(input: { model: string; where: Where[] }): Promise<T | null> =>
-    run('consumeOne', async () => {
-      const result = await adapter.consumeOne<Record<string, unknown>>({
-        ...input,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      });
+    run('consumeOne', {
+      execute: async () => {
+        const result = await adapter.consumeOne<Record<string, unknown>>({
+          ...input,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        });
 
-      return decryptResult(input.model, result, dataProtection) as T | null;
+        return decryptResult(input.model, result, dataProtection) as T | null;
+      },
     }),
   count: (input) =>
-    run('count', () =>
-      adapter.count({
-        ...input,
-        where: rewriteWhere(input.model, input.where, dataProtection),
-      }),
-    ),
+    run('count', {
+      execute: () =>
+        adapter.count({
+          ...input,
+          where: rewriteWhere(input.model, input.where, dataProtection),
+        }),
+    }),
   create: <T extends Record<string, unknown>, R = T>(input: {
     data: Omit<T, 'id'>;
     forceAllowId?: boolean;
     model: string;
     select?: string[];
   }): Promise<R> =>
-    run('create', async () => {
-      if (!isProtectedModel(input.model)) {
-        return adapter.create<T, R>(input);
-      }
+    run('create', {
+      execute: async () => {
+        if (!isProtectedModel(input.model)) {
+          return adapter.create<T, R>(input);
+        }
 
-      const recordId = createRecordId(
-        options,
-        input.model,
-        input.data as Record<string, unknown>,
-        input.forceAllowId ?? false,
-      );
-      const selection = rewriteSelect(input.model, input.select);
-      const result = await adapter.create<Record<string, unknown>, Record<string, unknown>>({
-        ...input,
-        data: transformWrite(
+        const recordId = createRecordId(
+          options,
           input.model,
-          { ...input.data, id: recordId },
-          recordId,
-          dataProtection,
-        ),
-        forceAllowId: true,
-        select: selection.select,
-      });
+          input.data as Record<string, unknown>,
+          input.forceAllowId ?? false,
+        );
+        const selection = rewriteSelect(input.model, input.select);
+        const result = await adapter.create<Record<string, unknown>, Record<string, unknown>>({
+          ...input,
+          data: transformWrite(
+            input.model,
+            { ...input.data, id: recordId },
+            recordId,
+            dataProtection,
+          ),
+          forceAllowId: true,
+          select: selection.select,
+        });
 
-      return decryptResult(input.model, result, dataProtection, undefined, selection.addedId) as R;
+        return decryptResult(
+          input.model,
+          result,
+          dataProtection,
+          undefined,
+          selection.addedId,
+        ) as R;
+      },
     }),
   delete: (input) =>
-    run('delete', () =>
-      adapter.delete({
-        ...input,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      }),
-    ),
+    run('delete', {
+      execute: () =>
+        adapter.delete({
+          ...input,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        }),
+    }),
   deleteMany: (input) =>
-    run('deleteMany', () =>
-      adapter.deleteMany({
-        ...input,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      }),
-    ),
+    run('deleteMany', {
+      execute: () =>
+        adapter.deleteMany({
+          ...input,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        }),
+    }),
   findMany: <T>(input: {
     join?: JoinOption;
     limit?: number;
@@ -509,23 +524,25 @@ const decorateTransactionAdapter = (
     sortBy?: { direction: 'asc' | 'desc'; field: string };
     where?: Where[];
   }): Promise<T[]> =>
-    run('findMany', async () => {
-      rejectProtectedSort(input.model, input.sortBy?.field);
+    run('findMany', {
+      execute: async () => {
+        rejectProtectedSort(input.model, input.sortBy?.field);
 
-      const selection = rewriteSelect(input.model, input.select);
-      const result = await adapter.findMany<Record<string, unknown>>({
-        ...input,
-        select: selection.select,
-        where: rewriteWhere(input.model, input.where, dataProtection),
-      });
+        const selection = rewriteSelect(input.model, input.select);
+        const result = await adapter.findMany<Record<string, unknown>>({
+          ...input,
+          select: selection.select,
+          where: rewriteWhere(input.model, input.where, dataProtection),
+        });
 
-      return decryptResult(
-        input.model,
-        result,
-        dataProtection,
-        input.join,
-        selection.addedId,
-      ) as T[];
+        return decryptResult(
+          input.model,
+          result,
+          dataProtection,
+          input.join,
+          selection.addedId,
+        ) as T[];
+      },
     }),
   findOne: <T>(input: {
     join?: JoinOption;
@@ -533,21 +550,23 @@ const decorateTransactionAdapter = (
     select?: string[];
     where: Where[];
   }): Promise<T | null> =>
-    run('findOne', async () => {
-      const selection = rewriteSelect(input.model, input.select);
-      const result = await adapter.findOne<Record<string, unknown>>({
-        ...input,
-        select: selection.select,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      });
+    run('findOne', {
+      execute: async () => {
+        const selection = rewriteSelect(input.model, input.select);
+        const result = await adapter.findOne<Record<string, unknown>>({
+          ...input,
+          select: selection.select,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        });
 
-      return decryptResult(
-        input.model,
-        result,
-        dataProtection,
-        input.join,
-        selection.addedId,
-      ) as T | null;
+        return decryptResult(
+          input.model,
+          result,
+          dataProtection,
+          input.join,
+          selection.addedId,
+        ) as T | null;
+      },
     }),
   incrementOne: <T>(input: {
     increment: Record<string, number>;
@@ -555,57 +574,65 @@ const decorateTransactionAdapter = (
     set?: Record<string, unknown>;
     where: Where[];
   }): Promise<T | null> =>
-    run('incrementOne', async () => {
-      const modelFields = isProtectedModel(input.model) ? protectedFields[input.model] : undefined;
+    run('incrementOne', {
+      execute: async () => {
+        const modelFields = isProtectedModel(input.model)
+          ? protectedFields[input.model]
+          : undefined;
 
-      if (modelFields && Object.keys(input.increment).some((field) => modelFields[field])) {
-        return fail();
-      }
+        if (modelFields && Object.keys(input.increment).some((field) => modelFields[field])) {
+          return fail();
+        }
 
-      const hasProtectedSet =
-        input.set && isProtectedModel(input.model) && hasProtectedValue(input.model, input.set);
-      const recordId = hasProtectedSet ? exactRecordId(input.where) : undefined;
-      const result = await adapter.incrementOne<Record<string, unknown>>({
-        ...input,
-        set:
-          hasProtectedSet && recordId && isProtectedModel(input.model)
-            ? transformWrite(input.model, input.set ?? {}, recordId, dataProtection)
-            : input.set,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      });
+        const hasProtectedSet =
+          input.set && isProtectedModel(input.model) && hasProtectedValue(input.model, input.set);
+        const recordId = hasProtectedSet ? exactRecordId(input.where) : undefined;
+        const result = await adapter.incrementOne<Record<string, unknown>>({
+          ...input,
+          set:
+            hasProtectedSet && recordId && isProtectedModel(input.model)
+              ? transformWrite(input.model, input.set ?? {}, recordId, dataProtection)
+              : input.set,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        });
 
-      return decryptResult(input.model, result, dataProtection) as T | null;
+        return decryptResult(input.model, result, dataProtection) as T | null;
+      },
     }),
   update: <T>(input: {
     model: string;
     update: Record<string, unknown>;
     where: Where[];
   }): Promise<T | null> =>
-    run('update', async () => {
-      const hasProtectedUpdate =
-        isProtectedModel(input.model) && hasProtectedValue(input.model, input.update);
-      const recordId = hasProtectedUpdate ? exactRecordId(input.where) : undefined;
-      const result = await adapter.update<Record<string, unknown>>({
-        ...input,
-        update:
-          hasProtectedUpdate && recordId && isProtectedModel(input.model)
-            ? transformWrite(input.model, input.update, recordId, dataProtection)
-            : input.update,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      });
+    run('update', {
+      execute: async () => {
+        const hasProtectedUpdate =
+          isProtectedModel(input.model) && hasProtectedValue(input.model, input.update);
+        const recordId = hasProtectedUpdate ? exactRecordId(input.where) : undefined;
+        const result = await adapter.update<Record<string, unknown>>({
+          ...input,
+          update:
+            hasProtectedUpdate && recordId && isProtectedModel(input.model)
+              ? transformWrite(input.model, input.update, recordId, dataProtection)
+              : input.update,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        });
 
-      return decryptResult(input.model, result, dataProtection) as T | null;
+        return decryptResult(input.model, result, dataProtection) as T | null;
+      },
     }),
   updateMany: (input) =>
-    run('updateMany', () => {
-      if (isProtectedModel(input.model) && hasProtectedValue(input.model, input.update)) {
-        return fail();
-      }
+    run('updateMany', {
+      execute: () => {
+        if (isProtectedModel(input.model) && hasProtectedValue(input.model, input.update)) {
+          return fail();
+        }
 
-      return adapter.updateMany({
-        ...input,
-        where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
-      });
+        return adapter.updateMany({
+          ...input,
+          where: rewriteWhere(input.model, input.where, dataProtection) ?? [],
+        });
+      },
     }),
 });
 
@@ -618,12 +645,13 @@ const decorateAdapter = (
 
   return {
     ...decorated,
-    transaction: (callback) =>
-      run('transaction', () =>
-        adapter.transaction((transactionAdapter) =>
-          callback(decorateTransactionAdapter(transactionAdapter, options, dataProtection)),
-        ),
-      ),
+    transaction: (operation) =>
+      run('transaction', {
+        execute: () =>
+          adapter.transaction((transactionAdapter) =>
+            operation(decorateTransactionAdapter(transactionAdapter, options, dataProtection)),
+          ),
+      }),
   };
 };
 

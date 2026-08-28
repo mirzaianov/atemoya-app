@@ -160,7 +160,6 @@ const readTasks = (userId: string, id?: string): Promise<TaskRecord[]> =>
     return records.map(({ titleCiphertext, ...record }) => {
       const assignedTags = tagsByTaskId.get(record.id) ?? [];
 
-      // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022, before Array#toSorted.
       assignedTags.sort((left, right) => left.name.localeCompare(right.name));
 
       return {

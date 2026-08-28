@@ -86,6 +86,7 @@ export default function Signup() {
       } catch {
         // The check-email page supports manual entry when browser storage is unavailable.
       }
+
       startNavigation(() => router.replace('/check-email'));
     },
     onError: () => {
