@@ -23,7 +23,7 @@ flowchart TD
 
   TaskForm --> TaskActions["task-actions.ts<br/>Server actions<br/>create/update/delete/reorder"]:::action
   TaskList --> SortableTaskList["SortableTaskList<br/>src/features/home/sortable-task-list.tsx<br/>Client island<br/>local edit selection"]:::client
-  SortableTaskList --> TagFilter["TagFilter<br/>Client descendant<br/>Base UI multiple Select + nuqs"]:::client
+  SortableTaskList --> TagFilter["TagFilter<br/>Client descendant<br/>Base UI multiple Combobox + nuqs"]:::client
   SortableTaskList --> SortableTask["SortableTask<br/>src/features/home/sortable-task.tsx<br/>Client descendant"]:::client
   SortableTaskList --> TaskEditDialog["TaskEditDialog<br/>Client dialog<br/>RHF + Query mutation"]:::client
   TaskEditDialog --> TagPicker["TagPicker<br/>Client descendant<br/>Base UI multiple Combobox"]:::client

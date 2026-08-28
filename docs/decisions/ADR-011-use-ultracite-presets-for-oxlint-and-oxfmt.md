@@ -27,7 +27,8 @@ toolchain:
 - Extend the Ultracite core, React, and Next.js Oxlint presets.
 - Retain the local statement-padding plugin accepted in ADR-008.
 - Treat Ultracite's inherited lint rules as the repository lint conventions
-  without compatibility overrides.
+  without compatibility overrides, and prohibit inline lint suppression
+  directives.
 - Extend the Ultracite Oxfmt preset while preserving the existing print width,
   quotes, trailing commas, prose wrapping, and import order.
 - Keep `pnpm lint`, `pnpm format`, `pnpm format:check`, and `pnpm typecheck` as
@@ -63,6 +64,15 @@ toolchain:
 
 - Oxlint gains maintained core, React, accessibility, and Next.js rule coverage.
 - Existing code conforms to Ultracite's inherited lint rules.
+- Serial database-conversion batches use async recursion so stable cursors,
+  atomic commits, hooks, and read-back verification remain sequential without
+  `no-await-in-loop` exceptions.
+- Better Auth adapter work is represented by executable operation objects, and
+  synchronous data-protection assertions capture thrown errors explicitly, so
+  callback contracts remain intact without `prefer-await-to-callbacks`
+  exceptions.
+- Inline suppression directives and local compatibility overrides are not
+  accepted; conflicting code must be restructured without weakening behavior.
 - Oxfmt keeps the established repository output.
 - Ultracite upgrades may introduce new rules and must be reviewed before
   upgrading.

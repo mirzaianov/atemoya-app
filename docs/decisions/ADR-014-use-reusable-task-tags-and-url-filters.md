@@ -10,10 +10,14 @@ Accepted
 
 ## Implementation Status
 
-Implemented on `feature/ATE-4-tags`. Formatting, linting, type checking, 30 unit
-tests, and six guarded `atemoya_test` integration tests pass. Additive migration
-`0010_task_tags` is verified at migration count `11` with journal timestamp
-`1785930212109`. Preview acceptance and production promotion remain pending.
+Implemented and deployed. Formatting, linting, type checking, 30 unit tests, and
+six guarded `atemoya_test` integration tests pass. Additive migration
+`0010_task_tags` is applied to guarded `atemoya_test` and both Neon application
+branches at migration count `11` with journal timestamp `1785930212109`.
+Preview acceptance passed. Production initially deployed before the migration,
+causing tag-backed Server Component reads to fail. Applying `0010` aligned the
+schema, the focused Production smoke check passed, and rollout completed on
+2026-08-09.
 
 ## Context
 

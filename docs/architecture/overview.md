@@ -32,20 +32,23 @@ Execution details: `neon-environment-isolation-plan.md`
 
 ## Task Tags And Filters
 
-ADR-014 is implemented on the feature branch. Reusable user-owned tags use
+ADR-014 is implemented and deployed. Reusable user-owned tags use
 encrypted lower-case names, per-user blind indexes, readable hexadecimal color
 metadata, and same-owner `task_tags` relationships. Additive migration
-`0010_task_tags` leaves existing task rows unchanged and is verified against
-the guarded integration database at migration count `11`; Preview and
-Production rollout remain pending.
+`0010_task_tags` leaves existing task rows unchanged and is applied to guarded
+`atemoya_test` and both Neon application branches at migration count `11` with
+journal timestamp `1785930212109`. Preview acceptance and the focused
+post-migration Production smoke check pass. The rollout completed on 2026-08-09
+after the migration resolved tag-backed Home read failures caused by the initial
+Production schema drift.
 
 Server Components remain authoritative for task and tag reads. The existing
 sortable client island uses `nuqs` to own repeated opaque `tag` query
-parameters, a Base UI multiple Select with normal tag-chip rendering for
-filtering, a searchable Base UI multiple Combobox for Edit Task assignment, and
-a pure merge helper that reorders matching active tasks only within their
-visible slots. Tag management lives in Settings. `react-colorful` supplies the
-custom color picker because Base UI has no color-picker primitive.
+parameters, searchable Base UI multiple Comboboxes for filtering and Edit Task
+assignment with normal tag-chip rendering, and a pure merge helper that reorders
+matching active tasks only within their visible slots. Tag management lives in
+Settings. `react-colorful` supplies the custom color picker because Base UI has
+no color-picker primitive.
 
 Decision: `../decisions/ADR-014-use-reusable-task-tags-and-url-filters.md`
 

@@ -123,8 +123,9 @@ export default function Settings({
                   tag.id === updatedTag.id ? updatedTag : tag,
                 );
 
-                // oxlint-disable-next-line unicorn/no-array-sort -- The project targets ES2022.
-                return nextTags.sort((left, right) => left.name.localeCompare(right.name));
+                nextTags.sort((left, right) => left.name.localeCompare(right.name));
+
+                return nextTags;
               })
             }
             tags={tags}

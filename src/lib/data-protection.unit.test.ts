@@ -4,8 +4,6 @@ import test from 'node:test';
 import { createDataProtection, DataProtectionError } from './data-protection.ts';
 import type { EncryptionContext } from './data-protection.ts';
 
-/* oxlint-disable promise/prefer-await-to-callbacks -- node:assert requires synchronous callbacks. */
-
 const key = (fill: number) => Buffer.alloc(32, fill).toString('base64url');
 
 const configuration = {
@@ -28,13 +26,17 @@ const tagContext: EncryptionContext = {
 };
 
 const expectCode = (code: DataProtectionError['code'], action: () => unknown) => {
-  assert.throws(action, (error) => {
-    assert.ok(error instanceof DataProtectionError);
-    assert.equal(error.code, code);
-    assert.equal(error.message, code);
+  let caughtError: unknown;
 
-    return true;
-  });
+  try {
+    action();
+  } catch (error) {
+    caughtError = error;
+  }
+
+  assert.ok(caughtError instanceof DataProtectionError);
+  assert.equal(caughtError.code, code);
+  assert.equal(caughtError.message, code);
 };
 
 test('rejects invalid or reused key configuration', () => {

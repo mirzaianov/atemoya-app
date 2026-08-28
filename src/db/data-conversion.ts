@@ -195,34 +195,32 @@ const verifyBackupCodes = async (value: string, secret: string) => {
   return true;
 };
 
-const scanBatches = async <Row extends { id: string }>(
+const scanBatches = <Row extends { id: string }>(
   batchSize: number,
   load: (afterId: string | undefined) => Promise<Row[]>,
   inspect: (row: Row) => Promise<void> | void,
 ) => {
-  let afterId: string | undefined;
-  let scanned = 0;
-
-  while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- each stable cursor depends on the prior batch.
+  const scan = async (afterId: string | undefined, scanned: number): Promise<number> => {
     const rows = await load(afterId);
 
     if (rows.length === 0) {
       return scanned;
     }
 
-    // oxlint-disable-next-line no-await-in-loop -- inspection must finish before advancing the cursor.
     await Promise.all(rows.map(inspect));
-    scanned += rows.length;
 
+    const nextScanned = scanned + rows.length;
     const [lastRow] = rows.slice(-1);
+    const nextAfterId = lastRow?.id;
 
-    afterId = lastRow?.id;
-
-    if (!afterId || rows.length < batchSize) {
-      return scanned;
+    if (!nextAfterId || rows.length < batchSize) {
+      return nextScanned;
     }
-  }
+
+    return scan(nextAfterId, nextScanned);
+  };
+
+  return scan(undefined, 0);
 };
 
 const preflight = async ({
@@ -503,7 +501,7 @@ interface ConvertBatchesOptions<Row extends { id: string }> {
   verify: () => Promise<void>;
 }
 
-const convertBatches = async <Row extends { id: string }>({
+const convertBatches = <Row extends { id: string }>({
   assertBatch,
   batchSize,
   createUpdate,
@@ -513,11 +511,7 @@ const convertBatches = async <Row extends { id: string }>({
   testHooks,
   verify,
 }: ConvertBatchesOptions<Row>) => {
-  let afterId: string | undefined;
-  let converted = 0;
-
-  while (true) {
-    // oxlint-disable-next-line no-await-in-loop -- each stable cursor depends on the prior batch.
+  const convert = async (afterId: string | undefined, converted: number): Promise<number> => {
     const rows = await load(afterId);
 
     if (rows.length === 0) {
@@ -525,6 +519,7 @@ const convertBatches = async <Row extends { id: string }>({
     }
 
     const pendingRows = rows.filter(isPending);
+    let nextConverted = converted;
 
     if (pendingRows.length > 0) {
       const updates = pendingRows.map(createUpdate);
@@ -534,26 +529,25 @@ const convertBatches = async <Row extends { id: string }>({
         return fail();
       }
 
-      // oxlint-disable-next-line no-await-in-loop -- deterministic injection must finish before the batch.
       await testHooks?.beforeBatchCommit?.();
-      // oxlint-disable-next-line no-await-in-loop -- the next cursor must wait for commit and read-back.
       await db.batch([firstQuery, ...remainingQueries]);
-      converted += pendingRows.length;
-      // oxlint-disable-next-line no-await-in-loop -- deterministic injection must observe the committed batch.
+      nextConverted += pendingRows.length;
       await testHooks?.afterBatchCommit?.();
       // ponytail: global read-back is simplest; use per-batch projections if conversion volume grows.
-      // oxlint-disable-next-line no-await-in-loop -- verification must finish before advancing the cursor.
       await verify();
     }
 
     const [lastRow] = rows.slice(-1);
+    const nextAfterId = lastRow?.id;
 
-    afterId = lastRow?.id;
-
-    if (!afterId || rows.length < batchSize) {
-      return converted;
+    if (!nextAfterId || rows.length < batchSize) {
+      return nextConverted;
     }
-  }
+
+    return convert(nextAfterId, nextConverted);
+  };
+
+  return convert(undefined, 0);
 };
 
 const batchCountAssertion = (expected: number) =>
