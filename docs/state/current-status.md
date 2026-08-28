@@ -26,10 +26,12 @@ Project support docs include Things 3 reference material and UI reference images
   and complete try statements, and before non-leading return statements, and
   Oxfmt for formatting. Oxlint
   inherits Ultracite's maintained core, React, accessibility, and Next.js
-  conventions without compatibility overrides; the local padding rule is the
-  sole extension. Oxfmt retains the project's print width, quotes, trailing
-  commas, prose wrapping, and import order. [Reason why added: records the
-  opinionated lint baseline without misrepresenting the preserved formatting
+  conventions without compatibility overrides and prohibits inline suppression
+  directives. The local padding rule remains the sole rule extension. Serial
+  database batches use async recursion, and callback-based external contracts
+  use lint-compliant operation boundaries. Oxfmt retains the project's print
+  width, quotes, trailing commas, prose wrapping, and import order. [Reason why
+  added: records the exception-free lint baseline and the preserved formatting
   policy.]
 - Styling: Global CSS is limited to fonts, resets, and reusable CSS custom properties; component/page styles live beside their TSX files as `*.module.css`.
 - Button styling: raised text buttons and button-styled links use the shared `standard` top-face sizing for a `2.8rem` layout height and `3rem` visible raised height, with independent `primary`, `destructive`, `neutral`, and full-width variants. Disabled variants use semantic text and edge tokens rather than parent opacity. Compact icon-only controls retain their purpose-specific sizing and simple press interaction. [Reason why added: records the project-wide raised-control height convention after removing the obsolete `action` variant.]
@@ -65,4 +67,4 @@ Firebase-era user/list data was moved manually; no automated Firebase import exi
 
 Varlock-backed Next development/local build commands depend on local `.env.local` values and KeePassXC access. Do not inspect `.env.local` unless the user explicitly asks.
 
-Formatting, linting, TypeScript checks, 30 unit tests, and six guarded integration tests pass for the task-tag implementation as of 2026-08-06. Preview and Production browser acceptance pass, and the rollout is closed as of 2026-08-09.
+Formatting, linting, TypeScript checks, and 31 unit tests pass as of 2026-08-28. Six guarded integration tests passed previously; they were not rerun for the lint-only refactor. Preview and Production browser acceptance pass for task tags, and the rollout is closed.
